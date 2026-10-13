@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dieta Ótima RuFaS</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top-inner">
+      <div>
+        <h1>Dieta Ótima <span class="muted">com RuFaS</span></h1>
+        <p class="sub">Otimização da dieta de vacas leiteiras: simulador RuFaS, otimizador, análise de sensibilidade e curva de lactação.</p>
+      </div>
+      <div id="conn" class="chip" title="Estado da conexão com o servidor">conectando…</div>
+    </div>
+    <nav class="wrap tabs" role="tablist">
+      <button class="tab active" data-tab="toy" role="tab">1 · Exercício do quadro</button>
+      <button class="tab" data-tab="cow" role="tab">2 · Vaca leiteira (RuFaS)</button>
+      <button class="tab" data-tab="curve" role="tab">3 · Curva de lactação</button>
+      <button class="tab" data-tab="sens" role="tab">4 · Sensibilidade (RuFaS)</button>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <!-- 1. Exercício do quadro -->
+    <section id="tab-toy" class="panel active">
+      <div class="grid2">
+        <div class="card">
+          <h2>Problema</h2>
+          <p class="hint">Minimizar o custo da dieta respeitando o mínimo e o máximo diário de cada nutriente.</p>
+          <h3>Alimentos</h3>
+          <table class="edit" id="toy-foods">
+            <thead><tr><th>Alimento</th><th>Custo ($/kg)</th><th>Carboidrato (kg/kg)</th><th>Proteína (kg/kg)</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+          <button class="ghost" id="toy-add-food">+ alimento</button>
+          <h3>Nutrientes</h3>
+          <table class="edit" id="toy-bounds">
+            <thead><tr><th>Nutriente</th><th>Mínimo (kg)</th><th>Máximo (kg)</th></tr></thead>
+            <tbody></tbody>
+          </table>
+          <div class="row"><button id="toy-solve" class="primary">Resolver</button><span id="toy-status" class="hint"></span></div>
+          <details class="math">
+            <summary>Modelo matemático</summary>
+            <p>Variáveis: x<sub>i</sub> = kg do alimento i por dia.</p>
+            <p><b>min</b> Σ c<sub>i</sub> x<sub>i</sub> &nbsp; <b>s.a.</b> mín<sub>j</sub> ≤ Σ q<sub>ij</sub> x<sub>i</sub> ≤ máx<sub>j</sub>, &nbsp; x<sub>i</sub> ≥ 0.</p>
+            <p>É um problema de programação linear, resolvido com o HiGHS (SciPy). Os preços-sombra mostram quanto o custo ótimo sobe por kg a mais exigido de cada nutriente.</p>
+          </details>
+        </div>
+        <div class="card">
+          <h2>Solução ótima</h2>
+          <div id="toy-result" class="empty">Clique em “Resolver”.</div>
+          <div class="cbox"><canvas id="toy-chart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Cenários e sensibilidade</h2>
+        <p class="hint">Como no quadro: cada cenário S<sub>i</sub> é uma linha com os parâmetros e o resultado (<b>Res</b> = custo ótimo da dieta).</p>
+        <div class="row wrap-row" id="toy-factors"></div>
+        <div class="row"><button id="toy-sens" class="primary">Gerar cenários</button><span id="toy-sens-status" class="hint"></span></div>
+        <div id="toy-sens-table" class="table-scroll"></div>
+      </div>
+    </section>
+
+    <!-- 2. Vaca leiteira -->
+    <section id="tab-cow" class="panel">
+      <div class="grid-side">
+        <div class="card">
+          <h2>Cenário</h2>
+          <label class="field">Preço do leite (US$/kg) <input type="number" id="cow-milk" step="0.01" min="0"></label>
+          <label class="field">Período simulado
+            <select id="cow-years"><option value="1">1 ano</option><option value="2">2 anos</option></select>
+          </label>
+          <label class="field">Redução máxima de leite tolerada (kg/vaca/dia)
+            <input type="number" id="cow-maxred" step="0.25" min="0" value="5">
+          </label>
+          <p class="hint">Se a ração não atende às exigências, o RuFaS reduz o leite (0,25 kg por tentativa) até este limite; acima dele a simulação aborta.</p>
+          <h3>Alimentos disponíveis</h3>
+          <div class="row"><button class="ghost" id="cow-preset-quadro">Arroz + milho + volumosos</button><button class="ghost" id="cow-preset-wide">Lista ampla</button></div>
+          <input type="search" id="feed-search" placeholder="Buscar alimento (ex.: soja, arroz, milho)…">
+          <div id="feed-list" class="feed-list"></div>
+          <h3>Selecionados</h3>
+          <div id="feed-selected" class="selected"></div>
+          <p class="hint">Preço em US$/kg de matéria seca. Limites em kg de matéria seca por vaca por dia (minerais, gorduras e farinhas animais já vêm com teto). Valores iniciais são ilustrativos: troque pelos seus (por exemplo, CEPEA).</p>
+          <button id="cow-run" class="primary block">Simular com o RuFaS</button>
+          <div id="cow-progress" class="progress hidden"><div></div><span></span></div>
+        </div>
+        <div>
+          <div id="cow-empty" class="card empty">Escolha os alimentos e clique em “Simular com o RuFaS”. Cada simulação leva cerca de 30 a 60 segundos.</div>
+          <div id="cow-out" class="hidden">
+            <div class="kpis" id="cow-kpis"></div>
+            <div class="card"><h2>Ração das vacas em lactação</h2><p class="hint">kg de matéria seca por vaca por dia, a cada 30 dias de simulação (formulada pelo otimizador do RuFaS).</p><div class="cbox"><canvas id="ch-ration"></canvas></div></div>
+            <div class="grid2">
+              <div class="card"><h2>Composição média</h2><div id="cow-ration-table" class="table-scroll"></div></div>
+              <div class="card"><h2>Exigências (NRC 2001)</h2><div class="cbox tall"><canvas id="ch-req"></canvas></div></div>
+            </div>
+            <div class="card"><h2>Leite do rebanho</h2><div class="cbox short"><canvas id="ch-milk"></canvas></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Curva de lactação -->
+    <section id="tab-curve" class="panel">
+      <div class="card">
+        <h2>Curva de lactação de Wood</h2>
+        <p class="hint">y(t) = l · t<sup>m</sup> · e<sup>−n t</sup>. Os parâmetros por paridade vêm do RuFaS. Após o <b>PEV</b> (período de espera voluntário) a vaca pode ser inseminada; se emprenhar logo, o parto seguinte ocorre cerca de <b>PEV + gestação</b> dias depois.</p>
+        <div class="row wrap-row">
+          <label class="field inline">PEV (dias) <input type="number" id="curve-pev" value="60" min="0" max="200"></label>
+          <label class="field inline">Gestação (dias) <input type="number" id="curve-gest" value="270" min="200" max="300"></label>
+          <label class="field inline">Secagem antes do parto (dias) <input type="number" id="curve-dry" value="60" min="0" max="90"></label>
+          <span id="curve-src" class="chip">parâmetros de referência</span>
+        </div>
+        <div class="cbox"><canvas id="ch-curve"></canvas></div>
+        <div id="curve-facts" class="kpis small"></div>
+      </div>
+    </section>
+
+    <!-- 4. Sensibilidade -->
+    <section id="tab-sens" class="panel">
+      <div class="grid-side">
+        <div class="card">
+          <h2>Fatores</h2>
+          <p class="hint">Usa os alimentos selecionados na aba 2. Cada combinação de preços de alimentos exige uma simulação do RuFaS; o preço do leite só recalcula a receita.</p>
+          <div id="sens-factors"></div>
+          <label class="field">Método
+            <select id="sens-method"><option value="grid">Grade (todas as combinações)</option><option value="latin">Hipercubo latino</option></select>
+          </label>
+          <label class="field">Níveis / amostras <input type="number" id="sens-n" value="3" min="2" max="12"></label>
+          <p class="hint" id="sens-estimate"></p>
+          <button id="sens-run" class="primary block">Rodar sensibilidade</button>
+          <div id="sens-progress" class="progress hidden"><div></div><span></span></div>
+        </div>
+        <div>
+          <div id="sens-empty" class="card empty">Defina os fatores e rode a análise.</div>
+          <div id="sens-out" class="hidden">
+            <div class="card"><h2>Tabela de cenários</h2><div id="sens-table" class="table-scroll"></div></div>
+            <div class="grid2">
+              <div class="card"><h2>Efeito sobre a margem</h2><p class="hint">Correlação de Spearman entre cada fator e a margem (−1 a +1).</p><div class="cbox"><canvas id="ch-effects"></canvas></div></div>
+              <div class="card"><h2>Margem por cenário</h2><div class="cbox"><canvas id="ch-sens"></canvas></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap foot">
+    Simulador: <a href="https://github.com/RuminantFarmSystems/RuFaS" target="_blank" rel="noopener">RuFaS</a> v1.0.6 (GPLv3) ·
+    Exigências e composição dos alimentos: NRC (2001) · Preços ilustrativos, não são cotações.
+  </footer>
+
+  <script src="vendor/chart.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
