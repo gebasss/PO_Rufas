@@ -5,6 +5,9 @@
 > histórico de decisões, propostas de mudança ou direções futuras: requisitos pendentes vivem no
 > [PRD](PRD.md), decisões visuais no [DESIGN](DESIGN.md) e instruções de uso no [README](../README.md).
 >
+> A seção 8 registra as fontes científicas (NRC 2001, NASEM 2021, RuFaS) e o que foi conferido contra elas. Os requisitos
+> planejados a partir dessa análise estão no [FSD](FSD.md), Anexo A, e não fazem parte do que está implementado.
+>
 > Escopo: apenas o que a equipe controla — a interface web, o servidor local e o adaptador que chama o RuFaS. O
 > **RuFaS** (v1.0.6, `vendor/RuFaS`, sem modificação) é tratado como sistema externo: uma "caixa" que recebe arquivos
 > de entrada e devolve arquivos de saída. Seu funcionamento interno só é descrito onde afeta o contrato com ele.
@@ -317,3 +320,82 @@ não a recalcula nem a altera.
 
 Os 10 testes automatizados ficam em `backend/tests/` e cobrem a coluna da direita; as demais regras foram verificadas
 manualmente (execução real do RuFaS e uso das telas), sem teste automatizado.
+
+## 8. Fontes científicas e rastreabilidade das referências
+
+Esta seção registra **de onde vêm** os números e as equações do sistema e **o que foi conferido** contra as fontes.
+Descreve o estado de 01/11/2026. Os requisitos planejados a partir desta análise (padrão NASEM, alimentos
+personalizados e verificações de consistência) estão no [FSD](FSD.md), Anexo A, e não fazem parte do que está
+implementado.
+
+### 8.1 Fontes
+
+| Fonte | Como foi usada | Onde está |
+|---|---|---|
+| **NRC (2001)**, *Nutrient Requirements of Dairy Cattle*, 7ª ed. | Padrão nutricional do sistema, aplicado **pelo RuFaS** (`nutrient_standard = "NRC"`). O PDF tem camada de texto. | `Downloads/NRC 2001.pdf` (fora do projeto) |
+| **NASEM (2021)**, 8ª ed. revisada, tradução da Santafé Agroinstituto (errata de 08/2022 incorporada) | **Somente referência**: o sistema não oferece o padrão NASEM. O PDF é uma digitalização sem texto; as notas foram feitas por OCR e auditadas | `docs/nasem2021_notas/` |
+| **RuFaS v1.0.6** | Simulador; implementa as equações dos dois padrões e traz as bibliotecas de alimentos | `vendor/RuFaS` |
+
+O livro do NASEM afirma que, em caso de divergência entre o texto e o modelo, **prevalece o código R oficial** (p. 472).
+Esse código não está no projeto.
+
+### 8.2 O que vem do NRC 2001 e foi conferido no PDF
+
+| Item do sistema | Referência no NRC | Resultado da conferência |
+|---|---|---|
+| NEL estimada na lista de alimentos, `0,0245 × TDN − 0,12` (`feeds.py`) | Eq. 2-3 | Confere. O NRC avisa que a Eq. 2-3 assume consumo de 3× a manutenção. Para TDN igual a 0 (minerais) o código dá −0,12 Mcal/kg (ver FSD, D7) |
+| "A NRC 2001 só tem farelo de arroz" (RN-07) | Tabela 15-1 | Confere: só existe "Rice, Bran" (entrada 95) |
+| Composição dos alimentos (`NRC_comp.csv` do RuFaS) | Tabela 15-1 | 4 linhas conferidas (milho moído seco, farelo de arroz, farelo de soja 48% e silagem de milho imatura): MS, PB, FDN, EE e TDN batem. As outras 130 linhas **não** foram conferidas |
+| Consumo de matéria seca de vaca em lactação calculado pelo RuFaS | Eq. 1-2 | O código do RuFaS (`nrc_requirements_calculator.py`) implementa a equação como no PDF, com FCM = 0,4 × leite + 15 × gordura × leite ÷ 100 e `(1 − e^(−0,192 × (semanas em lactação + 3,67)))` |
+
+### 8.3 O que vem do NASEM 2021 e foi conferido (referência, não usado no cálculo)
+
+| Item | Resultado |
+|---|---|
+| O RuFaS no modo NASEM: consumo (Eq. 2-1), mantença 0,10 Mcal/kg de peso metabólico (Eq. 3-13), útero gravídico (Eq. 3-15 e 3-16a), cálcio e fósforo de lactação (Eq. 7-4 e 7-8b) | Conferem com as notas do NASEM |
+| Fósforo de mantença de vaca seca no RuFaS (`0,8 × consumo + 0,0006 × peso`) | Diverge das notas (Eq. 7-5b: 1,0 g/kg de MS para vacas adultas, secas e lactantes). **A conferir na p. 124.** Não afeta a vaca em lactação |
+| Biblioteca NASEM do RuFaS contra a Tabela 19-1 (88 de 180 alimentos já transcritos nas notas) | 53 linhas com correspondente (MS, PB e FDN iguais); 3 diferem em amido, por arredondamento; 35 sem correspondente automático (óleos e gorduras, silagens sem espiga, arroz em grão, farelo de arroz desengordurado, glúten úmido, entre outros) |
+| Arroz em grão | A Tabela 19-1 traz "Grãos de Arroz" (p. 427: MS 87,9%; PB 8,1%; amido 75,8%; FDN 6,4%). **Nenhuma** das bibliotecas do RuFaS o carrega |
+| Tabela 5-1 (FDN de forragem, FDN total, amido) | Completa: (19, 25, 30), (18, 27, 28), (17, 29, 26), (16, 31, 24), (15, 33, 22). A Tabela 21-1 imprime "FDN de forragem mín. 19–25", divergente (observação nossa; as notas não a registram) |
+| Biblioteca NASEM do RuFaS, coluna `is_wetforage` | Verdadeira em 33 alimentos, inclusive vários com MS acima de 80% (farelo de arroz, grão de aveia, farinha de carne e ossos). O efeito **não** foi verificado |
+
+### 8.4 Constantes do RuFaS que condicionam a ração obtida
+
+Valem para os dois padrões. Não vêm de uma equação do NRC nem do NASEM.
+
+| Constante (`animal_module_constants.py`) | Valor | Efeito |
+|---|---|---|
+| `MINIMUM_RATION_NDF` / `MAXIMUM_RATION_NDF` | 25% / 45% da MS | FDN total da ração |
+| `MINIMUM_RATION_FORAGE_NDF` | 15% da MS | FDN de forragem mínima (a Tabela 5-1 do NASEM trata de 15 a 19%, conforme FDN total e amido) |
+| `MAXIMUM_RATION_FAT` | 7% da MS | Extrato etéreo máximo |
+| `DMI_CONSTRAINT_FRACTION` | 0,30 | A ração pode ter consumo até 30% acima do estimado |
+| `PROTEIN_UPPER_LIMIT_FACTOR` | 1,5 | Oferta de proteína metabolizável no máximo 1,5 × a exigência |
+
+### 8.5 Observações sobre os resultados já guardados (`runs/_cache/`)
+
+Análise de 57 simulações em cache (preços ilustrativos, padrão NRC), feita em 01/11/2026:
+- O consumo estimado ficou em ≈ 25,8 kg/dia e o consumo da ração entre 28 e 34 kg/dia; várias simulações bateram no teto de ≈ 33,5 kg (+30%).
+- A FDN total ficou em 45% (o teto do RuFaS) na maioria; a FDN de forragem, entre 30% e 45%; o amido, entre 2% e 28%. Todas cumprem a Tabela 5-1 do NASEM.
+- Uma ração com 11 kg/dia de farelo de arroz chegou exatamente ao teto de 7% de gordura.
+
+### 8.6 Erro típico dos modelos (do próprio NASEM)
+
+| Saída | RMSE | CCC | Fonte |
+|---|---|---|---|
+| Consumo, equação só com fatores do animal (Eq. 2-1) | 12,1% (texto: 12,4%) | 0,71 | Avaliação do modelo, cap. 20, pp. 522–523 |
+| Consumo, equação com fatores da dieta (Eq. 2-2) | 15,9% (texto: 17,3%) | 0,54 | idem |
+| Leite (empírico, a partir de proteína e gordura previstas) | 14,6% | 0,75 | idem |
+| Proteína do leite / gordura do leite | 14,4% / 17,1% | 0,75 / 0,62 | idem |
+| Leite "permitido" por energia / por proteína metabolizável | 24,4% / 22,1% | 0,67 / 0,64 | idem; o livro desaconselha usá-los como meta |
+
+Para comparação: o limite de +30% de consumo do RuFaS equivale a mais de duas vezes o erro típico da Eq. 2-1.
+
+### 8.7 O que não tem fonte científica no código
+
+| Item | Origem real |
+|---|---|
+| `DEFAULT_PRICES` e `DEFAULT_MILK_PRICE` | Valores ilustrativos escolhidos pela equipe; não são cotações (CEPEA ou outra) |
+| Tetos de inclusão padrão (0,6 / 0,9 / 1,0 kg MS/vaca/dia) | Escolha da equipe, descrita no código como "tetos usuais de formulação"; **não** extraídos do NRC nem do NASEM |
+| `DEFAULT_WOOD` | Média base do RuFaS mais o ajuste de paridade do arquivo de ajuste de lactação do RuFaS; a curva de Wood é de Wood (1967) |
+| 17 s por simulação na estimativa da sensibilidade | Média observada (≈ 66 s para 4 simulações com 2 em paralelo) |
+| Redução máxima de leite padrão de 5 kg/vaca/dia | Escolha da equipe, para a simulação degradar em vez de abortar |

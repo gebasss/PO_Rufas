@@ -1,14 +1,14 @@
 # Documento de Requisitos do Produto (PRD)
 
 **Produto:** Dieta Ótima com RuFaS
-**Versão do documento:** 0.3 (rascunho para avaliação)
-**Data:** 12/10/2026
+**Versão do documento:** 0.4 (rascunho para avaliação)
+**Data:** 01/11/2026
 **Status:** Versão web implementada; documento em revisão
 **Autor(es):** _[a preencher]_
 **Disciplina / Professor / Instituição:** Pesquisa Operacional · _[a preencher]_ · _[a preencher]_
 **Escopo deste documento:** somente a **aplicação web local**. A versão em linha de comando com relatório está fora
 deste PRD.
-**Documentos relacionados:** [DESIGN.md](DESIGN.md) (interface) · [README](../README.md) (instalação e uso)
+**Documentos relacionados:** [DESIGN.md](DESIGN.md) (interface) · [DOMINIO.md](DOMINIO.md) (regras e fontes científicas) · [DECISOES_TECNICAS.md](DECISOES_TECNICAS.md) · [FSD.md](FSD.md) (especificação funcional; o Anexo A traz os requisitos planejados) · [nasem2021_notas/](nasem2021_notas/00_INDICE.md) (notas do NASEM 2021) · [README](../README.md) (instalação e uso)
 
 ---
 
@@ -140,7 +140,7 @@ Os itens que **não** são objetivos desta versão estão na seção 6.
 | M3 | Tempo de uma sensibilidade com 4 simulações | ≤ 3 min | ~66 s (2 em paralelo) | Atingida |
 | M4 | Simulações que falham sem aviso ao usuário | 0 | 0 (bug corrigido e verificado manualmente; o teste automatizado cobre só o resumo da falha) | Atingida |
 | M5 | Testes automatizados passando | 100% | 10 de 10 | Atingida |
-| M6 | Desvio da ração ótima em relação a uma referência profissional (formulador comercial ou tabelas da NRC) | _a definir com o professor_ | não medido | **Pendente** |
+| M6 | Desvio da ração ótima em relação a uma referência profissional (formulador comercial, tabelas da NRC ou equações do NASEM 2021, cap. 20; ver FSD, Anexo A.3.7) | _a definir com o professor_ | não medido | **Pendente** |
 | M7 | Cenários com preços reais (CEPEA) usados em uma demonstração | ≥ 1 cenário completo | preços ilustrativos | **Pendente** |
 
 ---
@@ -249,10 +249,12 @@ o navegador no endereço local tem as mesmas permissões. A tabela abaixo descre
 | RF-21 | O sistema deve **salvar e carregar** configurações de cenário. | S | Pendente | Reuso entre sessões. |
 | RF-22 | O sistema deve permitir **importar preços** (CSV) para cenários com cotações reais, por exemplo do CEPEA. | S | Pendente | Hoje os preços são digitados à mão e os valores iniciais são ilustrativos. |
 | RF-23 | O sistema deve permitir adicionar **nutrientes** ao exercício do quadro. | C | Pendente | Generalização do exercício. |
-| RF-24 | O sistema deve oferecer o padrão **NASEM 2021** como alternativa à NRC 2001. | C | Pendente | Previsto no quadro do professor; fora desta versão. |
+| RF-24 | O sistema deve oferecer o padrão **NASEM 2021** como alternativa à NRC 2001 e permitir **comparar os dois padrões** no mesmo cenário. | S | Pendente | Previsto no quadro do professor. **Especificado** no FSD, Anexo A.3; viabilidade técnica verificada (o RuFaS já aceita `NASEM`; todos os alimentos dos presets existem na biblioteca NASEM). Não implementado; depende da decisão Q6. |
 | RF-25 | O sistema deve ter uma tela de **premissas e limites** que explique o que o modelo assume e não faz. | S | Atendido | Tela `/sobre/`, com quatro blocos (funcionamento, premissas, limites, créditos). |
+| RF-26 | O sistema deve permitir cadastrar **alimentos personalizados**, começando pelo **arroz em grão** (Tabela 19-1 do NASEM, p. 427), que não existe nas bibliotecas do RuFaS. | S | Pendente | O quadro do professor usa arroz; hoje o "arroz" é farelo de arroz (RN-07). **Especificado** no FSD, Anexo A.5; depende de RF-24 (dados completos só no NASEM) e da decisão Q9. |
+| RF-27 | O sistema deve exibir um **painel de verificações de consistência** da ração obtida: consumo × estimado, FDN total, FDN de forragem e amido × Tabela 5-1 do NASEM, gordura e leite perdido. | S | Pendente | Nas simulações já guardadas a ração ficou 3 a 8 kg acima do consumo estimado e várias bateram no teto de +30% do RuFaS. **Especificado** no FSD, Anexo A.4; os limiares dependem da decisão Q8. |
 
-O RF-19 é o único requisito de prioridade "deve ter" ainda não atendido; ele é o principal item a especificar antes
+Os requisitos RF-24, RF-26 e RF-27 já têm especificação (FSD, Anexo A), sem implementação. O RF-19 é o único requisito de prioridade "deve ter" ainda não atendido; ele é o principal item a especificar antes
 de qualquer uso profissional (seção 15).
 
 ---
@@ -264,7 +266,7 @@ de qualquer uso profissional (seção 15).
 | Item | Motivo | Quando / dependência |
 |---|---|---|
 | Linha de comando e relatório em PDF | Entrega combinada em duas fases: primeiro a web completa | Fase seguinte, após a conclusão da web |
-| Padrão NASEM 2021 (RF-24) | A NRC 2001 é suficiente para o exercício e para a validação inicial | Depende da resposta à questão Q6 |
+| Implementação do padrão NASEM 2021 (RF-24) | Especificado (FSD, Anexo A.3), mas não implementado nesta versão | Depende da resposta à questão Q6 |
 | Preços automáticos do CEPEA | Exige fonte de dados e licença de uso; hoje os preços são digitados | Importação por CSV (RF-22) é o passo intermediário (Q5) |
 | Contas de usuário, hospedagem em nuvem, múltiplos usuários ou fazendas | O sistema é local e de um usuário | Sem previsão |
 | Modificações no código do RuFaS | O RuFaS é usado como está (GPLv3, versão fixada) | Sem previsão |
@@ -280,7 +282,7 @@ de qualquer uso profissional (seção 15).
 
 ### 6.3 Requisitos previstos, ainda não implementados
 
-Os requisitos RF-13 e RF-19 a RF-24 (seção 5.2) estão dentro da intenção do produto, mas **não implementados** nesta
+Os requisitos RF-13, RF-19 a RF-24, RF-26 e RF-27 (seção 5.2) estão dentro da intenção do produto, mas **não implementados** nesta
 versão. Eles não são "fora de escopo" definitivo; dependem de decisão ou de tempo.
 
 ---
@@ -456,6 +458,9 @@ ilustrativos.
 | HU9 | nutricionista | guardar e exportar cenários e resultados | documentar a recomendação | **Pendente** (RF-20 e RF-21) |
 | HU10 | nutricionista | ver o balanço entre o que a ração oferece e o que a vaca exige | auditar a ração | **Pendente** (RF-19) |
 | HU11 | nutricionista | importar cotações reais de uma planilha | usar preços de mercado sem digitar | **Pendente** (RF-22) |
+| HU12 | professor, nutricionista | simular o mesmo cenário em NRC 2001 e NASEM 2021 e ver as diferenças | comparar os dois padrões do quadro | **Pendente** (RF-24; FSD, Anexo A.3) |
+| HU13 | professor | usar o arroz em grão do exercício na simulação com o RuFaS | representar fielmente o "arroz" do quadro | **Pendente** (RF-26; FSD, Anexo A.5) |
+| HU14 | nutricionista | ver se a ração obtida é coerente com o consumo estimado e com os limites de fibra, amido e gordura | desconfiar de uma ração irreal | **Pendente** (RF-27; FSD, Anexo A.4) |
 
 ---
 
@@ -591,8 +596,8 @@ Limitações conhecidas, para que ninguém leia mais certeza do que o sistema en
 | L4 | O resultado não foi comparado com uma referência profissional. | Não se deve usar a ração para alimentar animais sem revisão. | M6, RNF-10, R9 |
 | L5 | Não há balanço de nutrientes (oferta × exigência) da ração obtida. | Só as exigências são exibidas; o profissional não audita a ração por completo. | RF-19 |
 | L6 | Não há exportação nem salvamento de cenários. | Resultados só podem ser registrados por captura de tela; os fatores se perdem ao recarregar. | RF-20, RF-21 |
-| L7 | Só a NRC 2001 está disponível. | O NASEM 2021, citado no quadro, não é oferecido. | RF-24, Q6 |
-| L8 | A biblioteca NRC 2001 só tem farelo de arroz; não há arroz em grão. | O "arroz" do exercício é representado pelo farelo de arroz. | C2, RN-07 |
+| L7 | Só a NRC 2001 está disponível. | O NASEM 2021, citado no quadro, não é oferecido. Já há especificação (FSD, Anexo A.3). | RF-24, Q6 |
+| L8 | As bibliotecas NRC 2001 e NASEM 2021 **do RuFaS** só têm farelo de arroz; o livro do NASEM traz o arroz em grão (Tabela 19-1, p. 427), que o RuFaS não carrega. | O "arroz" do exercício é representado pelo farelo de arroz. | C2, RN-07, RF-26 |
 | L9 | O tamanho do rebanho não é ajustável na interface. | Usa-se o rebanho padrão do RuFaS. | RF-13 |
 | L10 | O exercício do quadro tem apenas dois nutrientes (carboidrato e proteína). | Não generaliza para energia, minerais e fibra. | RF-02, RF-23 |
 | L11 | Cada simulação consome ~1,2 GB de RAM e leva 30 a 37 s; só um job roda por vez. | Análises grandes demoram; máquinas com pouca memória livre podem falhar. | RNF-02, R5 |
@@ -600,6 +605,8 @@ Limitações conhecidas, para que ninguém leia mais certeza do que o sistema en
 | L13 | Jobs ficam na memória do servidor; reiniciá-lo perde jobs em andamento e resultados não exportados. Os resultados em disco permanecem no cache. | Reiniciar durante uma análise obriga a rodar de novo (as simulações prontas voltam do cache). | Seção 8 |
 | L14 | Não há testes automatizados de integração com o RuFaS nem de interface; acessibilidade não foi auditada com leitor de tela; o contraste das cores dos gráficos não foi medido. | Regressões nessas camadas só são detectadas manualmente. | Seção 11.3, DESIGN |
 | L15 | A pasta `runs/` não é limpa automaticamente. | Ocupa disco com o uso prolongado. | Seção 8.3 |
+| L16 | O otimizador do RuFaS aceita ração com consumo até 30% acima do estimado (`DMI_CONSTRAINT_FRACTION`), e o erro típico da equação de consumo do NASEM é 12,1%. Nas simulações guardadas a ração ficou 3 a 8 kg acima do estimado, várias no teto. | Custo da ração e margem podem estar superestimados; a ração pode ser fisiologicamente irreal. | RF-27, R10, Q8, Q10 |
+| L17 | A NEL estimada exibida na lista de alimentos (`0,0245 × TDN − 0,12`) é do NRC e vale só para alimentos com TDN; para minerais (TDN 0) o código resulta em −0,12 Mcal/kg. | Valor sem sentido exibido para minerais; sem efeito no cálculo, que é do RuFaS. | FSD, D7 |
 
 ---
 
@@ -620,7 +627,10 @@ A coluna "Proposta" é o que o autor assumiria se não houver resposta; **precis
 | Q3 | Como a resposta do leite à dieta deve ser tratada, já que no RuFaS ela é fraca (R1)? | Professor | Define o trade-off central do produto | **Sim** | Manter o leite do RuFaS (P1) |
 | Q4 | Qual referência profissional usar para validar a ração (M6)? | Professor | Aceite científico | Não | Comparar com as tabelas da NRC 2001 |
 | Q5 | Preços do CEPEA serão fornecidos? Em que moeda e unidade? | Equipe | RF-22, M7 | Não | Importação por CSV em US$/kg MS |
-| Q6 | O NASEM 2021 é requisito de entrega? | Professor | RF-24 | Não | Fora desta versão |
+| Q6 | O NASEM 2021 é requisito de entrega? Hoje é **viável** e está **especificado** (FSD, Anexo A.3) | Professor | RF-24 | Não | Implementar o seletor e a comparação |
+| Q8 | Quais limiares usar nas verificações de consistência (consumo da ração × estimado: atenção em +12%, alerta em +24%; leite perdido em alerta a partir de 50% da redução máxima)? | Professor | RF-27 | Não | Múltiplos (1× e 2×) do erro de 12,1% da equação de consumo do NASEM |
+| Q9 | Como tratar o arroz em grão no padrão NRC, que não tem composição nem TDN para ele? | Professor | RF-26 | Não | Disponível só no NASEM |
+| Q10 | O limite de consumo +30% sobre o estimado, do RuFaS, é intencional? O sistema não modifica o RuFaS; o professor participou do projeto do RuFaS | Professor | L16, RF-27 | Não | Perguntar e registrar a resposta |
 | Q7 | Qual o prazo de entrega e o formato de apresentação? | Equipe | Prioridade dos itens pendentes | Não | Sem proposta |
 
 ### 15.2 Lacunas do próprio documento
@@ -638,7 +648,8 @@ A coluna "Proposta" é o que o autor assumiria se não houver resposta; **precis
 | RF-21 | Salvar e carregar | Onde guardar (arquivo local ou navegador), nome, versão do formato |
 | RF-22 | Importar preços | Layout do CSV, mapeamento de nomes para ids do RuFaS, tratamento de itens sem correspondência |
 | RF-13 | Tamanho do rebanho | Limites mínimo e máximo, efeito no tempo e na memória |
-| RF-23, RF-24 | Mais nutrientes, NASEM | Só se o professor exigir |
+| RF-23 | Mais nutrientes | Só se o professor exigir |
+| RF-24, RF-26, RF-27 | NASEM, alimentos personalizados, verificações | **Já especificados** no FSD, Anexo A; faltam as decisões Q6, Q8, Q9 e Q10 |
 
 ### 15.4 Verificações técnicas ainda em aberto
 
@@ -659,18 +670,19 @@ sobre o custo de alimentação ao longo da lactação, chamando o RuFaS v1.0.6 (
 simula a vaca com ração, custo e margem, desenha a curva de lactação com PEV e gestação, roda análise de
 sensibilidade com tabela `S1..SN` e `Res`, e explica premissas e limites. Falhas e leite perdido ficam visíveis.
 
-**Estado.** 17 dos 25 requisitos funcionais atendidos, 1 parcial (RF-02) e 7 pendentes (RF-13 e RF-19 a RF-24); dos 11
+**Estado.** 17 dos 27 requisitos funcionais atendidos, 1 parcial (RF-02) e 9 pendentes (RF-13, RF-19 a RF-24, RF-26 e RF-27; os três últimos estão especificados no FSD, Anexo A); dos 11
 requisitos não funcionais, 10 atendidos e 1 pendente (validade científica, RNF-10). Dez testes automatizados passam.
 
 **Principais limites.** Preços ilustrativos; o leite quase não responde à dieta no RuFaS v1.0.6; ração por grupo, não
-por fase; sem balanço de nutrientes, exportação nem NASEM; sem validação contra referência profissional.
+por fase; ração que pode passar do consumo estimado em até 30% (limite do RuFaS); sem balanço de nutrientes, exportação nem NASEM; sem validação contra referência profissional.
 
 **Próximos passos.**
 
 1. Obter as respostas de Q2 e Q3, que bloqueiam o FSD, e as demais questões da seção 15.
 2. Especificar e implementar o balanço nutricional (RF-19), o item de maior valor para o usuário profissional.
-3. Definir a referência de validação (Q4) e medir o desvio (M6).
-4. Escrever o FSD; depois, a versão em linha de comando com relatório.
+3. Definir a referência de validação (Q4) e medir o desvio (M6), agora com o NASEM 2021 como referência científica adicional.
+4. Decidir RF-27, RF-24 e RF-26 (já especificados no FSD, Anexo A): verificações de consistência, padrão NASEM e arroz em grão, nessa ordem.
+5. Depois, a versão em linha de comando com relatório.
 
 ---
 
@@ -718,6 +730,8 @@ por fase; sem balanço de nutrientes, exportação nem NASEM; sem validação co
 | R7 | Mudanças em versões futuras do RuFaS quebrarem a integração (a branch `dev` já difere da v1.0.6). | Média | Médio | Versão fixada; adaptador isolado em um módulo. |
 | R8 | Falha de rede (TLS) impedir a instalação do ambiente. | Média | Baixo | Script de instalação com contorno via `curl`. |
 | R9 | Uso do sistema como se fosse recomendação profissional sem validação. | Baixa | Alto | Aviso de uso e plano de validação (seção 11.3). |
+| R10 | A ração formulada pelo RuFaS passar do consumo estimado (até +30%) e inflar custo e margem (L16). | Alta | Médio | Painel de verificações (RF-27); pergunta ao professor (Q10); o RuFaS não é modificado. |
+| R11 | Divergências entre o RuFaS e o NASEM, ou erros de impressão do livro, comprometerem a validação (por exemplo, fósforo de mantença de vaca seca: 0,8 no RuFaS e 1,0 nas notas do NASEM, a conferir na p. 124). | Média | Médio | Conferir contra o código R oficial do NASEM; ver `nasem2021_notas/00_INDICE.md`, seção 4. |
 
 ## Apêndice C: Visão técnica resumida
 
@@ -757,7 +771,7 @@ por fase; sem balanço de nutrientes, exportação nem NASEM; sem validação co
 | Tabela de **Cenários** (`Arroz`, `Milho`, `Mín`, `Máx`, …, `Res`) | RF-04 e RF-18 | Atendido |
 | Gráfico de produção × dias, com **PEV** em 60 d e faixa de 270 d | RF-14 e RF-15 | Atendido (interpretação a confirmar, Q1) |
 | **NRC (2001)** | Biblioteca e exigências NRC | Atendido |
-| **NASEM (2021)** | RF-24 | Pendente (fora desta versão) |
+| **NASEM (2021)** | RF-24 (e RF-26, RF-27) | Pendente; especificado no FSD, Anexo A (viabilidade técnica verificada) |
 | **CEPEA** (preços) | RF-22 | Pendente (preços digitados à mão) |
 | Vaca recém-parida em consideração | Curva de lactação e ração por intervalo desde o dia 0 da simulação | Parcial: a curva é exibida, mas a dieta não é otimizada por fase da lactação (o RuFaS formula uma ração para o grupo de vacas em lactação) |
 
@@ -767,7 +781,10 @@ por fase; sem balanço de nutrientes, exportação nem NASEM; sem validação co
 |---|---|
 | **RuFaS** | _Ruminant Farm Systems_: modelo de simulação de fazenda leiteira, de código aberto. |
 | **NRC (2001)** | _Nutrient Requirements of Dairy Cattle_, 7ª edição revisada: exigências nutricionais de vacas leiteiras. |
-| **NASEM (2021)** | Edição mais recente do padrão de exigências; sucede a NRC 2001. |
+| **NASEM (2021)** | _Nutrient Requirements of Dairy Cattle_, 8ª edição revisada: edição mais recente do padrão de exigências; sucede a NRC 2001. |
+| **FDNf** | FDN de forragem (% da MS da dieta). |
+| **ECC / BCS** | Escore de condição corporal (1 a 5). |
+| **ED base** | Energia digestível padronizada de um alimento (Mcal/kg MS), calculada nas condições de referência do NASEM (consumo de 3,5% do peso, amido 26% e FDN 30% na dieta). |
 | **PRD** | Documento de Requisitos do Produto (este documento). |
 | **FSD** | _Functional Specification Document_: especificação funcional detalhada, posterior ao PRD. |
 | **MS** | Matéria seca. |
@@ -794,6 +811,9 @@ por fase; sem balanço de nutrientes, exportação nem NASEM; sem validação co
 4. Virtanen, P. et al. SciPy 1.0. _Nature Methods_, 17, 261–272, 2020. (HiGHS é o solucionador de PL usado.)
 5. Material de aula de Pesquisa Operacional (quadro com o problema da dieta e o diagrama
    simulador/otimizador/sensibilidade).
+6. National Academies of Sciences, Engineering, and Medicine. _Nutrient Requirements of Dairy Cattle_, 8ª ed. revisada.
+   Washington, DC: The National Academies Press, 2021. https://doi.org/10.17226/25806. Usada na tradução brasileira da
+   Santafé Agroinstituto, que incorpora a errata de 08/2022. Notas técnicas em `nasem2021_notas/`.
 
 ## Apêndice G: Formulação matemática
 
@@ -865,3 +885,4 @@ próprio RuFaS.
 | 0.1 | 12/10/2026 | _[a preencher]_ | Primeira versão, cobrindo a aplicação web. |
 | 0.2 | 12/10/2026 | _[a preencher]_ | Interface migrada para Next.js e shadcn/ui (template AdminCN); incluído RF-25; referência ao DESIGN.md. |
 | 0.3 | 12/10/2026 | _[a preencher]_ | Documento reorganizado na estrutura padrão de 16 seções. Novas: regras de negócio (7), informações controladas (8), fluxos de uso (9), critérios por história (11.2), consultas, relatórios e indicadores (12), limitações (14), pontos pendentes antes do FSD (15) e resumo final (16). Seções existentes refinadas e reposicionadas; riscos, premissas, glossário, referências e matemática passaram a apêndices. |
+| 0.4 | 01/11/2026 | _[a preencher]_ | Incorporada a análise do NASEM 2021 (notas em `nasem2021_notas/`). Novos requisitos RF-26 e RF-27; RF-24 detalhado e promovido a "deveria ter". Novas histórias HU12 a HU14, limitações L16 e L17, riscos R10 e R11 e questões Q8 a Q10. Contagem e próximos passos atualizados. Nenhuma funcionalidade foi implementada. |

@@ -68,7 +68,9 @@ tentativa, até o limite configurado); é assim que a dieta afeta o leite no mod
 - [`docs/DOMINIO.md`](docs/DOMINIO.md): Domínio e Regras de Negócio (componentes, entidades, regras implementadas e
   onde cada uma vive no código).
 - [`docs/FSD.md`](docs/FSD.md): Especificação funcional (telas, API, fluxos, cálculos, mensagens, critérios de
-  validação e desvios conhecidos).
+  validação e desvios conhecidos; o Anexo A especifica os requisitos planejados NASEM, arroz em grão e verificações de consistência).
+- [`docs/nasem2021_notas/`](docs/nasem2021_notas/00_INDICE.md): notas técnicas do livro NASEM 2021 (tradução brasileira), usadas como
+  referência científica; a seção 8 de `docs/DOMINIO.md` resume o que foi conferido contra o RuFaS e o NRC.
 - [`docs/DECISOES_TECNICAS.md`](docs/DECISOES_TECNICAS.md): Decisões técnicas já tomadas (stack, ambientes,
   integração com o RuFaS, segurança), alertas e pendências antes do FSD.
 - [`docs/DESIGN.md`](docs/DESIGN.md): Documento de Design (origem e adaptação do template, arquitetura da interface,
