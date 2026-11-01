@@ -333,7 +333,7 @@ implementado.
 | Fonte | Como foi usada | Onde está |
 |---|---|---|
 | **NRC (2001)**, *Nutrient Requirements of Dairy Cattle*, 7ª ed. | Padrão nutricional do sistema, aplicado **pelo RuFaS** (`nutrient_standard = "NRC"`). O PDF tem camada de texto. | `Downloads/NRC 2001.pdf` (fora do projeto) |
-| **NASEM (2021)**, 8ª ed. revisada, tradução da Santafé Agroinstituto (errata de 08/2022 incorporada) | **Somente referência**: o sistema não oferece o padrão NASEM. O PDF é uma digitalização sem texto; as notas foram feitas por OCR e auditadas | `docs/nasem2021_notas/` |
+| **NASEM (2021)**, 8ª ed. revisada, tradução da Santafé Agroinstituto (errata de 08/2022 incorporada) | **Somente referência**: o sistema não oferece o padrão NASEM. O PDF é uma digitalização sem texto; as notas foram feitas por OCR e auditadas | `docs/nasem2021_notas/` (local, não versionada) |
 | **RuFaS v1.0.6** | Simulador; implementa as equações dos dois padrões e traz as bibliotecas de alimentos | `vendor/RuFaS` |
 
 O livro do NASEM afirma que, em caso de divergência entre o texto e o modelo, **prevalece o código R oficial** (p. 472).

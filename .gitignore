@@ -5,3 +5,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 vendor/RuFaS/output/
+
+# Notas do NASEM 2021: transcrição de livro protegido por direitos autorais (só local)
+docs/nasem2021_notas/
+docs/nasem2021_notas.zip

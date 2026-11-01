@@ -8,7 +8,7 @@
 **Disciplina / Professor / Instituição:** Pesquisa Operacional · _[a preencher]_ · _[a preencher]_
 **Escopo deste documento:** somente a **aplicação web local**. A versão em linha de comando com relatório está fora
 deste PRD.
-**Documentos relacionados:** [DESIGN.md](DESIGN.md) (interface) · [DOMINIO.md](DOMINIO.md) (regras e fontes científicas) · [DECISOES_TECNICAS.md](DECISOES_TECNICAS.md) · [FSD.md](FSD.md) (especificação funcional; os Anexos A e B trazem os requisitos planejados) · [LINEARIZACAO.md](LINEARIZACAO.md) (estudo da linearização) · [nasem2021_notas/](nasem2021_notas/00_INDICE.md) (notas do NASEM 2021) · [README](../README.md) (instalação e uso)
+**Documentos relacionados:** [DESIGN.md](DESIGN.md) (interface) · [DOMINIO.md](DOMINIO.md) (regras e fontes científicas) · [DECISOES_TECNICAS.md](DECISOES_TECNICAS.md) · [FSD.md](FSD.md) (especificação funcional; os Anexos A e B trazem os requisitos planejados) · [LINEARIZACAO.md](LINEARIZACAO.md) (estudo da linearização) · `nasem2021_notas/` (notas do NASEM 2021; pasta local, não versionada) · [README](../README.md) (instalação e uso)
 
 ---
 
@@ -831,7 +831,7 @@ por fase; ração que pode passar do consumo estimado em até 30% (limite do RuF
    simulador/otimizador/sensibilidade).
 6. National Academies of Sciences, Engineering, and Medicine. _Nutrient Requirements of Dairy Cattle_, 8ª ed. revisada.
    Washington, DC: The National Academies Press, 2021. https://doi.org/10.17226/25806. Usada na tradução brasileira da
-   Santafé Agroinstituto, que incorpora a errata de 08/2022. Notas técnicas em `nasem2021_notas/`.
+   Santafé Agroinstituto, que incorpora a errata de 08/2022. Notas técnicas em `nasem2021_notas/` (pasta local, não versionada).
 7. Estudo da linearização das equações do otimizador do RuFaS: [LINEARIZACAO.md](LINEARIZACAO.md).
 
 ## Apêndice G: Formulação matemática

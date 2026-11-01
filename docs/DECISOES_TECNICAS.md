@@ -26,8 +26,8 @@
   requisitos planejados (RF-24, RF-26 e RF-27), ainda não implementados.
 - `LINEARIZACAO.md`: estudo e especificação da linearização das equações do otimizador do RuFaS e do módulo ampliado
   do Exercício do quadro (pedido do professor). Nada implementado.
-- `nasem2021_notas/` (pasta, com o `00_INDICE.md`): notas técnicas do livro NASEM 2021 (tradução
-  brasileira), feitas por OCR e auditadas. Referência científica complementar; ver `DOMINIO.md`, seção 8.
+- `nasem2021_notas/` (pasta **local, não versionada**, por direitos autorais, com o `00_INDICE.md`): notas técnicas do
+  livro NASEM 2021 (tradução brasileira), feitas por OCR e auditadas. Referência científica complementar; ver `DOMINIO.md`, seção 8.
 - Materiais de origem, fora do repositório: o quadro do professor de Pesquisa
   Operacional (problema da dieta, diagrama simulador/otimizador/sensibilidade,
   gráfico da lactação) e o PDF *Nutrient Requirements of Dairy Cattle* (NRC,
@@ -368,9 +368,10 @@ documento.
 
 ## 10. Pendências não bloqueantes
 
-- **Fluxo do repositório Git:** não foi definido (ramos, pull requests, revisão). Também não foi
-  decidido se a pasta `docs/nasem2021_notas/` (≈ 1 MB) e a cópia `docs/nasem2021_notas.zip`
-  (≈ 370 KB, duplicata do conteúdo) serão versionadas.
+- **Fluxo do repositório Git:** não foi definido (ramos, pull requests, revisão). A pasta
+  `docs/nasem2021_notas/` (≈ 1 MB, transcrição de livro protegido por direitos autorais) e a cópia
+  `docs/nasem2021_notas.zip` **não são versionadas** (`.gitignore`). A pasta chegou a ser publicada na `main` pública
+  (PR #2, commit `1aa2bc9`) e foi removida em seguida; o conteúdo permanece no histórico do Git.
 - **Ambiente de homologação e publicação:** não existe separação nem processo de
   entrega; não foi decidido como o sistema será entregue ao professor
   (relacionado à questão Q7 do PRD, prazo e formato de apresentação).
