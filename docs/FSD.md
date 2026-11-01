@@ -65,7 +65,7 @@ Este documento é autossuficiente. Quando o comportamento da implementação atu
 | `DESIGN.md` | Referência visual complementar. O conteúdo visual relevante está consolidado na seção 10 deste FSD. |
 | `DOMINIO.md` | Regras de negócio e mapeamento regra → arquivo → função → teste. Referência técnica de baixo nível. Inclui a seção 8, de fontes científicas. |
 | `LINEARIZACAO.md` | Estudo da linearização das equações do otimizador do RuFaS (fórmulas, técnicas, verificação do erro). Base técnica do Anexo B. |
-| `nasem2021_notas/` | Notas técnicas do livro NASEM 2021 (tradução PT-BR), usadas como referência científica do Anexo A. O código R do modelo oficial prevalece sobre o texto do livro. |
+| `nasem2021_notas/` (local, não versionada) | Notas técnicas do livro NASEM 2021 (tradução PT-BR), usadas como referência científica do Anexo A. O código R do modelo oficial prevalece sobre o texto do livro. |
 | `DECISOES_TECNICAS.md` | Decisões técnicas já tomadas, alertas e pendências. |
 | `README.md` | Instruções de instalação e uso. |
 
@@ -1416,7 +1416,7 @@ Das 57 simulações em `runs/_cache/` (preços ilustrativos), o estimado ficou e
 | Ca; P; Mg; K; Na; Cl; S (% MS) | `calcium`, `phosphorus`, `magnesium`, `potassium`, `sodium`, `chlorine`, `sulfur` | 0,02; 0,26; 0,1; 0,25; 0,01; 0,07; 0,1 |
 | Cu; Fe; Mn; Zn; Mo (mg/kg MS) | `copper`, `iron`, `manganese`, `zinc`, `molibdenum` | 3,96; 83; 37; 21; 1,0 |
 
-Fonte dos valores: `docs/nasem2021_notas/ch19_dados/tab19-1_parcial_88alimentos.csv` (linha NRC16F123), conferida pela auditoria independente das notas. O pré-cadastro cita a fonte na dica do alimento.
+Fonte dos valores: `docs/nasem2021_notas/ch19_dados/tab19-1_parcial_88alimentos.csv` (local, não versionado; linha NRC16F123), conferida pela auditoria independente das notas. O pré-cadastro cita a fonte na dica do alimento.
 
 **A.5.3 O que o livro dá e o que falta**
 - **Falta**: os perfis de aminoácidos e de ácidos graxos do arroz em grão estão na Tabela 19-2 (p. 453), que as notas **não** transcrevem (60 de 184 alimentos). Essas colunas devem ser transcritas com conferência visual da p. 453 ou herdadas (selo "composição parcial").

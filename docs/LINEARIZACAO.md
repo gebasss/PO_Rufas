@@ -385,6 +385,6 @@ ração é inviável) passa a ser um laço externo sobre LPs.
   `nasem_requirements_calculator.py` e `nrc_requirements_calculator.py` (exigências),
   `animal_module_constants.py` (constantes), `animal_types.py`, `animal_combination.py`.
 - NASEM 2021, tradução brasileira: capítulos 2 (consumo), 3 (energia, Eq. 3-5a, 3-8 a 3-12), 5 (Tabela 5-1), 6, 7 e 20
-  (equações do modelo). Notas em `docs/nasem2021_notas/` (local; o texto do livro é protegido por direitos autorais).
+  (equações do modelo). Notas em `docs/nasem2021_notas/` (local, não versionada; o texto do livro é protegido por direitos autorais).
 - NRC 2001: capítulo 2 (energia, desconto de ingestão), capítulo 5 (proteína), Tabela 15-1 (composição).
 - Replicação numérica da seção 5.3: rações em `runs/_cache/`, preços ilustrativos.
