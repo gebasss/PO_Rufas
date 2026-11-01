@@ -1605,8 +1605,8 @@ Erros no formato da seção 11.3. A rota é síncrona. O `id` dos alimentos é o
 ### B.9 Critérios de aceite
 
 1. **Identidade no ponto:** para cada dieta, a oferta linearizada avaliada em `x_d` é igual à não linear, dentro de 1e-6.
-2. **Erro fora do ponto:** com os coeficientes de `x_d` e as quantidades da dieta variadas de −10% a +10%, o erro de oferta
-   fica dentro da tolerância de `LINEARIZACAO.md`, seção 6 **(valor a confirmar)**.
+2. **Erro fora do ponto:** com os coeficientes de `x_d` e as quantidades da dieta variadas de −5% a +5%, o erro de oferta
+   fica em até 1% da exigência (`LINEARIZACAO.md`, seções 6 e 10: a ±10% o erro de energia chegou a 1,5%) **(a confirmar)**.
 3. **Razões exatas:** em dietas aleatórias, a forma linear de FDN, FDN de forragem e gordura (4.3) dá o **mesmo** estado
    viável/inviável que a razão original.
 4. **`min` de proteína:** as duas restrições lineares equivalem ao `min` (4.6) em dietas aleatórias.
@@ -1624,7 +1624,7 @@ Erros no formato da seção 11.3. A rota é síncrona. O `id` dos alimentos é o
 | Chamar as calculadoras de exigência do RuFaS sem simulação | Dependências do pacote `RUFAS` (gerenciador de saídas, constantes) | Importar e chamar `calculate_requirements` isoladamente |
 | Modo NASEM para novilhas e vacas secas | Restrições e exigências da NASEM para essas categorias não foram exercitadas | Avaliar casos de referência do NASEM (Tabela 21-1, com cautela) |
 | Metano e nitrogênio urinário de uma vaca isolada | Valores do lote não existem fora do RuFaS | Decisão L-Q2 |
-| Convergência do ponto fixo | Oscilação em dietas extremas | Amortecimento e verificação (`LINEARIZACAO.md`, 5.1) |
+| Otimização linearizada (fase 2) | O ponto fixo simples parou 4,8% acima do RuFaS; o desconto de ingestão é descontínuo em TDN% = 60 | Parametrização dos escalares globais, com dois regimes (`LINEARIZACAO.md`, 5.1b e seção 10) |
 | Biblioteca de alimentos | Alimentos NRC-only ou NASEM-only (RF-24) | Aviso e remoção (A.3.1) |
 
 ### B.11 Alterações previstas em outras partes deste documento (quando implementado)

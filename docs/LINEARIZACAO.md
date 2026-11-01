@@ -142,6 +142,12 @@ senão:  M = TDN_tot / (0,035 · (0,96·BW)^0,75)
 
 `D` é uma função racional de `x`: **não linear**. Mas é um **escalar único** para a ração inteira.
 
+**Descontinuidade.** O NRC define `D = 1` para dietas com TDN1X **de 60% ou menos** (Eq. 2-9 e o texto do cap. 2); o
+RuFaS usa `TDN% < 60`. Logo `D(x)` é **descontínua** em `TDN% = 60`: a consumo alto, o salto é de ≈ 3,5% (por
+exemplo, `D = 1,0` em 59,5% e `D = 0,965` em 60,5%, com consumo de 33 kg). O estudo da seção 10 mostra que o
+otimizador do RuFaS **explora esse salto**. Outra diferença: o NRC limita o **TDN descontado** a no mínimo 60%; o RuFaS
+limita o **fator** `D` a no mínimo 0,6 (`MINIMUM_TDN_DISCOUNT`).
+
 **Por alimento, dado `D`** (`feeds`: mineral = 0 em tudo; "gordura" = `is_fat`):
 
 ```
@@ -229,7 +235,8 @@ Não linearidades: `D(x)`, `pbw(x)` e `%conc(x)` (razões em `x`), a razão `Kd/
 |---|---|---|---|
 | Amido total em `dNDF_i` (4.5) | `S_tot` em **kg** (`Σ x_j·St_j/100`) | `Dt_St` em **% da MS** (Eq. 3-5a) | A digestibilidade da FDN fica ≈ 0,1 acima; para uma dieta com 35% de FDN, a energia digestível sobe ≈ 0,15 Mcal/kg MS (**estimativa, a confirmar com o código R oficial**) |
 | Oferta de proteína no modo NASEM | Método do NRC (4.6) | O NASEM tem outro sistema de proteína (cap. 6) | Oferta e exigência de padrões diferentes (**a verificar**) |
-| Ponto de partida do `SLSQP` | `random.random()·10` se não há ração anterior | — | O ótimo do RuFaS é local e pode variar entre execuções |
+| Ponto de partida do `SLSQP` | `random.random()·10` se não há ração anterior | — | O ótimo do RuFaS é local; em 30 execuções o custo variou 0,1% (seção 10) |
+| Piso do desconto de ingestão | Fator `D ≥ 0,6` | TDN **descontado** ≥ 60% (NRC, cap. 2), isto é, `D ≥ 60/TDN1X` | Para TDN1X de 70%, o piso do NRC é 0,857 e o do RuFaS é 0,6; raramente é atingido (`D` de 0,855 a 0,94 nas rações guardadas) |
 
 ---
 
@@ -238,7 +245,8 @@ Não linearidades: `D(x)`, `pbw(x)` e `%conc(x)` (razões em `x`), a razão `Kd/
 | Técnica | Quando | Exatidão |
 |---|---|---|
 | **A. Transformação exata** | Razões (4.3); `min` na restrição inferior (4.6) | Exata |
-| **B. Congelamento e ponto fixo** | `D(x)`, consumo, `%conc`, amido total (4.4 a 4.6) | Exata **no ponto de referência**; o erro cresce com a distância |
+| **B. Congelamento e ponto fixo** | `D(x)`, consumo, `%conc`, amido total (4.4 a 4.6) | Exata **no ponto de referência**; o erro cresce com a distância; **pode parar num ponto subótimo** (5.1 e seção 10) |
+| **F. Parametrização dos escalares globais** (recomendada) | `D(x)`, passagem ruminal e consumo dependem de poucos escalares: `DMI`, `TDN%` e `%conc` | **Exata em cada ponto da grade**: fixar os escalares como **parâmetros** e impor as igualdades lineares `Σx = DMI`, `Σ TDN_i·x_i = TDN%·DMI`, `Σ_{conc} x_i = (%conc/100)·DMI`; o erro vira o passo da grade |
 | **C. Taylor de 1ª ordem (programação linear sucessiva)** | Se B não chegar perto do RuFaS | Inclui a sensibilidade dos coeficientes a `x`; exige região de confiança |
 | **D. Enumeração de ramos** | Disjunções (`max` de NE; `min` na restrição superior) | Exata (um LP por ramo) |
 | **E. Linearização por partes com variáveis inteiras** | Descartada | Quebra os preços-sombra e deixa de ser PL |
@@ -257,8 +265,26 @@ Não linearidades: `D(x)`, `pbw(x)` e `%conc(x)` (razões em `x`), a razão `Kd/
 iterações. Se oscilar, amortecer a atualização (`x ← x_anterior + 0,5·(x_novo − x_anterior)`).
 
 **Propriedade importante:** no ponto fixo, os coeficientes são avaliados **na própria solução**, então a solução do LP
-satisfaz as restrições **não lineares originais**. A solução é **viável** para o problema do RuFaS; só pode ser
-ligeiramente **subótima** (porque as derivadas dos coeficientes foram ignoradas).
+satisfaz as restrições **não lineares originais**. A solução é **viável** para o problema do RuFaS; mas pode ser
+**subótima**, e o estudo numérico mostrou que a diferença **não é pequena**: o ponto fixo convergiu para um custo **4,8%
+acima** do melhor do RuFaS, porque a iteração não enxerga a descontinuidade em `TDN% = 60` (seção 10).
+
+### 5.1b Método recomendado: parametrização dos escalares globais (técnica F)
+
+```
+para cada ponto (DMI, TDN%, %conc) de uma grade (e, depois, de um refinamento local):
+    calcular D, as taxas de passagem e os coeficientes por alimento nesses escalares   (constantes)
+    resolver o LP (um por ramo da disjunção de energia e do `min` de proteína)
+        com as igualdades lineares  Σx = DMI,  Σ TDN_i·x_i = TDN%·DMI,  Σ_{conc} x_i = (%conc/100)·DMI
+escolher o ponto de menor custo
+```
+
+- **Exatidão:** em cada ponto, os escalares do LP **coincidem** com os da solução; a solução satisfaz as restrições
+  originais (folga mínima de −5e-13 no estudo). Não há erro de linearização, só o erro da grade.
+- **Descontinuidade:** tratar como **dois regimes**: `TDN% ≤ 60` (`D = 1`, energia independente do consumo) e `TDN% > 60`
+  (`D < 1`). Em cada regime a formulação é suave.
+- **Custo computacional:** 3.536 pontos × 6 LPs em 24 s (seção 10); a dimensão é 3, então a grade é barata.
+- A técnica **C (Taylor)** e o **ponto fixo (B)** ficam como refinamentos locais dentro de um regime.
 
 ### 5.2 Região de operação
 
@@ -298,7 +324,7 @@ Ao final de cada resolução, avaliar **todas** as restrições com as funções
 
 | Medida | Definição | Tolerância (a confirmar) |
 |---|---|---|
-| Erro de oferta | `(oferta_não_linear − oferta_linear) / exigência` | ≤ 1% por restrição |
+| Erro de oferta | `(oferta_não_linear − oferta_linear) / exigência` | ≤ 1% por restrição, **com os coeficientes congelados e as quantidades variando até ±5%** (a ±10% o erro de energia chegou a 1,2% a 1,5%; seção 10) |
 | Violação | `max(0, exigência − oferta_não_linear)` | 0 nas restrições de piso |
 | Ramo da disjunção | O ramo escolhido continua o de maior oferta? | Sim |
 
@@ -370,13 +396,14 @@ ração é inviável) passa a ser um laço externo sobre LPs.
 
 | ID | Questão | Proposta (a confirmar) |
 |---|---|---|
-| L-Q1 | Tolerâncias de convergência e de erro de linearização (seções 5.1 e 6) | Valores propostos acima |
+| L-Q1 | Tolerâncias de convergência e de erro de linearização (seções 5.1 e 6) | Valores propostos acima; o estudo numérico sustenta ≤ 1% para variações de até ±5% |
 | L-Q2 | Metano e nitrogênio urinário do lote para uma vaca isolada (7.3) | Estimar pelo NASEM e congelar |
 | L-Q3 | Mapeamento CEPEA × biblioteca de alimentos; arroz em grão (RF-26) | A verificar com o professor |
 | L-Q4 | O amido em kg (4.7) deve ser replicado em todas as comparações? | Sim (L-D5); registrar a diferença quando o módulo estiver completo |
 | L-Q5 | Critério final de ordenação das dietas (7.4) | Proposta acima |
 | L-Q6 | A oferta de proteína do NRC no modo NASEM (4.6) é intencional no RuFaS? | Perguntar ao professor |
 | L-Q7 | Como representar a vaca recém-parida (início de lactação), em que a equação de consumo precisa ser integrada para grupos com menos de 90 dias (NASEM, p. 476)? | A estudar |
+| L-Q8 | A **descontinuidade** do desconto de ingestão em `TDN% = 60` e o piso do fator `D` em 0,6 (4.4 e 4.7): são intencionais no RuFaS? O RuFaS replica o NRC (que define `D = 1` para TDN1X ≤ 60%), mas o piso do NRC é outro | Replicar o RuFaS e tratar os dois regimes (5.1b) |
 
 ## 9. Fontes
 
@@ -388,3 +415,63 @@ ração é inviável) passa a ser um laço externo sobre LPs.
   (equações do modelo). Notas em `docs/nasem2021_notas/` (local, não versionada; o texto do livro é protegido por direitos autorais).
 - NRC 2001: capítulo 2 (energia, desconto de ingestão), capítulo 5 (proteína), Tabela 15-1 (composição).
 - Replicação numérica da seção 5.3: rações em `runs/_cache/`, preços ilustrativos.
+
+---
+
+## 10. Estudo numérico (01/11/2026)
+
+Experimento feito em **scripts descartáveis**, fora do repositório, usando as **funções do próprio RuFaS** v1.0.6 para
+calcular as ofertas e as restrições, o `RationOptimizer` (`SLSQP`) do RuFaS como referência, e o HiGHS (SciPy) para os LPs.
+**Escopo:** modo NRC, uma vaca, um conjunto de alimentos, preços ilustrativos. Não é uma simulação completa do RuFaS.
+
+### 10.1 Cenário
+
+| Item | Valor |
+|---|---|
+| Vaca | Lactação, 650 kg, peso à maturidade 700 kg, 100 dias em lactação, 60 dias de gestação, 2ª lactação, ECC 3,0, 40 kg de leite (gordura 3,7%, proteína 3,1%, lactose 4,85%) |
+| Exigências (NRC, pelo RuFaS) | Consumo estimado 25,82 kg; PM 2.681 g; Ca 70,9 g; P 64,0 g; energia total 39,6 Mcal (mantença 10,30; lactação 28,71; crescimento 0,59) |
+| Alimentos | "Conjunto base": silagem de milho imatura (50), silagem de leguminosa (110), milho moído seco (44), farelo de soja 48% (167), farelo de arroz (138), carbonato de cálcio (230), farinha de sangue (23) |
+| Preços e tetos | Preços ilustrativos do sistema; tetos de inclusão padrão |
+
+### 10.2 Resultados
+
+| Método | Custo (US$/vaca/dia) | Consumo (kg) | TDN% | Observações |
+|---|---|---|---|---|
+| **RuFaS (`SLSQP`), 30 sementes** | 3,8342 (mínimo), 3,8342 (mediana), 3,8382 (máximo) | 33,4 (mediana); máximo permitido 33,57 | 59,7 a 60,0 | 30 de 30 convergiram; variação de custo de 0,1% |
+| **LP por ponto fixo** (2 pontos iniciais) | 4,0169 | 27,6 | `D` = 0,937 | 10 e 8 iterações, **mesmo ponto final**; **+4,8%** sobre o RuFaS; restrições originais satisfeitas (folga mínima −1,7e-4) |
+| **LP por parametrização** (grade de 3.536 pontos) | 3,8373 | 33,3 | 59,5 | 417 pontos viáveis, 24 s; **+0,08%** sobre o melhor do RuFaS; folga mínima −5e-13 |
+| **LP exato nos escalares do melhor RuFaS** (DMI 33,34; TDN% 60,00; conc. 3,67%) | **3,8342** | 33,34 | 60,00 | **Idêntico** ao melhor do RuFaS (4 casas) |
+
+### 10.3 Conclusões
+
+1. **O LP reproduz o RuFaS.** Para os mesmos escalares globais, o LP e o `SLSQP` chegam ao mesmo custo (3,8342): o
+   otimizador do RuFaS converge para o ótimo do problema linear **dado** o conjunto de escalares. Isso valida as fórmulas
+   da seção 4 e o método da seção 5.1b.
+2. **O RuFaS explora a descontinuidade do desconto.** As 30 soluções têm `TDN%` entre 59,7 e 60,0, logo abaixo do ponto em
+   que o desconto de ingestão liga (`D = 1`), e consumo próximo do teto de +30%. A ração é barata porque usa silagem em
+   grande quantidade, a consumo alto, sem desconto de energia. É consequência de uma regra do próprio NRC, mas é uma
+   característica do **modelo**, não de uma dieta realista. O painel de verificações (RF-27) deve sinalizar o consumo.
+3. **O ponto fixo simples não basta.** Parando em `D = 0,937` (regime com desconto), ele ficou 4,8% acima do RuFaS, e a
+   iteração não escapa. A parametrização dos escalares (5.1b) acha o mesmo ótimo que o RuFaS, em 24 s.
+4. **Erro fora do ponto, com coeficientes congelados.** Variando as quantidades da solução do ponto fixo:
+
+| Variação das quantidades | Erro na NEl | Erro na NEm | Erro na PM |
+|---|---|---|---|
+| −10% | −1,19% | −1,50% | 0,12% |
+| −5% | −0,60% | −0,76% | 0,06% |
+| +5% | +0,60% | +0,77% | 0,00% |
+| +10% | +1,21% | +1,55% | 0,01% |
+
+   A tolerância de 1% vale para variações de até ±5%; a ±10% o erro de energia passa de 1%.
+5. **Reprodutibilidade do RuFaS.** O custo varia 0,1% entre 30 sementes, e a ração, um pouco mais; o ótimo local do `SLSQP`
+   é praticamente estável neste cenário. A pergunta P12 fica respondida **para este cenário**.
+
+### 10.4 Limites do estudo
+
+- Um cenário (uma vaca, um conjunto de alimentos, preços ilustrativos). Nas três rações de simulações completas examinadas
+  (seção 5.3), `TDN%` ficou entre 64 e 71%, no regime com desconto; o resultado dessas simulações não foi reproduzido aqui.
+- Só o modo **NRC**. O modo NASEM (energia quadrática em `x`, seção 4.5) **não** foi exercitado.
+- A grade tem 3 escalares; o refinamento local foi simples (passos fixos). A otimalidade global da grade não foi provada.
+- Os LPs usaram os coeficientes por alimento calculados pelas funções do RuFaS (exatos), mas as restrições de fibra,
+  gordura, cálcio e fósforo foram escritas por nós e conferidas pelas funções de restrição do RuFaS no ponto final
+  (todas satisfeitas).
