@@ -11,7 +11,7 @@
 
 ## 1. Documentos recebidos
 
-- `PRD.md` (v0.3): recebido — fonte funcional, descreve o que o sistema deve
+- `PRD.md` (v0.4): recebido — fonte funcional, descreve o que o sistema deve
   fazer, os requisitos com situação (atendido, parcial, pendente), as regras de
   validação e as questões em aberto.
 - `DESIGN.md` (v0.2): recebido — documenta o padrão visual implementado na
@@ -22,7 +22,10 @@
   teste. Usado aqui como fonte técnica primária, complementar ao PRD — este
   documento não repete o que já está lá.
 - `README.md` (raiz do projeto): instruções de instalação e uso.
-- `FSD.md`: **ainda não existe** (é o próximo documento).
+- `FSD.md`: recebido — especificação funcional do que está implementado, com o Anexo A para os
+  requisitos planejados (RF-24, RF-26 e RF-27), ainda não implementados.
+- `nasem2021_notas/` (pasta, com o `00_INDICE.md`): notas técnicas do livro NASEM 2021 (tradução
+  brasileira), feitas por OCR e auditadas. Referência científica complementar; ver `DOMINIO.md`, seção 8.
 - Materiais de origem, fora do repositório: o quadro do professor de Pesquisa
   Operacional (problema da dieta, diagrama simulador/otimizador/sensibilidade,
   gráfico da lactação) e o PDF *Nutrient Requirements of Dairy Cattle* (NRC,
@@ -109,10 +112,12 @@ digita. A persistência é por arquivos: a pasta `runs/` (cenários, logs e cach
 - **Homologação:** não existe ambiente formal separado. Ver pendência na seção 10.
 
 ### Controle de versão
-**O projeto não está sob controle de versão**: a pasta não é um repositório Git
-(há um `.gitignore` já preparado, mas nenhum `git init`) e não há remoto. Apenas
-`vendor/RuFaS` é um clone Git do RuFaS na tag v1.0.6 (histórico raso, de terceiros).
-A sincronização do OneDrive não substitui versionamento. Ver pendência na seção 10.
+Git. O projeto é um repositório (raiz do projeto, ramo `main`) com remoto `origin` em
+`https://github.com/gebasss/PO_Rufas.git` e um único commit (`first commit`, `86bb3d2`) em
+01/11/2026. O `.gitignore` exclui `.venv/`, `wheelhouse/`, `runs/` e caches. Não há fluxo de
+pull request, ramos protegidos nem CI/CD definidos. `vendor/RuFaS` é um clone Git do RuFaS na tag
+v1.0.6 (histórico raso, de terceiros).
+Ver pendência na seção 10.
 
 ### Autenticação
 Não existe login, senha ou token. O sistema não pede, não armazena e não
@@ -178,7 +183,7 @@ técnicas locais, nenhuma via API HTTP de terceiros:
 - **HiGHS (via SciPy)** — solucionador do PL do exercício do quadro.
 
 Preços de mercado (CEPEA) e o padrão NASEM 2021 **não** são integrados (PRD,
-RF-22 e RF-24 pendentes). A instalação, uma vez feita, funciona sem internet.
+RF-22 e RF-24 pendentes; o RF-24 está especificado no FSD, Anexo A). A instalação, uma vez feita, funciona sem internet.
 
 ### Segurança
 Servidor restrito a `127.0.0.1` por padrão; sem dados pessoais; proteção do
@@ -206,6 +211,14 @@ instalação é reproduzível por script (`scripts/setup.ps1`), inclusive onde o
 10 testes automatizados em `backend/tests/` (PL, amostragem e efeitos de
 Spearman, adaptador e cache), todos passando. Integração real com o RuFaS e
 interface foram verificadas manualmente, **sem teste automatizado**.
+
+### Referências científicas
+O padrão nutricional do sistema é a **NRC 2001**, aplicada pelo RuFaS; o **NASEM 2021** (tradução
+brasileira, errata de 2022 incorporada) é só referência. A análise de 01/11/2026 conferiu a equação de
+consumo (NRC Eq. 1-2 e NASEM Eq. 2-1), a mantença e o cálcio e fósforo de lactação do RuFaS contra os
+livros, e 53 das 88 linhas já transcritas da Tabela 19-1 do NASEM contra a biblioteca NASEM do RuFaS. Não
+foi conferido o restante das bibliotecas, nem a saída do RuFaS contra tabelas de exigências. Os tetos de
+inclusão padrão e os preços iniciais **não** têm fonte científica. Detalhe em `DOMINIO.md`, seção 8.
 
 ### Licenciamento
 O RuFaS é GPLv3 e não é modificado. O template da interface é MIT (aviso em
@@ -332,29 +345,37 @@ documento.
 - Um modelo próprio de resposta do leite à dieta, ou otimização por fase da
   lactação — dependem de decisão do professor (PRD §15, Q2 e Q3); hoje o leite e
   a ração vêm do RuFaS.
-- Suporte ao padrão NASEM 2021 e obtenção automática de preços do CEPEA —
-  pendentes de decisão (Q5 e Q6), não existem.
+- Suporte ao padrão NASEM 2021 — **especificado** (FSD, Anexo A.3), mas não implementado e pendente
+  da decisão Q6. Obtenção automática de preços do CEPEA — pendente (Q5), não existe.
+- Tratar o NASEM 2021 como fonte do cálculo atual: ele é **só referência**; o cálculo é do RuFaS no
+  padrão NRC.
+- Alimentos personalizados e painel de verificações — especificados (FSD, Anexo A.4 e A.5), não existem.
 - Suporte a vários usuários ou várias fazendas numa mesma instalação.
 - Hospedagem em nuvem, serviço remoto ou exposição do servidor à rede.
 - Exportação, relatórios em PDF, salvar/carregar cenários — pendentes (RF-20,
   RF-21), não existem.
 - Balanço de nutrientes (oferta × exigência) da ração — pendente (RF-19); hoje
   só as exigências são exibidas.
-- Repositório Git, remoto, CI/CD ou ambiente de homologação — **não existem**;
-  não presumir que existem.
+- CI/CD ou ambiente de homologação — **não existem**; não presumir que existem. O repositório Git
+  existe (seção 3), mas sem fluxo de revisão definido.
 - Testes automatizados de integração e de interface — não existem; só os 10
   testes do back-end.
 - Preços como cotações reais: os valores iniciais são ilustrativos.
 
 ## 10. Pendências não bloqueantes
 
-- **Controle de versão:** o projeto não é um repositório Git. Não foi decidido
-  se será versionado nem onde ficaria hospedado.
+- **Fluxo do repositório Git:** não foi definido (ramos, pull requests, revisão). Também não foi
+  decidido se a pasta `docs/nasem2021_notas/` (≈ 1 MB) e a cópia `docs/nasem2021_notas.zip`
+  (≈ 370 KB, duplicata do conteúdo) serão versionadas.
 - **Ambiente de homologação e publicação:** não existe separação nem processo de
   entrega; não foi decidido como o sistema será entregue ao professor
   (relacionado à questão Q7 do PRD, prazo e formato de apresentação).
 - **Validação científica:** não foi definida a referência profissional para
-  comparar a ração (PRD, Q4, M6).
+  comparar a ração (PRD, Q4, M6). O NASEM 2021 (cap. 20) é uma referência disponível; o código R
+  oficial do modelo, que prevalece sobre o texto do livro, não está no projeto.
+- **Decisões novas (PRD, seção 15):** Q8 (limiares das verificações de consistência), Q9 (arroz em grão
+  no padrão NRC) e Q10 (o limite de +30% de consumo sobre o estimado, do RuFaS, é intencional?).
+- **Verificações técnicas antes de implementar RF-24, RF-26 e RF-27:** lista no FSD, Anexo A.7.
 - **Preços reais:** não foi confirmado se haverá cotações do CEPEA e em que
   moeda e unidade (PRD, Q5, M7, RF-22).
 - **Padrão NASEM 2021:** não foi decidido se é requisito de entrega (PRD, Q6).
@@ -388,7 +409,10 @@ a parte já construída, o FSD (`FSD.md`) tem o papel de documentar formalmente 
 comportamento de cada tela e rota, usando este documento e o `DOMINIO.md` como
 fontes primárias.
 
-Os requisitos pendentes (RF-13, RF-19 a RF-24) e a dieta por fase da lactação
-só podem ser especificados no FSD depois de resolvidas as questões Q2 e Q3 (e
-Q5 e Q6 para preços e NASEM). Até lá, o FSD deve descrevê-los como pendentes,
-sem inventar o comportamento.
+O FSD já existe. Ele especifica o que está implementado e, no Anexo A, os
+requisitos planejados RF-24 (NASEM), RF-26 (arroz em grão) e RF-27
+(verificações de consistência), sem implementação. Os demais requisitos
+pendentes (RF-13, RF-19 a RF-23) e a dieta por fase da lactação só podem ser
+especificados depois de resolvidas as questões Q2 e Q3 (e Q5 para preços). Até
+lá, o FSD os descreve como pendentes, sem inventar o comportamento. A
+implementação do Anexo A depende das decisões Q6, Q8, Q9 e Q10.
