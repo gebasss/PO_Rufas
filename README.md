@@ -71,6 +71,8 @@ tentativa, até o limite configurado); é assim que a dieta afeta o leite no mod
   validação e desvios conhecidos; o Anexo A especifica os requisitos planejados NASEM, arroz em grão e verificações de consistência).
 - [`docs/nasem2021_notas/`](docs/nasem2021_notas/00_INDICE.md): notas técnicas do livro NASEM 2021 (tradução brasileira), usadas como
   referência científica; a seção 8 de `docs/DOMINIO.md` resume o que foi conferido contra o RuFaS e o NRC.
+- [`docs/LINEARIZACAO.md`](docs/LINEARIZACAO.md): estudo e especificação da linearização do otimizador (equações do RuFaS,
+  técnicas, módulo ampliado do Exercício do quadro); nada implementado.
 - [`docs/DECISOES_TECNICAS.md`](docs/DECISOES_TECNICAS.md): Decisões técnicas já tomadas (stack, ambientes,
   integração com o RuFaS, segurança), alertas e pendências antes do FSD.
 - [`docs/DESIGN.md`](docs/DESIGN.md): Documento de Design (origem e adaptação do template, arquitetura da interface,
