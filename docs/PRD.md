@@ -626,7 +626,7 @@ explicitamente, antes de escrevê-lo.
 
 ### 15.1 Decisões que dependem do professor ou da equipe
 
-A coluna "Proposta" é o que o autor assumiria se não houver resposta; **precisa ser confirmada**.
+A coluna "Proposta" é o que o autor assumiria se não houver resposta; **precisa ser confirmada**. As perguntas estão consolidadas e numeradas (P1 a P20) em [PERGUNTAS_PROFESSOR.md](PERGUNTAS_PROFESSOR.md).
 
 | # | Questão | Para quem | Impacto | Bloqueia o FSD? | Proposta (a confirmar) |
 |---|---|---|---|---|---|
