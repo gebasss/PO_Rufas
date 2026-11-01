@@ -8,7 +8,7 @@
 | Data de referência | 12/10/2026 |
 | Natureza do documento | Especificação consolidada de um sistema **já implementado e verificado, ainda sem uso em produção**. Serve como documentação formal, base de manutenção e referência para reimplementação. |
 
-Este documento é autossuficiente. Quando o comportamento da implementação atual diverge do que está especificado aqui, a divergência está catalogada na seção 26 (Desvios Conhecidos), com identificadores `D1`, `D2`, etc., referenciados ao longo do texto. Os requisitos `RF-24`, `RF-26` e `RF-27` estão especificados no **Anexo A** (planejados, **não implementados**). Os demais requisitos do PRD ainda não implementados (`RF-13`, `RF-19` a `RF-23`) **não** são especificados aqui: constam como pendentes na seção 27 e não devem ser inventados.
+Este documento é autossuficiente. Quando o comportamento da implementação atual diverge do que está especificado aqui, a divergência está catalogada na seção 26 (Desvios Conhecidos), com identificadores `D1`, `D2`, etc., referenciados ao longo do texto. Os requisitos `RF-24`, `RF-26` e `RF-27` estão especificados no **Anexo A**, e os requisitos `RF-28` a `RF-30` (módulo ampliado do Exercício do quadro, com modelo linear) no **Anexo B** e em `LINEARIZACAO.md` (todos planejados, **não implementados**). Os demais requisitos do PRD ainda não implementados (`RF-13`, `RF-19` a `RF-23`) **não** são especificados aqui: constam como pendentes na seção 27 e não devem ser inventados.
 
 ---
 
@@ -64,6 +64,7 @@ Este documento é autossuficiente. Quando o comportamento da implementação atu
 | `PRD.md` | Requisitos do produto, personas, métricas e questões em aberto. Fonte dos requisitos pendentes. |
 | `DESIGN.md` | Referência visual complementar. O conteúdo visual relevante está consolidado na seção 10 deste FSD. |
 | `DOMINIO.md` | Regras de negócio e mapeamento regra → arquivo → função → teste. Referência técnica de baixo nível. Inclui a seção 8, de fontes científicas. |
+| `LINEARIZACAO.md` | Estudo da linearização das equações do otimizador do RuFaS (fórmulas, técnicas, verificação do erro). Base técnica do Anexo B. |
 | `nasem2021_notas/` | Notas técnicas do livro NASEM 2021 (tradução PT-BR), usadas como referência científica do Anexo A. O código R do modelo oficial prevalece sobre o texto do livro. |
 | `DECISOES_TECNICAS.md` | Decisões técnicas já tomadas, alertas e pendências. |
 | `README.md` | Instruções de instalação e uso. |
@@ -278,6 +279,8 @@ aplicacao RuFaS/
 | Importação de preços (CEPEA ou CSV) | RF-22, pendente. Preços são digitados. |
 | Mais nutrientes no exercício do quadro | RF-23, pendente. Os nutrientes são fixos (carboidrato e proteína). |
 | Padrão NASEM 2021 | RF-24, pendente; especificado no Anexo A.3. O sistema usa só a NRC 2001. |
+| Módulo ampliado do Exercício do quadro (avaliação de dietas montadas, modelo linear das equações do RuFaS) | RF-28 e RF-29, pendentes; especificados no Anexo B. |
+| Sugestão e previsão da dieta ótima de uma vaca e fase (RF-30) | Fase 2; esboço em `LINEARIZACAO.md`, 7.6. |
 | Ajuste do tamanho do rebanho pela interface | RF-13, pendente. O servidor aceita `cow_num`; a interface não o expõe. |
 | Dieta otimizada por fase da lactação | Depende da questão Q2 do PRD. A ração é formulada por grupo, pelo RuFaS. |
 | Modelo próprio de resposta do leite à dieta | Depende da questão Q3 do PRD. O leite é o simulado pelo RuFaS. |
@@ -1217,6 +1220,7 @@ Nenhum dos itens abaixo impede a manutenção da versão atual com base neste FS
 
 - RF-19 (balanço nutricional), RF-20 (exportação), RF-21 (salvar e carregar cenários), RF-22 (importar preços), RF-23 (mais nutrientes no exercício) e RF-13 (tamanho do rebanho na interface). Quando decididos, devem receber especificação própria neste documento.
 - RF-24 (NASEM), RF-26 (alimentos personalizados, arroz em grão) e RF-27 (verificações de consistência) já estão especificados no Anexo A; faltam as decisões Q6 (revisada), Q8 e Q9 e a implementação.
+- RF-28 e RF-29 (módulo ampliado, modelo linear) estão especificados no Anexo B e em `LINEARIZACAO.md`; RF-30 (dieta ótima sugerida) é a fase 2. Faltam a decisão Q11 e a implementação.
 
 **Melhorias e limitações conhecidas**
 
@@ -1460,3 +1464,175 @@ Fonte dos valores: `docs/nasem2021_notas/ch19_dados/tab19-1_parcial_88alimentos.
 | 16 | Mensagens novas (alimentos removidos, padrão inválido, verificações) |
 | 23 | Casos de validação de A.3.6, A.4.5 e A.5.4 |
 | 26 | Remover D7 quando a exibição de NEL for corrigida |
+
+
+---
+
+## Anexo B. Especificação do Módulo Ampliado do Exercício do Quadro (RF-28 a RF-30; NÃO implementado)
+
+> **Status:** este anexo especifica funcionalidades que **ainda não existem**. A base técnica (equações do RuFaS,
+> linearização, verificação do erro) está em [LINEARIZACAO.md](LINEARIZACAO.md); este anexo especifica o
+> **comportamento funcional**, a interface e a API. Onde um fato não foi verificado, o texto diz **"a verificar"**; onde a
+> decisão é da equipe ou do professor, diz **"(a confirmar)"**.
+
+### B.1 Visão geral
+
+**Origem.** Pedido do professor de Pesquisa Operacional: maximizar a sessão "Exercício do quadro", com entradas mais
+ricas (características da vaca, exigências e restrições nutricionais pelo NASEM, dieta escolhida e preços em dólares) e com
+**equações lineares**, para que o otimizador próprio seja **comparável** ao do RuFaS.
+
+| ID | Requisito | Fase |
+|---|---|---|
+| RF-28 | Avaliar e comparar dietas já montadas para uma vaca (categoria e fase) | 1 |
+| RF-29 | Modelo linear das restrições, verificação do erro de linearização e comparação com o RuFaS | 1 |
+| RF-30 | Sugerir e prever a dieta ótima para a vaca e a fase | 2 (posterior) |
+
+**Decisões vigentes (de `LINEARIZACAO.md`, seção 1):** documento principal NASEM 2021, apoio NRC 2001; preços do CEPEA em
+dólares (conversões depois); categorias só as que o RuFaS otimiza; o RuFaS é replicado onde diverge do livro; a entrada é
+uma dieta já montada.
+
+**Dependências.** RF-24 (padrão NASEM) para o modo NASEM; RF-27 (verificações) reaproveita parte das regras; RF-26 para o
+arroz em grão. Sem RF-24, o módulo funciona só no padrão NRC.
+
+### B.2 Interface
+
+O módulo amplia a **tela 1 (Exercício do quadro)**, sem remover o exercício atual.
+
+- Um seletor no topo da tela alterna entre **"Exercício simples"** (o atual, padrão da tela) e **"Avaliar dietas (vaca
+  real)"**.
+- No modo ampliado, a tela tem quatro cartões, em ordem:
+
+| Cartão | Conteúdo |
+|---|---|
+| **Vaca** | Padrão nutricional (NASEM ou NRC); categoria (B.3); campos da vaca (B.3); exigências calculadas, com a opção de **sobrescrever** cada uma |
+| **Dietas** | Tabela de dietas montadas: nome e quantidades (kg MS/dia) por alimento (B.4); botões **+ Dieta** e **Remover** |
+| **Preços** | US$/kg MS por alimento, com valor original, unidade, moeda, câmbio e base (B.5) |
+| **Resultado** | Botão **Avaliar dietas**; **ranking** das dietas; detalhe por restrição de uma dieta escolhida; erro de linearização |
+
+- Estados: antes de avaliar, texto "Informe a vaca, monte as dietas e clique em Avaliar dietas."; durante o cálculo, botão
+  desabilitado ("Avaliando…"); erro, aviso com a primeira linha da mensagem (padrão da seção 16).
+- O cálculo não executa o RuFaS completo (seção B.6): é **síncrono** e rápido, sem tarefa em segundo plano.
+- A cor nunca é o único canal: estados "viável", "inviável" e "no limite" também aparecem em texto.
+- Os dados do modo ampliado ficam na **memória da página** (como o exercício simples); persistência em `localStorage` fica
+  como melhoria **(a confirmar)**.
+
+### B.3 Entradas: padrão, categoria e vaca
+
+**Padrão:** `NASEM` (principal) ou `NRC`. **Categoria**, só as que o RuFaS otimiza (`LINEARIZACAO.md`, seção 2):
+`LAC_COW` (vaca em lactação), `CLOSE_UP` (vaca seca e novilha pré-parto), `GROWING` (novilhas I e II).
+
+Campos (assinatura de `calculate_requirements` do RuFaS; **a verificar** quais são obrigatórios por categoria):
+
+| Campo | Unidade | Lactação | Seca e pré-parto | Crescimento |
+|---|---|---|---|---|
+| Peso corporal (`body_weight`) | kg | sim | sim | sim |
+| Peso à maturidade (`mature_body_weight`) | kg | sim | sim | sim |
+| Paridade (`parity`) | número | sim | sim | opcional |
+| Dias em lactação (`days_in_milk`) | dias | sim | não | não |
+| Dia de gestação (`day_of_pregnancy`) | dias | opcional | sim | opcional |
+| Escore de condição corporal (`body_condition_score_5`) | 1 a 5 | sim | sim | opcional |
+| Produção de leite (`milk_production`) | kg/dia | sim | não | não |
+| Gordura, proteína verdadeira e lactose do leite | % | sim | não | não |
+| Ganho médio diário da novilha (`average_daily_gain_heifer`) | g/dia | não | não | sim |
+| Intervalo entre partos (`calving_interval`) | dias | opcional | opcional | opcional |
+| Alojamento (`housing`: `Barn` ou `Grazing`) e distância percorrida | m | sim | sim | sim |
+| FDN da ração anterior (`ndf_percentage`) | % da MS | opcional | opcional | opcional |
+| Fósforo do processo (`process_based_phosphorus_requirement`) | g/dia | opcional | opcional | opcional |
+| Metano entérico e nitrogênio urinário do lote | g/dia e kg | NASEM | NASEM | NASEM |
+
+Os dois últimos são **saídas do RuFaS para o lote**; para uma vaca isolada o módulo os recebe ou os estima pelas equações do
+NASEM (`LINEARIZACAO.md`, 7.3, decisão pendente L-Q2). Validações: valores numéricos positivos onde aplicável; campos
+vazios usam o padrão do RuFaS apenas onde o RuFaS define um **(a verificar)**; nenhum valor inventado.
+
+### B.4 Entradas: dietas montadas
+
+- Até **10 dietas** por avaliação **(a confirmar)**; cada dieta tem **nome** e uma lista de alimentos da **biblioteca do
+  padrão escolhido**, com a quantidade em **kg de MS por dia**.
+- Validações: ao menos um alimento; quantidades maiores ou iguais a zero; consumo total maior que zero. Alimentos ausentes na
+  biblioteca do padrão (RF-24, A.3.1) são removidos da dieta, com aviso.
+- Os alimentos personalizados (RF-26) valem aqui, no padrão em que existirem.
+- Os limites por alimento (mínimo e máximo, kg MS/dia) valem como restrições (`LINEARIZACAO.md`, 4.1) e entram na
+  verificação de cada dieta.
+
+### B.5 Entradas: preços
+
+- US$ por kg de MS, por alimento. Valores iniciais ilustrativos (seção 14.3), rotulados como tais.
+- Campos de origem (regra de conversão em `LINEARIZACAO.md`, 7.2): valor original, unidade comercial, moeda, câmbio (R$ por
+  US$), base (matéria natural ou MS) e fonte (indicador do CEPEA e data). A conversão automática e o mapeamento CEPEA ×
+  biblioteca **ficam para depois**; nesta fase o usuário informa o valor em US$/kg MS, ou o valor original com o câmbio.
+
+### B.6 Cálculo
+
+Para cada dieta `d`, com os coeficientes avaliados **na própria dieta** (ponto de referência `x_d`):
+
+1. **Exigências** da vaca, pelo RuFaS (calculadoras NASEM ou NRC), com as sobrescritas do usuário. **A verificar:** se as
+   calculadoras podem ser chamadas diretamente, sem iniciar uma simulação do RuFaS.
+2. **Restrições aplicáveis** (`LINEARIZACAO.md`, seções 2 e 3): custo, limites por alimento, consumo, cálcio, fósforo,
+   FDN total, FDN de forragem, gordura, energia (NRC: mantença, lactação, crescimento e total; NASEM: energia líquida), e
+   proteína metabolizável.
+3. **Oferta linearizada** de cada restrição (técnicas A, B e D), com os coeficientes calculados em `x_d`.
+4. **Oferta não linear** (funções originais do RuFaS) e **erro de linearização** (`LINEARIZACAO.md`, seção 6).
+5. **Folga** `= oferta − exigência` (ou o inverso nas restrições de teto), **estado** (viável ou inviável) e **violação
+   normalizada** `V = Σ max(0, (exigência − oferta)/exigência)` (`LINEARIZACAO.md`, 7.4).
+6. **Custo** `= Σ p_i·x_i`, em US$/dia.
+
+Na fase 1 **não há otimização**; logo, **não há preços-sombra** (eles existem só quando um LP com `x` livre é resolvido,
+RF-30). Na disjunção de energia do NRC, a oferta usada é a do ramo que cobre a exigência total, ou a maior, se nenhum cobre.
+O RuFaS é replicado onde diverge do livro (amido em kg; oferta de proteína do NRC no modo NASEM), com aviso no resultado.
+
+**Ordenação (RF-28), da menos para a mais recomendada (a confirmar):**
+1. Dietas **inviáveis**, em ordem decrescente de `V`.
+2. Dietas **viáveis**, em ordem decrescente de custo.
+A dieta viável de menor custo é marcada **"melhor entre as informadas"** (não "ótima": a ótima é do RF-30).
+
+### B.7 API (proposta)
+
+| Método e rota | Corpo | Resposta |
+|---|---|---|
+| `GET /api/module/defaults?standard=<NASEM\|NRC>&category=<LAC_COW\|CLOSE_UP\|GROWING>` | — | Campos da vaca da categoria, com unidade e se são obrigatórios; restrições aplicáveis |
+| `POST /api/module/evaluate` | `{ standard, category, cow: {…}, requirements_override?: {…}, diets: [{ name, amounts: { <id>: <kg MS/dia> } }], prices: { <id>: <US$/kg MS> } }` | Para cada dieta: `cost`, `feasible`, `violation`, `constraints: [{ id, label, requirement, supply_linear, supply_nonlinear, error_pct, slack, status }]`, `warnings`; mais `requirements` calculadas e `ranking` (lista de nomes, da menos para a mais recomendada) |
+
+Erros no formato da seção 11.3. A rota é síncrona. O `id` dos alimentos é o `rufas_id` da biblioteca do padrão.
+
+### B.8 Comparação com o RuFaS (RF-29)
+
+- **Fase 1:** para a mesma vaca, o mesmo lote e a mesma dieta, comparar a oferta e a folga de cada restrição **linearizada**
+  com a **original do RuFaS** (as funções `NutritionSupplyCalculator.*`, chamadas diretamente; **a verificar**).
+  Relatório: erro por restrição e por dieta, com as tolerâncias de `LINEARIZACAO.md`, seção 6.
+- **Fase 2:** comparar o LP (ótimo global do problema linearizado) com o otimizador do RuFaS (`RationOptimizer`, ótimo
+  local, ponto inicial aleatório quando não há ração anterior): custo, ração e folgas (`LINEARIZACAO.md`, 5.4).
+
+### B.9 Critérios de aceite
+
+1. **Identidade no ponto:** para cada dieta, a oferta linearizada avaliada em `x_d` é igual à não linear, dentro de 1e-6.
+2. **Erro fora do ponto:** com os coeficientes de `x_d` e as quantidades da dieta variadas de −10% a +10%, o erro de oferta
+   fica dentro da tolerância de `LINEARIZACAO.md`, seção 6 **(valor a confirmar)**.
+3. **Razões exatas:** em dietas aleatórias, a forma linear de FDN, FDN de forragem e gordura (4.3) dá o **mesmo** estado
+   viável/inviável que a razão original.
+4. **`min` de proteína:** as duas restrições lineares equivalem ao `min` (4.6) em dietas aleatórias.
+5. **Categorias:** novilhas e vacas secas, no modo NRC, **não** têm as restrições `NE_total` e `NE_lactation`.
+6. **Ordenação:** inviáveis antes de viáveis; entre inviáveis, `V` decrescente; entre viáveis, custo decrescente.
+7. **Vetores de teste:** as três rações de `LINEARIZACAO.md`, 5.3, reproduzem os valores de desconto `D` (0,908; 0,935;
+   0,855) e de oferta de energia da tabela, dentro de 1%.
+8. **Replicação do RuFaS:** o amido total em kg é usado na digestibilidade da FDN do NASEM, e o resultado traz o aviso.
+9. **Testes automatizados** (`pytest`) para os itens 1 a 7; o RuFaS **não** é modificado.
+
+### B.10 Riscos e itens a verificar antes de implementar
+
+| Item | Risco | Como verificar |
+|---|---|---|
+| Chamar as calculadoras de exigência do RuFaS sem simulação | Dependências do pacote `RUFAS` (gerenciador de saídas, constantes) | Importar e chamar `calculate_requirements` isoladamente |
+| Modo NASEM para novilhas e vacas secas | Restrições e exigências da NASEM para essas categorias não foram exercitadas | Avaliar casos de referência do NASEM (Tabela 21-1, com cautela) |
+| Metano e nitrogênio urinário de uma vaca isolada | Valores do lote não existem fora do RuFaS | Decisão L-Q2 |
+| Convergência do ponto fixo | Oscilação em dietas extremas | Amortecimento e verificação (`LINEARIZACAO.md`, 5.1) |
+| Biblioteca de alimentos | Alimentos NRC-only ou NASEM-only (RF-24) | Aviso e remoção (A.3.1) |
+
+### B.11 Alterações previstas em outras partes deste documento (quando implementado)
+
+| Seção | Alteração |
+|---|---|
+| 3, 4 e 5.1 | Novos módulos do back-end e testes do modelo linear |
+| 6, 10 e 13 | Escopo, tela 1 ampliada (cartões Vaca, Dietas, Preços e Resultado) e novo fluxo "Avaliar dietas montadas" |
+| 11 | Rotas `GET /api/module/defaults` e `POST /api/module/evaluate` |
+| 14, 15 e 16 | Regras de ordenação, cálculo linearizado e mensagens |
+| 23 | Casos de validação de B.9 |

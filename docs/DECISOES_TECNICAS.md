@@ -24,6 +24,8 @@
 - `README.md` (raiz do projeto): instruções de instalação e uso.
 - `FSD.md`: recebido — especificação funcional do que está implementado, com o Anexo A para os
   requisitos planejados (RF-24, RF-26 e RF-27), ainda não implementados.
+- `LINEARIZACAO.md`: estudo e especificação da linearização das equações do otimizador do RuFaS e do módulo ampliado
+  do Exercício do quadro (pedido do professor). Nada implementado.
 - `nasem2021_notas/` (pasta, com o `00_INDICE.md`): notas técnicas do livro NASEM 2021 (tradução
   brasileira), feitas por OCR e auditadas. Referência científica complementar; ver `DOMINIO.md`, seção 8.
 - Materiais de origem, fora do repositório: o quadro do professor de Pesquisa
@@ -347,6 +349,8 @@ documento.
   a ração vêm do RuFaS.
 - Suporte ao padrão NASEM 2021 — **especificado** (FSD, Anexo A.3), mas não implementado e pendente
   da decisão Q6. Obtenção automática de preços do CEPEA — pendente (Q5), não existe.
+- Um otimizador **não linear** próprio: por pedido do professor, o simulador/otimizador do sistema deve ser **linear**
+  (as equações do RuFaS são linearizadas; `LINEARIZACAO.md`). Não existe, e não deve ser criado um `SLSQP` próprio.
 - Tratar o NASEM 2021 como fonte do cálculo atual: ele é **só referência**; o cálculo é do RuFaS no
   padrão NRC.
 - Alimentos personalizados e painel de verificações — especificados (FSD, Anexo A.4 e A.5), não existem.
@@ -373,6 +377,8 @@ documento.
 - **Validação científica:** não foi definida a referência profissional para
   comparar a ração (PRD, Q4, M6). O NASEM 2021 (cap. 20) é uma referência disponível; o código R
   oficial do modelo, que prevalece sobre o texto do livro, não está no projeto.
+- **Módulo ampliado do Exercício do quadro (PRD, RF-28 a RF-30; FSD, Anexo B):** especificado, não implementado; as
+  pendências técnicas estão em `LINEARIZACAO.md`, seção 8 (L-Q1 a L-Q7, PRD Q11).
 - **Decisões novas (PRD, seção 15):** Q8 (limiares das verificações de consistência), Q9 (arroz em grão
   no padrão NRC) e Q10 (o limite de +30% de consumo sobre o estimado, do RuFaS, é intencional?).
 - **Verificações técnicas antes de implementar RF-24, RF-26 e RF-27:** lista no FSD, Anexo A.7.
