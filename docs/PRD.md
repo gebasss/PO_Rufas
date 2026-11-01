@@ -626,7 +626,7 @@ explicitamente, antes de escrevê-lo.
 
 ### 15.1 Decisões que dependem do professor ou da equipe
 
-A coluna "Proposta" é o que o autor assumiria se não houver resposta; **precisa ser confirmada**. As perguntas estão consolidadas e numeradas (P1 a P20) em [PERGUNTAS_PROFESSOR.md](PERGUNTAS_PROFESSOR.md).
+A coluna "Proposta" é o que o autor assumiria se não houver resposta; **precisa ser confirmada**. As perguntas estão consolidadas e numeradas (P1 a P21) em [PERGUNTAS_PROFESSOR.md](PERGUNTAS_PROFESSOR.md).
 
 | # | Questão | Para quem | Impacto | Bloqueia o FSD? | Proposta (a confirmar) |
 |---|---|---|---|---|---|
@@ -743,7 +743,7 @@ por fase; ração que pode passar do consumo estimado em até 30% (limite do RuF
 | R9 | Uso do sistema como se fosse recomendação profissional sem validação. | Baixa | Alto | Aviso de uso e plano de validação (seção 11.3). |
 | R10 | A ração formulada pelo RuFaS passar do consumo estimado (até +30%) e inflar custo e margem (L16). | Alta | Médio | Painel de verificações (RF-27); pergunta ao professor (Q10); o RuFaS não é modificado. |
 | R11 | Divergências entre o RuFaS e o NASEM, ou erros de impressão do livro, comprometerem a validação (por exemplo, fósforo de mantença de vaca seca: 0,8 no RuFaS e 1,0 nas notas do NASEM, a conferir na p. 124). | Média | Médio | Conferir contra o código R oficial do NASEM; ver `nasem2021_notas/00_INDICE.md`, seção 4. |
-| R12 | O modelo linearizado divergir do otimizador do RuFaS além das tolerâncias (o RuFaS resolve um problema não convexo e, sem ração anterior, parte de um ponto aleatório). | Média | Alto | Ponto fixo com verificação do erro, Taylor de 1ª ordem se preciso, protocolo de comparação (`LINEARIZACAO.md`, seções 5 e 6). |
+| R12 | O modelo linearizado divergir do otimizador do RuFaS além das tolerâncias (o RuFaS resolve um problema não convexo e, sem ração anterior, parte de um ponto aleatório). | Média | Alto | Parametrização dos escalares globais (exata por ponto da grade), com verificação do erro; ponto fixo e Taylor como refinamentos; protocolo de comparação (`LINEARIZACAO.md`, seções 5, 6 e 10). O estudo numérico igualou o custo do RuFaS (3,8342). |
 | R13 | Replicar anomalias do RuFaS (amido total em kg na digestibilidade da FDN; oferta de proteína do NRC no modo NASEM) transmitir erros ao módulo. | Média | Médio | Replicar por decisão (L-D5), registrar as divergências (`LINEARIZACAO.md`, 4.7) e validar contra o código R oficial do NASEM. |
 
 ## Apêndice C: Visão técnica resumida

@@ -30,6 +30,7 @@ A coluna **Resposta** fica em branco para o preenchimento. Prioridade das respos
 | P10 | RuFaS | Limite de consumo de +30% sobre o estimado | C |
 | P11 | RuFaS | Fósforo de mantença da vaca seca | C |
 | P12 | RuFaS | Reprodutibilidade do otimizador do RuFaS | C |
+| P21 | RuFaS | Descontinuidade do desconto de ingestão em TDN% = 60 | C |
 | P13 | NASEM e alimentos | O NASEM 2021 é requisito de entrega? | B |
 | P14 | NASEM e alimentos | Arroz em grão | B |
 | P15 | Preços | Indicadores do CEPEA e câmbio | B |
@@ -53,7 +54,7 @@ A coluna **Resposta** fica em branco para o preenchimento. Prioridade das respos
 
 | # | Pergunta e contexto | Proposta | Destrava | Resposta |
 |---|---|---|---|---|
-| **P4** (L-Q1) | Quais **tolerâncias** aceitar? A linearização usa um método iterativo (ponto fixo). | Convergir quando a maior variação de uma quantidade for menor que 0,0001 kg e o custo variar menos de 0,01%, em até 20 iterações. Erro de linearização de até 1% da exigência em cada restrição. | Critério de aceite do RF-29 | |
+| **P4** (L-Q1) | Quais **tolerâncias** aceitar? A linearização usa um método iterativo (ponto fixo) ou uma grade de escalares. | Convergir quando a maior variação de uma quantidade for menor que 0,0001 kg e o custo variar menos de 0,01%, em até 20 iterações. Erro de linearização de até 1% da exigência em cada restrição, para variações de até ±5% das quantidades (estudo numérico: a ±10% o erro de energia chega a 1,5%). | Critério de aceite do RF-29 | |
 | **P5** (L-Q5) | Como **ordenar** as dietas, "das menos recomendadas até a ótima"? | Primeiro as **inviáveis**, da maior para a menor violação normalizada das exigências; depois as **viáveis**, do maior para o menor custo; a de menor custo é a "melhor entre as informadas" (a ótima, só na fase 2). | RF-28 | |
 | **P6** (L-Q2) | Para uma vaca isolada, de onde vêm o **metano entérico** e o **nitrogênio urinário**? No RuFaS são médias do lote, produzidas pela simulação, e entram na energia do NASEM. | Estimar pelas equações do NASEM (Eq. 3-9 e 3-10a), congelar na referência e permitir ao usuário sobrescrever. | Energia no modo NASEM | |
 | **P7** (L-Q7) | Como representar a **vaca recém-parida**? O NASEM (p. 476) diz que, para grupos com menos de 90 dias em lactação, a equação de consumo deve ser integrada ao longo do tempo, e que usar o dia médio superestima o consumo de 0 a 45 dias. | Avaliar a vaca individual no dia informado (sem integrar), com aviso para dias em lactação abaixo de 45. | Consumo estimado; RF-28 | |
@@ -69,7 +70,8 @@ replicar e o que registrar como limitação.
 | **P9** (L-Q6) | No modo NASEM, a **oferta de proteína metabolizável** usa o método do NRC, e a **exigência** é a do NASEM. É intencional? | Replicar e registrar. | RF-24 e RF-29 | |
 | **P10** (PRD Q10) | O otimizador aceita ração com consumo até **30% acima do estimado** (`DMI_CONSTRAINT_FRACTION = 0,30`), e o erro típico da equação de consumo do NASEM é 12,1%. Nas 57 simulações guardadas, a ração ficou de 3 a 8 kg acima do estimado, várias no teto. É intencional? | Perguntar e registrar a resposta; o painel de verificações (RF-27) avisa quando o consumo passa do estimado. | Custo e margem; RF-27 | |
 | **P11** | O **fósforo de mantença da vaca seca** é 0,8 g/kg de MS no RuFaS; as notas do NASEM trazem 1,0 g/kg para vacas adultas, secas e lactantes (Eq. 7-5b, p. 124, a conferir). Há motivo? | Registrar; não afeta a vaca em lactação. | Categoria vaca seca | |
-| **P12** | O otimizador parte de um ponto **aleatório** (`random.random()·10`) quando não há ração anterior, e o problema não é convexo. O resultado é reprodutível (semente) ou pode variar entre execuções? | Comparar sempre contra várias execuções do RuFaS e usar a de menor custo. | Comparação do RF-29 | |
+| **P12** | O otimizador parte de um ponto **aleatório** (`random.random()·10`) quando não há ração anterior, e o problema não é convexo. O resultado é reprodutível (semente) ou pode variar entre execuções? Em 30 execuções de um cenário de referência, o custo variou 0,1% (3,8342 a 3,8382); falta saber se a variação é esperada. | Comparar sempre contra várias execuções do RuFaS e usar a de menor custo. |
+| **P21** (L-Q8) | O desconto de ingestão do NRC é **descontínuo** em TDN% = 60: abaixo, `D = 1`; acima, `D` cai (≈ 3,5% a consumo alto). No cenário de referência, as 30 soluções do RuFaS ficaram em TDN% de 59,7 a 60,0, logo abaixo do salto, com consumo no teto. Além disso, o RuFaS limita o **fator** `D` a 0,6, e o NRC limita o **TDN descontado** a 60%. São intencionais? | Replicar o RuFaS e tratar os dois regimes na linearização. | Linearização (RF-29); RF-27 | | Comparação do RF-29 | |
 
 ## D. NASEM, alimentos, preços e validação
 
@@ -103,7 +105,7 @@ replicar e o que registrar como limitação.
 | P7 | Q11 | L-Q7 | Anexo B.10 |
 | P8, P9 | — | L-Q4, L-Q6 | Anexo B.6 |
 | P10 | Q10 | — | Anexo A.6 |
-| P11, P12 | — | — | — (novas) |
+| P11, P12, P21 | — | L-Q8 (P21) | — (novas) |
 | P13 | Q6 | — | Anexo A.3 |
 | P14 | Q9 | L-Q3 | Anexo A.5 |
 | P15 | Q5 | L-Q3 | Anexo B.5 |
