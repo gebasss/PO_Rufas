@@ -1,0 +1,237 @@
+# Plano de implementação: módulo "Exercício do quadro" ampliado e complementos
+
+**Versão 0.1 (02/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
+comportamento do sistema; as regras estão nos documentos citados e este arquivo só as sequencia.
+
+| Documento | O que fornece ao plano |
+|---|---|
+| `PRD.md` (RF-13, 19 a 24, 26 a 30) | O que falta atender e a prioridade (M/S/C) |
+| `FSD.md`, Anexo A (RF-24, RF-26, RF-27) e Anexo B (RF-28 a RF-30) | Telas, campos, rotas, critérios de aceite |
+| `LINEARIZACAO.md` | Fórmulas, técnica de linearização, tolerâncias, estudo numérico |
+| `PERGUNTAS_PROFESSOR.md` | Decisões que dependem do professor (P1 a P21) |
+| `DECISOES_TECNICAS.md` | Stack, ambientes, restrições (RuFaS intocado, GPLv3, Windows, OneDrive) |
+
+---
+
+## 1. Objetivo e escopo
+
+**Objetivo principal (pedido do professor):** o módulo "Exercício do quadro" passa a **avaliar e comparar dietas montadas**
+para uma vaca real (categoria e fase), no padrão NASEM (principal) ou NRC (apoio), com **restrições lineares** e com o erro
+de linearização medido contra as equações do RuFaS. Em seguida (fase 2), ele **sugere a dieta ótima** e a compara com o
+otimizador do RuFaS (SLSQP).
+
+| Fase | Requisitos | Entrega |
+|---|---|---|
+| **1** | RF-28, RF-29 | Avaliar e ordenar dietas; erro de linearização; comparação oferta linear × RuFaS |
+| **2** | RF-30 | Dieta ótima por LP; comparação com o SLSQP do RuFaS |
+| **Apoio** | RF-24 (núcleo), RF-26, RF-27 | Padrão NASEM, arroz em grão, painel de verificações |
+| **Complementos** | RF-19, 20, 21, 22, 13, 23 | Balanço, exportação, salvar, importar preços, rebanho, mais nutrientes |
+
+**Fora do escopo deste plano:** CI/CD, autenticação, auditoria, banco de dados (seguem como em `DECISOES_TECNICAS.md`);
+conversão automática de moeda e leitura automática do CEPEA (LINEARIZACAO 7.2: depois); categoria bezerra e combinações sem
+otimizador no RuFaS; qualquer alteração em `vendor/RuFaS`.
+
+## 2. Princípios
+
+1. **RuFaS intocado.** Só se importam funções do RuFaS (calculadoras de exigência e de oferta); nada é copiado nem editado.
+2. **Replicar o RuFaS onde diverge do livro** (L-D5): amido total em kg na digestibilidade da FDN, oferta de proteína do NRC no
+   modo NASEM, piso do desconto, descontinuidade em TDN% = 60, ponto inicial aleatório. Cada replicação gera aviso no resultado.
+3. **Linearizar só nas variáveis de decisão** (`x_i`, kg MS/dia); as exigências são constantes calculadas.
+4. **Cada restrição tem identidade verificável:** a oferta linearizada, no ponto de referência, é igual à oferta original do
+   RuFaS (critério B.9-1). Sem isso, nenhuma comparação com o RuFaS vale.
+5. **Testes não dependem de material protegido:** os vetores de teste são números calculados pelo RuFaS (tabela 5.3 de
+   `LINEARIZACAO.md`), não trechos do livro; `docs/nasem2021_notas/` é local e **não** pode ser lido por testes nem pelo código.
+6. **Entregas pequenas e independentes**, cada uma com seus testes e um critério de aceite do FSD; o fluxo atual (simulação,
+   sensibilidade, curva) continua funcionando em toda etapa.
+7. **Commit, push e PR só quando o dono pedir**; o dono faz o merge.
+
+## 3. Ponto de partida (código atual)
+
+| Peça | Arquivo | Uso no plano |
+|---|---|---|
+| Otimização linear do quadro (LP com `scipy.linprog`) | `backend/dietopt/diet_lp.py` | Base do solver da fase 2; hoje atende o exercício simples |
+| Biblioteca de alimentos e presets | `backend/dietopt/feeds.py` | Passa a ser **por padrão** (NRC e NASEM) |
+| Adaptador do RuFaS (cenário, execução, leitura) | `backend/dietopt/rufas_adapter.py`, `rufas_results.py` | Ganha o campo `standard`; escreve `NASEM_Comp` |
+| Cenários, avaliação, cache | `backend/dietopt/scenarios.py` | **Corrigir** `with_defaults`: restringir preços aos ids da biblioteca do padrão |
+| Tarefas em segundo plano | `backend/dietopt/jobs.py` | Fase 2 (otimização, > 20 s) roda como tarefa |
+| Servidor HTTP e rotas | `backend/dietopt/server.py` | Novas rotas `/api/module/*` |
+| Testes | `backend/tests/` (`pytest`) | Novos testes por etapa |
+| Interface | `web/src/views/ToyView.tsx`, `web/src/lib/api.ts`, `types.ts` | Seletor de modo e quatro cartões; build por `scripts\build-web.ps1` |
+
+Já verificado (FSD A.7.1, B.10): o modo NASEM roda com as nossas listas; as calculadoras NRC e NASEM rodam isoladas para as
+seis categorias; as saídas do modo NASEM têm os mesmos nomes. Falta exercitar o otimizador do RuFaS em vaca seca e novilha.
+
+## 4. Estrutura proposta de código (nova)
+
+```
+backend/dietopt/module/
+    standards.py        # padrão (NRC | NASEM), categorias aceitas, restrições por categoria (LINEARIZACAO 2 e 3.1)
+    requirements.py     # envelope das calculadoras de exigência do RuFaS + sobrescritas + TDN% e afins (NRC)
+    coefficients.py     # coeficientes por alimento no ponto x_d (D, taxas de passagem, ME, NEm/NEl/NEg, RDP, RUP, Ca, P)
+    constraints.py      # restrições: classes L, E e A (4.1 a 4.6), em forma  a·x ≥ b  com rótulo e unidade
+    evaluate.py         # avaliar uma dieta: oferta linear, oferta original, erro, folga, estado, violação V, custo
+    ranking.py          # ordenação (7.4) e "melhor entre as informadas"
+    compare.py          # relatório linear × RuFaS por restrição (fase 1)
+    optimize.py         # fase 2: parametrização dos escalares globais (5.1b), LP por ponto e por ramo
+backend/tests/module/   # um arquivo de teste por módulo acima
+web/src/views/ModuleView.tsx  (+ componentes: CowCard, DietsCard, PricesCard, ResultCard)
+docs/…                  # atualizar FSD (seções "implementado"), PRD (status) e README ao fim de cada etapa
+```
+
+O pacote `module` importa o RuFaS **de forma tardia** (dentro das funções), para o servidor subir rápido e para que os
+testes de lógica pura rodem sem o RuFaS.
+
+## 5. Etapas
+
+Legenda de tamanho: **P** (pequeno, até meio dia), **M** (um a dois dias), **G** (mais de dois dias). São ordens de grandeza
+para sequenciar, não prazos.
+
+### E0. Fechar decisões que travam o código (antes de começar)
+
+Nada aqui exige o professor para **iniciar**: cada item tem proposta registrada, usada como padrão se não houver resposta.
+
+| Decisão | Onde | Bloqueia | Se sem resposta |
+|---|---|---|---|
+| Tolerância de erro de linearização (L-Q1) | LINEARIZACAO 6 e 8 | E3 | ≤ 1% da exigência para ±5% |
+| Metano e N urinário do lote para vaca isolada (L-Q2) | LINEARIZACAO 7.3 | E3 (NASEM, energia) | Estimar pelo NASEM e congelar |
+| Critério de ordenação das dietas (L-Q5) | LINEARIZACAO 7.4 | E3 | Inviáveis por `V`; viáveis por custo |
+| Limite de +30% do consumo é intencional? (Q10) | PRD 15 | E3, E7 | Replicar o RuFaS e avisar |
+| Descontinuidade em TDN% = 60 e piso do desconto (L-Q8, P21) | LINEARIZACAO 4.4 | E3, E7 | Replicar; dois regimes |
+| Oferta de proteína do NRC no modo NASEM (L-Q6) | LINEARIZACAO 4.6 | E3 | Replicar e avisar |
+| Mapeamento CEPEA × biblioteca; arroz em grão (L-Q3, Q9) | LINEARIZACAO 7.2 | E8 | Preço digitado ou CSV com id do RuFaS |
+
+Saída: lista "decisões assumidas" no início de `module/standards.py` e no relatório de cada avaliação.
+
+### E1. Padrão nutricional na base (RF-24, núcleo) — **M**
+
+1. `Scenario` ganha `standard` (`"NRC"` por padrão); a chave do cache já o inclui.
+2. Bibliotecas de alimentos por padrão; a troca de ids 301→230 e 302→167 só vale para NRC.
+3. **Correção:** restringir os preços aos ids da biblioteca do padrão (o id 166 não existe no NASEM); gravar limites
+   (`lower_limit`, `limit`) na cópia do CSV NASEM e apontar `NASEM_Comp` no `metadata.json`.
+4. Leitor de saídas inalterado (mesmas 13 variáveis); rótulo de energia conforme o padrão.
+5. Rotas `/api/jobs/simulate` e `/api/jobs/sensitivity` aceitam `standard`.
+
+Aceite: FSD A.3.4 (critérios 1 e 2): "Conjunto base" em NASEM roda e exibe os seis indicadores; em NRC os resultados são
+iguais aos da seção 15.4. Testes: construção do cenário NASEM (sem rodar o RuFaS inteiro), cache separado por padrão.
+
+### E2. Calculadoras de exigência (envelope) — **M**
+
+1. `requirements.py`: chama `calculate_requirements` (NRC e NASEM) sem simulação, com os campos de FSD B.3, a unidade correta
+   do ganho diário (**kg/dia**) e os campos exclusivos do NRC (TDN%, temperatura anterior, energia líquida da dieta).
+2. Sobrescritas das exigências pelo usuário; validação de faixas; erro claro para campo faltante da categoria.
+3. `GET /api/module/defaults` (FSD B.7): campos por categoria e restrições aplicáveis.
+
+Aceite: B.9-5 (categorias: novilha e vaca seca no NRC sem `NE_total` e `NE_lactation`); valores iguais aos das tabelas de
+sondagem de 01/11/2026 (vaca em lactação, NRC e NASEM). Testes puros e com o RuFaS importado.
+
+### E3. Núcleo linear e avaliação de dietas (RF-28, RF-29, fase 1) — **G** (caminho crítico)
+
+Ordem interna, do mais simples ao mais difícil, cada passo com testes antes do seguinte:
+
+1. **Classe L** (custo, limites, consumo, Ca, P) e **classe E** (FDN, FDN de forragem, gordura como `Σx(a−c) ≥ 0`).
+2. **Proteína metabolizável** (classe A, com `min` em duas restrições): taxas de passagem, RDP, RUP, microbiana mínima.
+3. **Energia NRC** (desconto `D(x)`, NEm/NEl/NEg por polinômio, disjunção `max`): coeficientes congelados em `x_d`.
+4. **Energia NASEM** (digestibilidade da FDN com amido em kg, replicada) e fibra da Tabela 5-1 como verificação.
+5. `evaluate.py`: oferta linear, oferta original (funções `NutritionSupplyCalculator.*`), erro, folga, estado, `V`, custo.
+6. `ranking.py`: ordenação do FSD B.6.
+
+Aceite: critérios **B.9-1 a B.9-8**. Em particular: identidade no ponto (1e-6), erro de ±5% em até 1% (±10% até 1,5%),
+razões exatas, `min` de proteína, vetores de teste (três rações de 5.3: `D` = 0,908; 0,935; 0,855), aviso de replicação.
+
+### E4. API do módulo — **P**
+
+`POST /api/module/evaluate` (síncrona, FSD B.7), erros no formato da seção 11.3, validações de B.4 e B.5 (dietas com ao menos
+um alimento, quantidades ≥ 0, consumo total > 0, alimentos ausentes da biblioteca do padrão removidos com aviso).
+Aceite: testes de contrato da rota com dietas viáveis, inviáveis, mistas.
+
+### E5. Interface do módulo — **M**
+
+1. Seletor "Exercício simples" × "Avaliar dietas (vaca real)" na tela 1; o exercício simples permanece o padrão.
+2. Cartões **Vaca**, **Dietas**, **Preços** e **Resultado** (FSD B.2), estados vazio, carregando e erro.
+3. Ranking, detalhe por restrição, erro de linearização; estado também em texto (não só cor).
+4. Tipos e chamadas em `lib/types.ts` e `lib/api.ts`; build por `scripts\build-web.ps1`; conferir em 1.440 px e ≈ 540 px.
+
+Aceite: FSD B.2 e B.4/B.5; sem regressão nas telas atuais (simulação, sensibilidade, curva, sobre).
+
+### E6. Comparação com o RuFaS, fase 1 — **P** (depende de E3)
+
+`compare.py` e relatório (tela e CSV): para a mesma vaca, lote e dieta, oferta e folga **linearizadas × originais do RuFaS**,
+erro por restrição e por dieta, com as tolerâncias de LINEARIZACAO 6. Aceite: FSD B.8 (fase 1).
+
+### E7. Dieta ótima e comparação com o SLSQP (RF-30, fase 2) — **G**
+
+1. `optimize.py`: parametrização dos escalares globais (DMI, TDN%, %concentrado), dois regimes em TDN% = 60, um LP por ponto
+   da grade e por ramo (energia e `min` de proteína), refinamento local (LINEARIZACAO 5.1b).
+2. Roda como **tarefa em segundo plano** (`jobs.py`): o estudo levou 24 s para 3.536 pontos; progresso e cancelamento.
+3. Comparação com o `RationOptimizer` do RuFaS: custo, ração, folgas; várias sementes (o RuFaS parte de ponto aleatório).
+4. Preços-sombra das restrições ativas (só aqui existem).
+5. Tela: dieta ótima como referência final e desvio de cada dieta (`(custo_d − custo_ótimo)/custo_ótimo`).
+
+Aceite: resultado de LINEARIZACAO 10 reproduzido (custo do LP dentro de 0,1% do melhor do RuFaS no caso-base: 3,8373 contra
+3,8342) e viabilidade da solução nas restrições **originais**. Se o caso-base divergir, parar e rever a formulação.
+
+### E8. Complementos (independentes entre si; ordem sugerida)
+
+| Etapa | Requisito | Tamanho | Observação |
+|---|---|---|---|
+| E8a | RF-27 painel de verificações V1 a V5 | M | Reaproveita a Tabela 5-1 e as regras de E3; só leitura de resultados existentes |
+| E8b | RF-19 balanço nutricional | M | Compartilha a oferta × exigência de E3; vale para a simulação completa |
+| E8c | RF-26 alimentos personalizados (arroz em grão) | M | Depende de Q9 (como tratar no NRC) e de testar o RuFaS com alimento fora da biblioteca |
+| E8d | RF-22 importar preços (CSV, US$) | P | Mapeamento por id do RuFaS; itens sem correspondência listados |
+| E8e | RF-20 exportar (CSV e relatório) | M | Depois de E6 e E7 para incluir os novos resultados |
+| E8f | RF-21 salvar e carregar cenário | P | Arquivo local; versionar o formato |
+| E8g | RF-13 tamanho do rebanho | P | Já aceito no back-end; só expor, com limites e aviso de tempo e memória |
+| E8h | RF-23 mais nutrientes | — | Só se o professor exigir |
+
+## 6. Dependências e caminho crítico
+
+```
+E0 ─┬─> E1 ──────────────┐
+    └─> E2 ─> E3 ─> E4 ─> E5 ─> E6 ─> E7
+                 └──────────────────> E8a, E8b
+E1 ─> E8c ;  E3 ─> E8e ;  independentes: E8d, E8f, E8g
+```
+
+Caminho crítico: **E0 → E2 → E3 → E4 → E5 → E7**. E1 pode andar em paralelo com E2, mas o modo NASEM do módulo só fecha
+depois de E1. Para uma primeira entrega ao professor, o conjunto mínimo é **E1 a E6** (fase 1 completa); E7 é a fase 2.
+
+## 7. Estratégia de testes
+
+| Camada | O que cobre | Observações |
+|---|---|---|
+| Unitária (lógica pura) | Classes L e E; ordenação; validações; conversões | Sem RuFaS; rápida |
+| Identidade e erro | Oferta linear = original no ponto; erro fora do ponto (±5%, ±10%) | Usa as funções de oferta do RuFaS importadas |
+| Vetores de referência | Três rações de 5.3 e a vaca de 650 kg / 40 kg de leite / 100 dias | Números gerados pelo RuFaS e gravados no teste |
+| Contrato da API | Corpo, erros, avisos | Servidor em memória |
+| Regressão do RuFaS completo | "Conjunto base" em NRC (igual à seção 15.4) e em NASEM | Lenta (≈ 20 s cada); marcada à parte (`-m rufas`) |
+| Interface | Roteiro manual com capturas em 1.440 px e ≈ 540 px | Sem teste automatizado (decisão vigente) |
+
+Execução: `..\.venv\Scripts\python -m pytest tests` a partir de `backend`. Os testes que importam o RuFaS exigem a pasta
+`vendor/RuFaS` no `sys.path`; em pasta curta fora do OneDrive, se houver erro de DLL em caminho longo.
+
+## 8. Riscos do plano
+
+| Risco | Efeito | Mitigação |
+|---|---|---|
+| Importar o RuFaS no mesmo processo do servidor (estado global, memória, tempo de carga) | Lentidão ou efeitos colaterais entre requisições | Importação tardia; teste de duas avaliações seguidas; se falhar, processo auxiliar |
+| Oferta não linear exige funções internas do RuFaS que mudam de assinatura | Quebra ao atualizar o RuFaS | Versão fixa (1.0.6); teste de contrato que falha cedo |
+| Erro de linearização acima de 1% em dietas distantes do ponto | Comparação enganosa | Mostrar o erro sempre; recalcular os coeficientes em `x_d`; marcar "fora da região" |
+| Otimizador do RuFaS não exercitado em vaca seca e novilha | Comparação da fase 2 só vale para lactação | Limitar RF-30 à vaca em lactação no início; ampliar depois |
+| Fase 2 mais lenta que o estimado (grade maior, dois regimes, vários ramos) | Tela travada | Tarefa em segundo plano, grade grossa e refinamento local |
+| Respostas do professor mudarem uma regra (ordenação, tolerância, replicação) | Retrabalho em E3 | Regras isoladas em `standards.py` e `ranking.py`; constantes nomeadas |
+| Erro de unidade (ganho diário em g × kg) | Exigências absurdas | Validação de faixa na entrada e teste dedicado |
+| Código fora de sincronia com os documentos | Documentos viram histórico | Em cada etapa, atualizar PRD (status) e FSD (marcar "implementado") |
+
+## 9. Definição de pronto (por etapa)
+
+1. Critérios de aceite do FSD cumpridos e testados; testes antigos continuam passando.
+2. RuFaS sem alteração (`git status` limpo em `vendor/RuFaS`).
+3. PRD (status do requisito), FSD (seção correspondente) e README atualizados.
+4. Interface conferida nas duas larguras, com o build gerado.
+5. Pendências novas registradas em `PERGUNTAS_PROFESSOR.md` ou no PRD (seção 15), nunca só no código.
+
+## 10. Próximos passos imediatos
+
+1. Enviar `PERGUNTAS_PROFESSOR.md` ao professor (as perguntas de E0 vão primeiro).
+2. Revisão de consistência entre PRD, FSD, DOMINIO e DECISOES (item 5 do roteiro de documentação).
+3. Quando o dono autorizar o início do código: abrir a ramificação de E1 e E2 (pequenas e independentes) e só então E3.

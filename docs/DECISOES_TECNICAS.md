@@ -26,6 +26,7 @@
   requisitos planejados (RF-24, RF-26 e RF-27), ainda não implementados.
 - `LINEARIZACAO.md`: estudo e especificação da linearização das equações do otimizador do RuFaS e do módulo ampliado
   do Exercício do quadro (pedido do professor). Nada implementado.
+- `PLANO_IMPLEMENTACAO.md`: ordem de implementação (etapas E0 a E8), dependências, testes e riscos. Nada implementado.
 - `nasem2021_notas/` (pasta **local, não versionada**, por direitos autorais, com o `00_INDICE.md`): notas técnicas do
   livro NASEM 2021 (tradução brasileira), feitas por OCR e auditadas. Referência científica complementar; ver `DOMINIO.md`, seção 8.
 - Materiais de origem, fora do repositório: o quadro do professor de Pesquisa
