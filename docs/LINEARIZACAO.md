@@ -83,6 +83,11 @@ Entradas da calculadora de exigências (assinatura de `calculate_requirements`, 
 `process_based_phosphorus_requirement`. Saída: energia de mantença, crescimento, gestação, lactação e atividade;
 proteína metabolizável; cálcio; fósforo; consumo estimado; aminoácidos essenciais. São constantes para o problema linear.
 
+Verificado em 01/11/2026: (i) as calculadoras NRC e NASEM rodam **sem uma simulação inteira**, para as seis categorias;
+(ii) `average_daily_gain_heifer` é em **kg/dia** (0,8), embora o texto de ajuda do RuFaS diga g; com 800 os valores explodem;
+(iii) o NRC pede ainda TDN% (fração) e, para novilhas, temperatura anterior e concentração de energia líquida da dieta, que
+dependem da dieta avaliada.
+
 ---
 
 ## 4. Formulação por restrição e linearização
@@ -361,7 +366,8 @@ CEPEA e data). O mapeamento entre os indicadores do CEPEA e os alimentos da bibl
 
 `pen_average_enteric_methane` (g/dia) e `pen_average_urine_nitrogen` (kg) são **saídas do RuFaS** para o lote. Para uma
 vaca isolada, o módulo precisa **recebê-las** ou **estimá-las** pelas equações do NASEM (metano e nitrogênio urinário,
-Eq. 3-9 e 3-10a), também congeladas na referência. **Decisão pendente (L-Q2).**
+Eq. 3-9 e 3-10a), também congeladas na referência. No RuFaS esses dois valores são a **média do lote** dos valores do dia
+anterior de cada animal (só o NASEM os usa), e não existem para uma vaca isolada. **Decisão pendente (L-Q2).**
 
 ### 7.4 Comparação de dietas (L-D4)
 
