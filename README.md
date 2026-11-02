@@ -74,6 +74,8 @@ tentativa, até o limite configurado); é assim que a dieta afeta o leite no mod
 - [`docs/PERGUNTAS_PROFESSOR.md`](docs/PERGUNTAS_PROFESSOR.md): decisões em aberto que dependem do professor, com contexto, proposta e o que cada uma destrava.
 - [`docs/LINEARIZACAO.md`](docs/LINEARIZACAO.md): estudo e especificação da linearização do otimizador (equações do RuFaS,
   técnicas, módulo ampliado do Exercício do quadro); nada implementado.
+- [`docs/PLANO_IMPLEMENTACAO.md`](docs/PLANO_IMPLEMENTACAO.md): ordem de implementação do módulo ampliado e dos complementos
+  (etapas, dependências, testes, riscos); nada implementado.
 - [`docs/DECISOES_TECNICAS.md`](docs/DECISOES_TECNICAS.md): Decisões técnicas já tomadas (stack, ambientes,
   integração com o RuFaS, segurança), alertas e pendências antes do FSD.
 - [`docs/DESIGN.md`](docs/DESIGN.md): Documento de Design (origem e adaptação do template, arquitetura da interface,
