@@ -1,12 +1,14 @@
-"""Biblioteca de alimentos da NRC (2001) do RuFaS, para a interface e para o PL rápido."""
+"""Biblioteca de alimentos do RuFaS (NRC 2001 ou NASEM 2021), para a interface e para o PL rápido."""
 
 from __future__ import annotations
 
 import csv
 from dataclasses import dataclass
+from functools import cache
 
-from .rufas_adapter import INPUT
+from .paths import FEED_DATA_DIR
 from .scenarios import DEFAULT_PRICES
+from .standards import get_standard
 
 # Alimentos que não fazem sentido na ração de vacas em lactação (líquidos de bezerro, iniciador, sais soltos).
 EXCLUDED_CATEGORIES = {"Calf Liquid Feed", "Starter"}
@@ -28,6 +30,8 @@ class FeedInfo:
     calcium: float
     phosphorus: float
     default_price: float | None  # US$/kg MS (ilustrativo)
+    starch: float | None = None  # % da MS (só na biblioteca NASEM)
+    de_base: float | None = None  # Mcal/kg MS, coluna ``DE_Base`` (só na biblioteca NASEM)
 
     @property
     def default_max(self) -> float:
@@ -51,16 +55,25 @@ class FeedInfo:
         return 0.0245 * self.tdn - 0.12
 
 
-def load_feed_library() -> list[FeedInfo]:
+@cache
+def feed_library(standard: str = "NRC") -> dict[int, FeedInfo]:
+    """Biblioteca do padrão indexada por id (lida uma vez por padrão)."""
+    return {feed.id: feed for feed in load_feed_library(standard)}
+
+
+def load_feed_library(standard: str = "NRC") -> list[FeedInfo]:
+    nutrient_standard = get_standard(standard)
+    is_nasem = nutrient_standard.code == "NASEM"
     descriptions = {}
-    with open(INPUT / "data" / "feed" / "user_feeds.csv", encoding="utf-8", newline="") as handle:
+    with open(FEED_DATA_DIR / "user_feeds.csv", encoding="utf-8", newline="") as handle:
         for row in csv.DictReader(handle):
             descriptions[int(row["rufas_id"])] = row
     feeds = []
-    with open(INPUT / "data" / "feed" / "NRC_comp.csv", encoding="utf-8", newline="") as handle:
+    with open(nutrient_standard.library_path, encoding="utf-8-sig", newline="") as handle:
         for row in csv.DictReader(handle):
-            feed_id = int(row["rufas_id"])
-            info = descriptions[feed_id]
+            feed_id = int(float(row["rufas_id"]))
+            # A biblioteca NASEM tem alimentos sem linha em user_feeds.csv; o nome vem então da própria biblioteca.
+            info = descriptions.get(feed_id) or {"Name": row.get("Name", str(feed_id)), "feed_description": ""}
             if row["Fd_Category"] in EXCLUDED_CATEGORIES or row["feed_type"] in {"Milk", "Starter"}:
                 continue
             feeds.append(
@@ -78,6 +91,8 @@ def load_feed_library() -> list[FeedInfo]:
                     calcium=float(row["calcium"]),
                     phosphorus=float(row["phosphorus"]),
                     default_price=DEFAULT_PRICES.get(feed_id),
+                    starch=float(row["starch"]) if is_nasem else None,
+                    de_base=float(row["DE_Base"]) if is_nasem else None,
                 )
             )
     return feeds

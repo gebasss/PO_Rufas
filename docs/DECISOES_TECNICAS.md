@@ -211,7 +211,7 @@ instalação é reproduzível por script (`scripts/setup.ps1`), inclusive onde o
 `pip` falha por TLS (baixa os pacotes com `curl` para `wheelhouse/`).
 
 ### Testes
-10 testes automatizados em `backend/tests/` (PL, amostragem e efeitos de
+33 testes automatizados em `backend/tests/` (PL, amostragem e efeitos de
 Spearman, adaptador e cache), todos passando. Integração real com o RuFaS e
 interface foram verificadas manualmente, **sem teste automatizado**.
 

@@ -1,6 +1,6 @@
 # Plano de implementação: módulo "Exercício do quadro" ampliado e complementos
 
-**Versão 0.1 (02/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
+**Versão 0.2 (02/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
 comportamento do sistema; as regras estão nos documentos citados e este arquivo só as sequencia.
 
 | Documento | O que fornece ao plano |
@@ -10,6 +10,23 @@ comportamento do sistema; as regras estão nos documentos citados e este arquivo
 | `LINEARIZACAO.md` | Fórmulas, técnica de linearização, tolerâncias, estudo numérico |
 | `PERGUNTAS_PROFESSOR.md` | Decisões que dependem do professor (P1 a P21) |
 | `DECISOES_TECNICAS.md` | Stack, ambientes, restrições (RuFaS intocado, GPLv3, Windows, OneDrive) |
+
+---
+
+## Andamento
+
+| Etapa | Situação | Observações |
+|---|---|---|
+| E0 | Em aberto | Valem as propostas registradas; perguntas ao professor em `PERGUNTAS_PROFESSOR.md` |
+| E1 | **Feita no back-end (02/11/2026)** | `standards.py`, `paths.py`; `Scenario.nutrient_standard` grava a biblioteca do padrão (com limites) e o `metadata`; preços restritos à biblioteca; `GET /api/feeds?standard=`; falta o seletor na interface (FSD A.3.1) |
+| E2 | **Feita (02/11/2026)** | `module/` (`categories`, `fields`, `requirements`, `api`); `GET /api/module/defaults`, `POST /api/module/requirements`; padrão do módulo é NASEM |
+| E3 a E8 | Não iniciadas | |
+
+Achados do E2: (i) a idade (`days_born`) é obrigatória só no NRC para novilhas; (ii) o intervalo entre partos vazio quebra a
+calculadora para vacas de 1ª e 2ª paridade, então vale 0 (que o RuFaS trata como "sem ganho de peso") com aviso; (iii) os
+campos da ração anterior (TDN, energia, temperatura, FDN) têm padrão do RuFaS, e o da FDN (0,3) é uma fração tratada como
+porcentagem (`LINEARIZACAO.md`, 4.7); (iv) o teste com um servidor local achou o erro de (ii) que os testes unitários, já
+com o intervalo preenchido, não pegaram: por isso há teste dedicado.
 
 ---
 
@@ -73,7 +90,7 @@ backend/dietopt/module/
     ranking.py          # ordenação (7.4) e "melhor entre as informadas"
     compare.py          # relatório linear × RuFaS por restrição (fase 1)
     optimize.py         # fase 2: parametrização dos escalares globais (5.1b), LP por ponto e por ramo
-backend/tests/module/   # um arquivo de teste por módulo acima
+backend/tests/test_module_*.py   # um arquivo de teste por módulo acima (a pasta de testes é plana)
 web/src/views/ModuleView.tsx  (+ componentes: CowCard, DietsCard, PricesCard, ResultCard)
 docs/…                  # atualizar FSD (seções "implementado"), PRD (status) e README ao fim de cada etapa
 ```

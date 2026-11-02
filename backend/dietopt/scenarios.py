@@ -11,6 +11,7 @@ from typing import Any
 
 from .rufas_adapter import RUNS_DIR, RunResult, Scenario, run_scenario
 from .rufas_results import RESULT_FILTERS, SimulationResult, load_result, result_from_dict, result_to_dict
+from .standards import library_ids
 
 # Preços ilustrativos em US$/kg de matéria seca. São valores de partida para a demonstração e devem ser
 # substituídos pelos do usuário (por exemplo, indicadores do CEPEA convertidos).
@@ -73,11 +74,16 @@ class Evaluation:
 
 
 def with_defaults(scenario: Scenario, economics: Economics) -> Scenario:
-    """Garante filtros de saída e preços para todos os alimentos usados pelo cenário."""
+    """Garante filtros de saída e preços dos alimentos da biblioteca do padrão do cenário.
+
+    Preços de ids que a biblioteca do padrão não tem são descartados: o RuFaS os trataria como alimento comprado sem
+    composição e abortaria com ``KeyError`` (por exemplo, o farelo de soja 44% não existe na biblioteca NASEM).
+    """
     scenario.filters = scenario.filters or RESULT_FILTERS
     prices = dict(economics.prices)
     prices.update(scenario.feed_prices)
-    scenario.feed_prices = prices
+    known = library_ids(scenario.nutrient_standard)
+    scenario.feed_prices = {feed_id: price for feed_id, price in prices.items() if feed_id in known}
     return scenario
 
 

@@ -23,26 +23,16 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-RUFAS_DIR = PROJECT_ROOT / "vendor" / "RuFaS"
-RUNS_DIR = PROJECT_ROOT / "runs"
-PYTHON = PROJECT_ROOT / ".venv" / "Scripts" / "python.exe"
-if not PYTHON.exists():  # Linux/Mac
-    PYTHON = PROJECT_ROOT / ".venv" / "bin" / "python"
+from .paths import INPUT, PROJECT_ROOT, PYTHON, RUFAS_DIR, RUNS_DIR
+from .standards import NASEM_ONLY_TO_NRC, get_standard
 
 EXAMPLE = "freestall"  # exemplo do RuFaS usado como base dos cenários
-INPUT = RUFAS_DIR / "input"
 
 
 def rel(path: Path) -> str:
     """Caminho relativo a vendor/RuFaS, com barras normais (e barra final para pastas)."""
     text = os.path.relpath(path, RUFAS_DIR).replace("\\", "/")
     return text + "/" if path.suffix == "" else text
-
-
-# Alimentos do exemplo que só existem na biblioteca NASEM -> equivalentes na biblioteca NRC.
-# 301 "Farm ES Mineral Mix" -> 230 carbonato de cálcio; 302 "Farm ES Midwest BP Blend" -> 167 farelo de soja 48% PB.
-NASEM_ONLY_TO_NRC = {301: 230, 302: 167}
 
 
 def remap_feed_ids(node: Any, mapping: dict[int, int], key: str | None = None) -> Any:
@@ -58,13 +48,14 @@ def remap_feed_ids(node: Any, mapping: dict[int, int], key: str | None = None) -
 
 
 def write_feed_library(path: Path, scenario: "Scenario") -> None:
-    """Copia a biblioteca NRC do RuFaS aplicando os limites de inclusão (``limit``/``lower_limit``) do cenário."""
-    with open(INPUT / "data" / "feed" / "NRC_comp.csv", encoding="utf-8", newline="") as handle:
+    """Copia a biblioteca do padrão do cenário aplicando os limites de inclusão (``limit``/``lower_limit``)."""
+    standard = get_standard(scenario.nutrient_standard)
+    with open(standard.library_path, encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
         fieldnames = reader.fieldnames or []
         rows = list(reader)
     for row in rows:
-        feed_id = int(row["rufas_id"])
+        feed_id = int(float(row["rufas_id"]))
         if feed_id in scenario.feed_limits:
             lower, upper = scenario.feed_limits[feed_id]
             row["lower_limit"], row["limit"] = str(lower), str(upper)
@@ -118,7 +109,8 @@ def build_scenario(scenario: Scenario, runs_dir: Path = RUNS_DIR) -> Path:
     config["start_date"] = scenario.start_date
     config["end_date"] = scenario.end_date
     config["random_seed"] = scenario.random_seed
-    config["nutrient_standard"] = scenario.nutrient_standard
+    standard = get_standard(scenario.nutrient_standard)
+    config["nutrient_standard"] = standard.code
     dump_json(base / "config.json", config)
 
     animal = load_json(INPUT / "data" / "animal" / f"example_{EXAMPLE}_animal.json")
@@ -128,8 +120,8 @@ def build_scenario(scenario: Scenario, runs_dir: Path = RUNS_DIR) -> Path:
     dump_json(base / "animal.json", animal)
 
     feed = load_json(INPUT / "data" / "feed" / "example_Midwest_feed.json")
-    if scenario.nutrient_standard == "NRC":
-        feed = remap_feed_ids(feed, NASEM_ONLY_TO_NRC)
+    if standard.id_remap:
+        feed = remap_feed_ids(feed, standard.id_remap)
     if scenario.lac_cow_ration is not None:
         feed["lac_cow_feeds"] = sorted(scenario.lac_cow_ration)
         feed["user_defined_ration_percentages"]["lac_cow"] = [
@@ -158,13 +150,14 @@ def build_scenario(scenario: Scenario, runs_dir: Path = RUNS_DIR) -> Path:
     if scenario.milk_reduction_maximum is not None:
         feed["milk_reduction_maximum"] = scenario.milk_reduction_maximum
     dump_json(base / "feed.json", feed)
-    write_feed_library(base / "NRC_comp.csv", scenario)
+    library = base / standard.library_file
+    write_feed_library(library, scenario)
 
     metadata = load_json(INPUT / "metadata" / f"example_{EXAMPLE}_dairy_metadata.json")
     metadata["files"]["config"]["path"] = rel(base / "config.json")
     metadata["files"]["animal"]["path"] = rel(base / "animal.json")
     metadata["files"]["feed"]["path"] = rel(base / "feed.json")
-    metadata["files"]["NRC_Comp"]["path"] = rel(base / "NRC_comp.csv")
+    metadata["files"][standard.metadata_key]["path"] = rel(library)
     dump_json(base / "metadata.json", metadata)
 
     for filter_name, patterns in scenario.filters.items():
