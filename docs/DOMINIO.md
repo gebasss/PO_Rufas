@@ -5,7 +5,7 @@
 > histórico de decisões, propostas de mudança ou direções futuras: requisitos pendentes vivem no
 > [PRD](PRD.md), decisões visuais no [DESIGN](DESIGN.md) e instruções de uso no [README](../README.md).
 >
-> A seção 8 registra as fontes científicas (NRC 2001, NASEM 2021, RuFaS) e o que foi conferido contra elas. Os requisitos
+> A seção 8 (acrescentada e revista em 01/11/2026) registra as fontes científicas (NRC 2001, NASEM 2021, RuFaS) e o que foi conferido contra elas. Os requisitos
 > planejados a partir dessa análise estão no [FSD](FSD.md), Anexo A, e não fazem parte do que está implementado.
 >
 > Escopo: apenas o que a equipe controla — a interface web, o servidor local e o adaptador que chama o RuFaS. O

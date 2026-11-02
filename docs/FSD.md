@@ -5,7 +5,7 @@
 | Item | Valor |
 |---|---|
 | Versão do sistema descrita | Web 1.0 (protótipo acadêmico; o código não tem número de versão formal, o servidor se identifica como `DietOpt/1.0`) |
-| Data de referência | 12/10/2026 |
+| Data de referência | 12/10/2026 (seções 1 a 28, sistema implementado); Anexos A e B revistos em 02/11/2026 (funcionalidades planejadas, não implementadas) |
 | Natureza do documento | Especificação consolidada de um sistema **já implementado e verificado, ainda sem uso em produção**. Serve como documentação formal, base de manutenção e referência para reimplementação. |
 
 Este documento é autossuficiente. Quando o comportamento da implementação atual diverge do que está especificado aqui, a divergência está catalogada na seção 26 (Desvios Conhecidos), com identificadores `D1`, `D2`, etc., referenciados ao longo do texto. Os requisitos `RF-24`, `RF-26` e `RF-27` estão especificados no **Anexo A**, e os requisitos `RF-28` a `RF-30` (módulo ampliado do Exercício do quadro, com modelo linear) no **Anexo B** e em `LINEARIZACAO.md` (todos planejados, **não implementados**). Os demais requisitos do PRD ainda não implementados (`RF-13`, `RF-19` a `RF-23`) **não** são especificados aqui: constam como pendentes na seção 27 e não devem ser inventados.
@@ -1627,7 +1627,7 @@ Erros no formato da seção 11.3. A rota é síncrona. O `id` dos alimentos é o
 ### B.8 Comparação com o RuFaS (RF-29)
 
 - **Fase 1:** para a mesma vaca, o mesmo lote e a mesma dieta, comparar a oferta e a folga de cada restrição **linearizada**
-  com a **original do RuFaS** (as funções `NutritionSupplyCalculator.*`, chamadas diretamente; **a verificar**).
+  com a **original do RuFaS** (as funções `NutritionSupplyCalculator.*`, chamadas diretamente; **verificado** em 01/11/2026: o estudo numérico de `LINEARIZACAO.md`, seção 10, já as chamou assim).
   Relatório: erro por restrição e por dieta, com as tolerâncias de `LINEARIZACAO.md`, seção 6.
 - **Fase 2:** comparar o LP (ótimo global do problema linearizado) com o otimizador do RuFaS (`RationOptimizer`, ótimo
   local, ponto inicial aleatório quando não há ração anterior): custo, ração e folgas (`LINEARIZACAO.md`, 5.4).

@@ -7,7 +7,7 @@
 > PRD, do DESIGN, do DOMINIO e do código-fonte real), sinaliza o que ainda está
 > em aberto, e alerta o que o FSD não deve inventar.
 >
-> Data de referência: 12/10/2026.
+> Data de referência: 12/10/2026; atualizado em 02/11/2026 (Git, módulo ampliado, plano de implementação).
 
 ## 1. Documentos recebidos
 
