@@ -353,7 +353,7 @@ Esse código não está no projeto.
 | Item | Resultado |
 |---|---|
 | O RuFaS no modo NASEM: consumo (Eq. 2-1), mantença 0,10 Mcal/kg de peso metabólico (Eq. 3-13), útero gravídico (Eq. 3-15 e 3-16a), cálcio e fósforo de lactação (Eq. 7-4 e 7-8b) | Conferem com as notas do NASEM |
-| Fósforo de mantença de vaca seca no RuFaS (`0,8 × consumo + 0,0006 × peso`) | Diverge das notas (Eq. 7-5b: 1,0 g/kg de MS para vacas adultas, secas e lactantes). **A conferir na p. 124.** Não afeta a vaca em lactação |
+| Fósforo de mantença de vaca seca no RuFaS (`0,8 × consumo + 0,0006 × peso`) | Diverge das notas (Eq. 7-5b: 1,0 g/kg de MS para vacas adultas, secas e lactantes). **Confirmado na imagem da p. 124** (01/11/2026). Não afeta a vaca em lactação |
 | Biblioteca NASEM do RuFaS contra a Tabela 19-1 (88 de 180 alimentos já transcritos nas notas) | 53 linhas com correspondente (MS, PB e FDN iguais); 3 diferem em amido, por arredondamento; 35 sem correspondente automático (óleos e gorduras, silagens sem espiga, arroz em grão, farelo de arroz desengordurado, glúten úmido, entre outros) |
 | Arroz em grão | A Tabela 19-1 traz "Grãos de Arroz" (p. 427: MS 87,9%; PB 8,1%; amido 75,8%; FDN 6,4%). **Nenhuma** das bibliotecas do RuFaS o carrega |
 | Tabela 5-1 (FDN de forragem, FDN total, amido) | Completa: (19, 25, 30), (18, 27, 28), (17, 29, 26), (16, 31, 24), (15, 33, 22). A Tabela 21-1 imprime "FDN de forragem mín. 19–25", divergente (observação nossa; as notas não a registram) |

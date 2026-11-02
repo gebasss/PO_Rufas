@@ -1303,13 +1303,16 @@ Ordem de implementação sugerida: RF-27, RF-24, RF-26. O RF-27 usa só dados qu
 - `Scenario.nutrient_standard = "NASEM"` (já existe).
 - Não aplicar a troca de ids 301 → 230 e 302 → 167 (só vale para NRC).
 - Gravar `lower_limit` e `limit` na cópia do CSV NASEM, e apontar o `metadata.json` para ela na chave `NASEM_Comp` (hoje o adaptador só edita `NRC_Comp`).
-- Os preços continuam por id (`DEFAULT_PRICES` e preços do usuário); os 18 ids dos presets existem nas duas bibliotecas.
+- Os preços continuam por id (`DEFAULT_PRICES` e preços do usuário), mas **devem ser restritos aos ids da biblioteca do padrão
+  escolhido**: o farelo de soja 44% (id 166) não existe na biblioteca NASEM e o `with_defaults` do adaptador mescla todos os
+  `DEFAULT_PRICES`, o que gera `KeyError` no RuFaS (verificado em 01/11/2026). Os 7 ids do "Conjunto base" (50, 110, 44, 167,
+  138, 230 e 23) existem nas duas bibliotecas.
 - A chave do cache já inclui o padrão (campo do `Scenario`), então resultados NRC e NASEM não se misturam.
 - O corpo de `POST /api/jobs/simulate` e `/api/jobs/sensitivity` ganha `standard` (`"NRC"` por padrão).
 
 **A.3.4 Resultados**
 - Mesmas telas e indicadores. Mostrar um selo "Padrão: NRC 2001" ou "Padrão: NASEM 2021" no topo dos resultados.
-- O gráfico "Exigências" lê hoje `NEl_requirement`, `DMIest_requirement` e `MP_requirement` da saída do RuFaS. **A verificar:** se o modo NASEM grava essas mesmas variáveis (ou outras) no filtro `lac_ration`. Se os nomes diferirem, o leitor de saídas deve mapeá-los e o gráfico deve rotular a energia conforme o padrão.
+- O gráfico "Exigências" lê hoje `NEl_requirement`, `DMIest_requirement` e `MP_requirement` da saída do RuFaS. **Verificado em 01/11/2026:** o modo NASEM grava as mesmas 13 variáveis no filtro `lac_ration` (inclusive os aminoácidos essenciais, que no NASEM vêm não nulos). Os nomes são idênticos, então o leitor de saídas não precisa de mapeamento; o gráfico só deve rotular a energia conforme o padrão (NASEM usa 0,66 de ME para NEL, o NRC usa 0,64).
 
 **A.3.5 Comparar padrões**
 - Botão **Comparar NRC × NASEM** na tela Vaca leiteira, habilitado com as mesmas condições de Simular.
@@ -1319,7 +1322,8 @@ Ordem de implementação sugerida: RF-27, RF-24, RF-26. O RF-27 usa só dados qu
 - Falha em um dos padrões: mostrar o outro e marcar o que falhou como "falhou", sem zeros (princípio P2).
 
 **A.3.6 Critérios de aceite**
-1. Simular o "Conjunto base" em NASEM termina sem erro e exibe os seis indicadores (**a verificar**; não foi testado).
+1. Simular o "Conjunto base" em NASEM termina sem erro e exibe os seis indicadores (**verificado** em 01/11/2026 pelo
+   adaptador, com os preços restritos à biblioteca, em 22,7 s; ver A.7.1).
 2. Com o padrão em NRC, os resultados continuam iguais aos da seção 15.4.
 3. Trocar de padrão remove da seleção, com aviso, os alimentos ausentes na outra biblioteca.
 4. Os limites mínimo e máximo informados valem nos dois padrões (ração média dentro dos limites).
@@ -1445,13 +1449,34 @@ Fonte dos valores: `docs/nasem2021_notas/ch19_dados/tab19-1_parcial_88alimentos.
 
 | Item | Risco | Como verificar |
 |---|---|---|
-| O modo NASEM com as nossas listas de alimentos e preços converge? | O otimizador e as restrições são diferentes (`NASEM_net_energy_constraint`) | Rodar o "Conjunto base" em NASEM e registrar o resultado |
-| Variáveis de saída do RuFaS no modo NASEM | O leitor de saídas e o gráfico de exigências podem não achar as variáveis | Ler o filtro `lac_ration` de uma execução NASEM |
+| O modo NASEM com as nossas listas de alimentos e preços converge? | O otimizador e as restrições são diferentes (`NASEM_net_energy_constraint`) | **Verificado** (A.7.1): converge, desde que os preços sejam restritos à biblioteca |
+| Variáveis de saída do RuFaS no modo NASEM | O leitor de saídas e o gráfico de exigências podem não achar as variáveis | **Verificado**: as mesmas 13 variáveis no filtro `lac_ration` |
 | Categorias da biblioteca NASEM | O teto padrão de minerais (seção 14.2) depende de `Fd_Category`/`feed_type` | Listar as categorias do CSV NASEM |
 | Ids do RuFaS fora das bibliotecas | O RuFaS pode exigir o alimento também em `user_feeds.csv` e em outras listas de `feed.json` | Testar com um alimento personalizado |
 | Memória | A comparação roda 2 simulações de ≈ 1,2 GB cada | Manter o limite de 2 simultâneas |
 | Preços ilustrativos | Comparar padrões com preços ilustrativos pode ser lido como recomendação | Manter o rótulo "ilustrativo" |
 | Divergências do próprio NASEM | Erros de impressão e ambiguidades (por exemplo, parênteses da Eq. 2-1; Tabela 21-1 × 5-1) | Consultar `00_INDICE.md`, seção 4, das notas; o código R oficial prevalece |
+
+#### A.7.1 Resultado da verificação do modo NASEM (01/11/2026)
+
+Execução do "Conjunto base" (ids 50, 110, 44, 167, 138, 230 e 23) pelo adaptador, uma vez em cada padrão, sem alterar o
+RuFaS. O NASEM terminou em 22,7 s.
+
+| Indicador | NRC 2001 | NASEM 2021 |
+|---|---|---|
+| Margem sobre custo de alimentação (US$, rebanho) | 384.622 | 440.925 |
+| Custo da ração, vaca em lactação (US$/dia) | 4,019 | 3,425 |
+| Consumo estimado (kg MS/dia) | 25,77 | 24,62 |
+| Consumo da ração (kg MS/dia) | 33,5 | 32,0 |
+| Energia de mantença (Mcal/dia) | 10,04 | 12,55 |
+| Energia de gestação (Mcal/dia) | 0,31 | 2,72 |
+| Proteína metabolizável (g/dia) | 2.822 | 2.695 |
+| Cálcio (g/dia) | 72,2 | 66,6 |
+| Leite total do rebanho (kg) | 1.278.982 | 1.278.982 |
+
+A ração do NASEM ficou em 14,81 kg (id 50), 16,8 kg (id 110), 0,17 kg (id 138) e 0,03 kg (id 23) por dia. O leite não
+mudou (nenhuma redução por ração insuficiente). Os números são ilustrativos (preços ilustrativos) e **não** indicam qual
+padrão é "melhor": as exigências diferem por construção (mantença de 0,08 para 0,10 Mcal/kg^0,75, gestação, DMI).
 
 ### A.8 Alterações previstas em outras partes deste documento (quando implementado)
 
@@ -1521,27 +1546,31 @@ O módulo amplia a **tela 1 (Exercício do quadro)**, sem remover o exercício a
 **Padrão:** `NASEM` (principal) ou `NRC`. **Categoria**, só as que o RuFaS otimiza (`LINEARIZACAO.md`, seção 2):
 `LAC_COW` (vaca em lactação), `CLOSE_UP` (vaca seca e novilha pré-parto), `GROWING` (novilhas I e II).
 
-Campos (assinatura de `calculate_requirements` do RuFaS; **a verificar** quais são obrigatórios por categoria):
+Campos (assinatura de `calculate_requirements` do RuFaS; o uso por categoria foi verificado em 01/11/2026 perturbando cada
+campo nas calculadoras NRC e NASEM; "NASEM" e "NRC" indicam que só aquele padrão usa o campo):
 
 | Campo | Unidade | Lactação | Seca e pré-parto | Crescimento |
 |---|---|---|---|---|
 | Peso corporal (`body_weight`) | kg | sim | sim | sim |
 | Peso à maturidade (`mature_body_weight`) | kg | sim | sim | sim |
 | Paridade (`parity`) | número | sim | sim | opcional |
-| Dias em lactação (`days_in_milk`) | dias | sim | não | não |
-| Dia de gestação (`day_of_pregnancy`) | dias | opcional | sim | opcional |
-| Escore de condição corporal (`body_condition_score_5`) | 1 a 5 | sim | sim | opcional |
+| Dias em lactação (`days_in_milk`) | dias | sim | NASEM: opcional | NASEM: opcional |
+| Dia de gestação (`day_of_pregnancy`) | dias | NASEM: opcional | sim | opcional (novilha prenhe) |
+| Escore de condição corporal (`body_condition_score_5`) | 1 a 5 | NASEM | não | NRC |
 | Produção de leite (`milk_production`) | kg/dia | sim | não | não |
 | Gordura, proteína verdadeira e lactose do leite | % | sim | não | não |
-| Ganho médio diário da novilha (`average_daily_gain_heifer`) | g/dia | não | não | sim |
+| Ganho médio diário da novilha (`average_daily_gain_heifer`) | **kg/dia** (o texto do RuFaS diz g, mas o código usa kg; 0,8 e não 800) | não | não | sim |
 | Intervalo entre partos (`calving_interval`) | dias | opcional | opcional | opcional |
 | Alojamento (`housing`: `Barn` ou `Grazing`) e distância percorrida | m | sim | sim | sim |
 | FDN da ração anterior (`ndf_percentage`) | % da MS | opcional | opcional | opcional |
 | Fósforo do processo (`process_based_phosphorus_requirement`) | g/dia | opcional | opcional | opcional |
+| TDN% da dieta, temperatura anterior e concentração de energia líquida da dieta (só NRC) | fração, °C, Mcal/kg | TDN% | TDN% | os três |
 | Metano entérico e nitrogênio urinário do lote | g/dia e kg | NASEM | NASEM | NASEM |
 
-Os dois últimos são **saídas do RuFaS para o lote**; para uma vaca isolada o módulo os recebe ou os estima pelas equações do
-NASEM (`LINEARIZACAO.md`, 7.3, decisão pendente L-Q2). Validações: valores numéricos positivos onde aplicável; campos
+As calculadoras rodam **sem iniciar uma simulação** (verificado). O TDN% e os demais campos exclusivos do NRC dependem da
+dieta e, no módulo, vêm da própria dieta avaliada. O metano entérico e o nitrogênio urinário do lote (última linha da tabela) são
+**saídas do RuFaS**: médias do lote dos valores do dia anterior de cada animal, usadas só no NASEM; para uma vaca isolada o
+módulo os recebe ou os estima pelas equações do NASEM (`LINEARIZACAO.md`, 7.3, decisão pendente L-Q2). Validações: valores numéricos positivos onde aplicável; campos
 vazios usam o padrão do RuFaS apenas onde o RuFaS define um **(a verificar)**; nenhum valor inventado.
 
 ### B.4 Entradas: dietas montadas
@@ -1565,8 +1594,9 @@ vazios usam o padrão do RuFaS apenas onde o RuFaS define um **(a verificar)**; 
 
 Para cada dieta `d`, com os coeficientes avaliados **na própria dieta** (ponto de referência `x_d`):
 
-1. **Exigências** da vaca, pelo RuFaS (calculadoras NASEM ou NRC), com as sobrescritas do usuário. **A verificar:** se as
-   calculadoras podem ser chamadas diretamente, sem iniciar uma simulação do RuFaS.
+1. **Exigências** da vaca, pelo RuFaS (calculadoras NASEM ou NRC), com as sobrescritas do usuário. As
+   calculadoras podem ser chamadas diretamente, sem iniciar uma simulação do RuFaS (**verificado** em 01/11/2026, para NRC e NASEM,
+   nas seis categorias).
 2. **Restrições aplicáveis** (`LINEARIZACAO.md`, seções 2 e 3): custo, limites por alimento, consumo, cálcio, fósforo,
    FDN total, FDN de forragem, gordura, energia (NRC: mantença, lactação, crescimento e total; NASEM: energia líquida), e
    proteína metabolizável.
@@ -1621,8 +1651,8 @@ Erros no formato da seção 11.3. A rota é síncrona. O `id` dos alimentos é o
 
 | Item | Risco | Como verificar |
 |---|---|---|
-| Chamar as calculadoras de exigência do RuFaS sem simulação | Dependências do pacote `RUFAS` (gerenciador de saídas, constantes) | Importar e chamar `calculate_requirements` isoladamente |
-| Modo NASEM para novilhas e vacas secas | Restrições e exigências da NASEM para essas categorias não foram exercitadas | Avaliar casos de referência do NASEM (Tabela 21-1, com cautela) |
+| Chamar as calculadoras de exigência do RuFaS sem simulação | Dependências do pacote `RUFAS` (gerenciador de saídas, constantes) | **Verificado**: `calculate_requirements` roda isolado, em NRC e NASEM, para as seis categorias |
+| Modo NASEM para novilhas e vacas secas | As calculadoras devolvem valores plausíveis, mas o otimizador do RuFaS não foi exercitado nessas categorias; a unidade do ganho diário (kg/dia) é fácil de errar | Avaliar casos de referência do NASEM (Tabela 21-1, com cautela) e validar a faixa de entrada do ganho diário |
 | Metano e nitrogênio urinário de uma vaca isolada | Valores do lote não existem fora do RuFaS | Decisão L-Q2 |
 | Otimização linearizada (fase 2) | O ponto fixo simples parou 4,8% acima do RuFaS; o desconto de ingestão é descontínuo em TDN% = 60 | Parametrização dos escalares globais, com dois regimes (`LINEARIZACAO.md`, 5.1b e seção 10) |
 | Biblioteca de alimentos | Alimentos NRC-only ou NASEM-only (RF-24) | Aviso e remoção (A.3.1) |
