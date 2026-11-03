@@ -21,6 +21,7 @@ from .diet_lp import Food, NutrientBounds, solve_diet
 from .feeds import FeedInfo, feed_library
 from .jobs import Job, JobManager
 from .module.api import compare_payload, defaults_payload, evaluate_payload, optimize_payload, requirements_payload
+from .prices import import_prices
 from .ration_balance import build_balance
 from .ration_checks import composition, consistency_checks, summarize
 from .rufas_adapter import PROJECT_ROOT, Scenario
@@ -315,6 +316,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(evaluate_payload(body))
             if path == "/api/module/compare":
                 return self._json(compare_payload(body))
+            if path == "/api/prices/import":
+                fx = body.get("fx")
+                return self._json(import_prices(body.get("standard"), str(body.get("csv") or ""), None if fx in (None, "") else float(fx)))
             if path == "/api/module/requirements":
                 return self._json(requirements_payload(body))
             if path == "/api/jobs/simulate":

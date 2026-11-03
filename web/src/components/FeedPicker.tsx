@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 
 import { SearchIcon, XIcon } from 'lucide-react'
 
+import PriceImport from '@/components/PriceImport'
 import { NumberInput } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -18,7 +19,7 @@ export const feedTitle = (feed: Feed) =>
 const MAX_RESULTS = 60
 
 export default function FeedPicker() {
-  const { feeds, feedById, selected, toggleFeed, setFeedField, applyPreset } = useApp()
+  const { feeds, feedById, selected, toggleFeed, setFeedField, applyPrices, applyPreset } = useApp()
   const [query, setQuery] = useState('')
 
   const results = useMemo(() => {
@@ -74,6 +75,8 @@ export default function FeedPicker() {
           </p>
         )}
       </div>
+
+      <PriceImport standard='NRC' selectedIds={selectedIds} onApply={applyPrices} />
 
       <div className='space-y-2'>
         <h3 className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>

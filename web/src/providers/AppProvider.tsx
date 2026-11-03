@@ -45,6 +45,8 @@ interface AppContextValue {
   selected: Selected
   toggleFeed: (id: number) => void
   setFeedField: (id: number, field: 'price' | 'min' | 'max', value: number) => void
+  /** Troca o preço (US$/kg MS) dos alimentos selecionados que aparecem em `prices`. */
+  applyPrices: (prices: Record<number, number>) => void
   applyPreset: (ids: number[]) => void
 
   params: SimParams
@@ -189,6 +191,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     []
   )
 
+  const applyPrices = useCallback(
+    (prices: Record<number, number>) =>
+      setSelected(prev =>
+        Object.fromEntries(
+          Object.entries(prev).map(([id, feed]) => [id, id in prices ? { ...feed, price: prices[Number(id)] } : feed])
+        )
+      ),
+    []
+  )
+
   const applyPreset = useCallback(
     (ids: number[]) => setSelected(buildSelection(ids, feeds, defaults)),
     [buildSelection, feeds, defaults]
@@ -204,6 +216,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     selected,
     toggleFeed,
     setFeedField,
+    applyPrices,
     applyPreset,
     params,
     setParams,

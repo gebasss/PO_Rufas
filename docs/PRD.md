@@ -1,7 +1,7 @@
 # Documento de Requisitos do Produto (PRD)
 
 **Produto:** Dieta Ótima com RuFaS
-**Versão do documento:** 0.12 (rascunho para avaliação)
+**Versão do documento:** 0.13 (rascunho para avaliação)
 **Data:** 02/11/2026
 **Status:** Versão web implementada; documento em revisão
 **Autor(es):** _[a preencher]_
@@ -247,7 +247,7 @@ o navegador no endereço local tem as mesmas permissões. A tabela abaixo descre
 | RF-19 | O sistema deve mostrar o **balanço nutricional** (oferta × exigência de NEL, proteína metabolizável, Ca, P, FDN) da ração obtida. | M | Implementado | A nutricionista precisa auditar a ração; hoje só as exigências são exibidas. Feito em 03/11/2026 (etapa E8b): cartão **Balanço nutricional** com as diferenças que o próprio RuFaS calcula a cada intervalo (média e pior intervalo; FSD, A.4b). |
 | RF-20 | O sistema deve **exportar** tabela de cenários e resultados (CSV) e gerar relatório. | S | Pendente | Documentar a recomendação. |
 | RF-21 | O sistema deve **salvar e carregar** configurações de cenário. | S | Pendente | Reuso entre sessões. |
-| RF-22 | O sistema deve permitir **importar preços** (CSV) para cenários com cotações reais, por exemplo do CEPEA. | S | Pendente | Hoje os preços são digitados à mão e os valores iniciais são ilustrativos. Preços em US$; a regra de conversão está em `LINEARIZACAO.md`, seção 7.2. |
+| RF-22 | O sistema deve permitir **importar preços** (CSV) para cenários com cotações reais, por exemplo do CEPEA. | S | Implementado | Hoje os preços são digitados à mão e os valores iniciais são ilustrativos. Preços em US$; a regra de conversão está em `LINEARIZACAO.md`, seção 7.2. Feito em 03/11/2026 (etapa E8d): importação de CSV nas telas Vaca leiteira e Avaliar dietas, com conversão para US$/kg MS e lista do que não casou (FSD, A.9). |
 | RF-23 | O sistema deve permitir adicionar **nutrientes** ao exercício do quadro. | C | Pendente | Generalização do exercício. |
 | RF-24 | O sistema deve oferecer o padrão **NASEM 2021** como alternativa à NRC 2001 e permitir **comparar os dois padrões** no mesmo cenário. | S | Parcial | Previsto no quadro do professor. **Especificado** no FSD, Anexo A.3; **back-end implementado em 02/11/2026** (`standard` nos cenários, biblioteca por padrão, `GET /api/feeds?standard=`, preços restritos à biblioteca); faltam o seletor na interface, o aviso de alimentos removidos e a comparação dos dois padrões; viabilidade técnica verificada (o RuFaS já aceita `NASEM`; todos os alimentos dos presets existem na biblioteca NASEM; o modo NASEM roda o "Conjunto base" desde que os preços sejam restritos à biblioteca, FSD A.7.1). Depende da decisão Q6. |
 | RF-25 | O sistema deve ter uma tela de **premissas e limites** que explique o que o modelo assume e não faz. | S | Atendido | Tela `/sobre/`, com quatro blocos (funcionamento, premissas, limites, créditos). |
@@ -272,7 +272,7 @@ de qualquer uso profissional (seção 15).
 | Implementação do padrão NASEM 2021 (RF-24) | Especificado (FSD, Anexo A.3), mas não implementado nesta versão | Depende da resposta à questão Q6 |
 | Sugestão da dieta ótima para uma vaca e uma fase (RF-30) | Fase 2 do módulo ampliado do Exercício do quadro | Implementada em 03/11/2026 (sem o laço de redução de leite) |
 | Conversão automática de moeda (R$ para US$) e leitura automática de indicadores do CEPEA | Os preços do módulo ampliado são em US$; o mapeamento e a conversão ficam para depois | Q11, `LINEARIZACAO.md` 7.2 |
-| Preços automáticos do CEPEA | Exige fonte de dados e licença de uso; hoje os preços são digitados | Importação por CSV (RF-22) é o passo intermediário (Q5) |
+| Preços automáticos do CEPEA | Exige fonte de dados e licença de uso; hoje os preços são digitados | Importação por CSV (RF-22) é o passo intermediário (Q5), implementado em 03/11/2026 |
 | Contas de usuário, hospedagem em nuvem, múltiplos usuários ou fazendas | O sistema é local e de um usuário | Sem previsão |
 | Modificações no código do RuFaS | O RuFaS é usado como está (GPLv3, versão fixada) | Sem previsão |
 | Otimizador próprio por fase da lactação | O RuFaS formula uma ração por grupo de vacas | Depende da resposta às questões Q2 e Q3 |
@@ -462,7 +462,7 @@ ilustrativos.
 | HU8 | professor | ver a curva de lactação com PEV e gestação | conferir o gráfico pedido | Curva de Wood por paridade com marcos ajustáveis |
 | HU9 | nutricionista | guardar e exportar cenários e resultados | documentar a recomendação | **Pendente** (RF-20 e RF-21) |
 | HU10 | nutricionista | ver o balanço entre o que a ração oferece e o que a vaca exige | auditar a ração | **Feito** (RF-19) |
-| HU11 | nutricionista | importar cotações reais de uma planilha | usar preços de mercado sem digitar | **Pendente** (RF-22) |
+| HU11 | nutricionista | importar cotações reais de uma planilha | usar preços de mercado sem digitar | **Feito** (RF-22; CSV com conversão de reais, saca e matéria natural) |
 | HU12 | professor, nutricionista | simular o mesmo cenário em NRC 2001 e NASEM 2021 e ver as diferenças | comparar os dois padrões do quadro | **Pendente** (RF-24; FSD, Anexo A.3) |
 | HU13 | professor | usar o arroz em grão do exercício na simulação com o RuFaS | representar fielmente o "arroz" do quadro | **Pendente** (RF-26; FSD, Anexo A.5) |
 | HU14 | nutricionista | ver se a ração obtida é coerente com o consumo estimado e com os limites de fibra, amido e gordura | desconfiar de uma ração irreal | **Feito** (RF-27; FSD, Anexo A.4) |
@@ -785,7 +785,7 @@ por fase; ração que pode passar do consumo estimado em até 30% (limite do RuF
 | Gráfico de produção × dias, com **PEV** em 60 d e faixa de 270 d | RF-14 e RF-15 | Atendido (interpretação a confirmar, Q1) |
 | **NRC (2001)** | Biblioteca e exigências NRC | Atendido |
 | **NASEM (2021)** | RF-24 (e RF-26, RF-27) | Pendente; especificado no FSD, Anexo A (viabilidade técnica verificada) |
-| **CEPEA** (preços) | RF-22 | Pendente (preços digitados à mão) |
+| **CEPEA** (preços) | RF-22 | Importação por CSV feita (RF-22); leitura automática do indicador continua pendente |
 | Equações do simulador/otimizador **lineares** (pedido do professor, 01/11/2026) | RF-29 | Implementado (E3, E6 e E7); especificado em `LINEARIZACAO.md` e no FSD, Anexo B |
 | Dietas variadas testadas e comparadas, da menos recomendada até a ótima | RF-28 e RF-30 | Pendente; especificado (fase 1 no Anexo B; fase 2 em `LINEARIZACAO.md`, 7.6) |
 | Entradas do módulo: características da vaca, exigências NASEM, dieta e preços em US$ (CEPEA) | RF-28 e RF-22 | Pendente; especificado |
@@ -913,3 +913,4 @@ próprio RuFaS.
 | 0.10 | 03/11/2026 | _[a preencher]_ | Etapa E6: comparação do modelo linear com o RuFaS (RF-29, fase 1) na tela e em CSV; RF-29 passa a Parcial. |
 | 0.11 | 03/11/2026 | _[a preencher]_ | Etapa E7: dieta ótima (RF-30) por LP com escalares globais, comparada com o SLSQP do RuFaS; RF-29 e RF-30 implementados (sem o laço de redução de leite). |
 | 0.12 | 03/11/2026 | _[a preencher]_ | Etapas E8a e E8b: painel de verificações de consistência (RF-27) e balanço nutricional (RF-19) na tela Vaca leiteira. |
+| 0.13 | 03/11/2026 | _[a preencher]_ | Etapa E8d: importação de preços por CSV (RF-22) com conversão para US$/kg MS. |

@@ -276,6 +276,30 @@ export interface ModuleOptimization {
   rufas?: RufasComparison
 }
 
+// ---- Importação de preços por CSV (RF-22; POST /api/prices/import)
+export interface PriceImportItem {
+  line: number
+  id: number
+  name: string
+  /** US$ por kg de matéria seca, já convertido. */
+  price: number
+  /** Valor original do arquivo, como foi lido (por exemplo "70 BRL por 60 kg (MN)"). */
+  original: string
+  source: string
+}
+export interface PriceImportProblem {
+  line: number
+  text: string
+  reason: string
+}
+export interface PriceImportResult {
+  standard: NutrientStandard
+  prices: Record<string, number>
+  items: PriceImportItem[]
+  problems: PriceImportProblem[]
+  warnings: string[]
+}
+
 // ---- Curva de lactação
 export interface Wood {
   l: number

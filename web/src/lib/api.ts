@@ -8,6 +8,7 @@ import type {
   ModuleEvaluation,
   ModuleRequirements,
   NutrientStandard,
+  PriceImportResult,
   ToyResult,
   ToySens
 } from '@/lib/types'
@@ -38,7 +39,9 @@ export const api = {
     ),
   moduleRequirements: (body: unknown) => request<ModuleRequirements>('/api/module/requirements', body),
   moduleEvaluate: (body: unknown) => request<ModuleEvaluation>('/api/module/evaluate', body),
-  moduleCompare: (body: unknown) => request<ModuleComparison>('/api/module/compare', body)
+  moduleCompare: (body: unknown) => request<ModuleComparison>('/api/module/compare', body),
+  importPrices: (standard: NutrientStandard, csv: string, fx: number | null) =>
+    request<PriceImportResult>('/api/prices/import', { standard, csv, fx })
 }
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))

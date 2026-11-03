@@ -373,6 +373,14 @@ export default function ModuleView() {
       <PricesCard
         state={state}
         library={library}
+        onPrices={prices =>
+          setState(s => ({
+            ...s,
+            feedSettings: Object.fromEntries(
+              Object.entries(s.feedSettings).map(([id, setting]) => [id, id in prices ? { ...setting, price: prices[Number(id)] } : setting])
+            )
+          }))
+        }
         onSetting={(id, field, value) =>
           setState(s => ({ ...s, feedSettings: { ...s.feedSettings, [id]: { ...s.feedSettings[id], [field]: value } } }))
         }
