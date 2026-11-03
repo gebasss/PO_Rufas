@@ -21,6 +21,8 @@ from .diet_lp import Food, NutrientBounds, solve_diet
 from .feeds import FeedInfo, feed_library
 from .jobs import Job, JobManager
 from .module.api import compare_payload, defaults_payload, evaluate_payload, optimize_payload, requirements_payload
+from .ration_balance import build_balance
+from .ration_checks import composition, consistency_checks, summarize
 from .rufas_adapter import PROJECT_ROOT, Scenario
 from .scenarios import DEFAULT_MILK_PRICE, DEFAULT_PRICES, Economics, evaluate
 from .sensitivity import Factor, run_sensitivity
@@ -141,6 +143,19 @@ def feed_label(feed_id: int | str, standard: str = "NRC") -> str:
     return f"{feed.name} — {feed.description}" if feed else str(feed_id)
 
 
+# Exigências médias do lote por intervalo que a interface e o balanço usam (``avg_rqmts_for_LAC_COW`` do RuFaS).
+REQUIREMENT_KEYS = (
+    "NEl_requirement", "NEmaint_requirement", "NEa_requirement", "NEg_requirement", "NEpreg_requirement",
+    "MP_requirement", "Ca_requirement", "P_req", "P_req_process", "DMIest_requirement", "avg_BW",
+)  # fmt: skip
+
+
+def _observed(ration: dict[str, float], library: dict[int, FeedInfo]) -> dict[str, float]:
+    """Consumo e composição da ração média, para as linhas do balanço que não têm oferta em energia, g ou kg."""
+    c = composition(ration, library)
+    return {} if c is None else {"dry_matter": c.dmi, "ndf": c.ndf, "forage_ndf": c.forage_ndf, "fat": c.fat}
+
+
 def simulation_payload(scenario: Scenario, economics: Economics) -> dict[str, Any]:
     evaluation = evaluate(scenario, economics)
     if not evaluation.ok or evaluation.result is None:
@@ -149,6 +164,15 @@ def simulation_payload(scenario: Scenario, economics: Economics) -> dict[str, An
     prices = {**DEFAULT_PRICES, **scenario.feed_prices}
     feed_ids = sorted({fid for ration in result.ration_kg_per_cow for fid in ration if fid != "dry_matter_intake_total"}, key=int)
     curves = lactation.lactation_curve(result.wood or None)
+    library = feed_library(scenario.nutrient_standard)
+    checks = consistency_checks(
+        result.ration_kg_per_cow,
+        [r.get("DMIest_requirement") for r in result.requirements],
+        evaluation.ration,
+        library,
+        evaluation.reduction,
+        scenario.milk_reduction_maximum,
+    )
     return {
         "summary": evaluation.as_row() | {"milk_price": economics.milk_price, "reducao_leite": evaluation.reduction, "max_reducao": scenario.milk_reduction_maximum},
         "feeds": [{"id": int(i), "label": feed_label(i, scenario.nutrient_standard), "price": prices.get(int(i))} for i in feed_ids],
@@ -158,7 +182,7 @@ def simulation_payload(scenario: Scenario, economics: Economics) -> dict[str, An
             "ration": result.ration_kg_per_cow,
             "cows": result.cows_in_pen,
             "requirements": [
-                {k: r.get(k) for k in ("NEl_requirement", "NEmaint_requirement", "MP_requirement", "Ca_requirement", "P_req", "DMIest_requirement", "avg_BW")}
+                {k: r.get(k) for k in REQUIREMENT_KEYS}
                 for r in result.requirements
             ],
             "cost_per_cow_day": [
@@ -173,6 +197,9 @@ def simulation_payload(scenario: Scenario, economics: Economics) -> dict[str, An
             "milestones": lactation.milestones(),
         },
         "average_ration": evaluation.ration,
+        "checks": checks,
+        "checks_summary": summarize(checks),
+        "balance": build_balance(result.evaluations, result.requirements, _observed(evaluation.ration, library)),
     }
 
 

@@ -306,11 +306,43 @@ export interface SimSummary {
 export interface Requirement {
   NEl_requirement: number | null
   NEmaint_requirement: number | null
+  NEa_requirement?: number | null
+  NEg_requirement?: number | null
+  NEpreg_requirement?: number | null
   MP_requirement: number | null
   Ca_requirement: number | null
   P_req: number | null
+  P_req_process?: number | null
   DMIest_requirement: number | null
   avg_BW: number | null
+}
+
+/** Verificação de consistência da ração (RF-27; FSD, A.4): só informa, não altera margem nem custo. */
+export type CheckStatus = 'ok' | 'warn' | 'alert'
+export interface RationCheck {
+  id: string
+  label: string
+  status: CheckStatus
+  value: string
+  limit: string
+  detail: string
+  metrics: Record<string, number>
+}
+/** Linha do balanço nutricional (RF-19), calculado pelo próprio RuFaS a cada intervalo e resumido. */
+export interface BalanceRow {
+  id: string
+  label: string
+  unit: string
+  /** `surplus`: oferta − exigência; `range`: 0 dentro da faixa; `floor`: % − mínimo; `ceiling`: máximo − %. */
+  kind: 'surplus' | 'range' | 'floor' | 'ceiling'
+  requirement: number | null
+  supply?: number
+  margin_pct?: number | null
+  /** Média dos intervalos e a pior (mais desfavorável). */
+  difference: number
+  worst_difference: number
+  status: 'ok' | 'deficit' | 'fora'
+  note: string
 }
 export interface SimResult {
   summary: SimSummary
@@ -325,6 +357,9 @@ export interface SimResult {
   }
   lactation: LactationInfo
   average_ration: Record<string, number>
+  checks?: RationCheck[]
+  checks_summary?: Record<CheckStatus, number>
+  balance?: BalanceRow[]
 }
 
 // ---- Sensibilidade

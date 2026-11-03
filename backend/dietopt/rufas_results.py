@@ -17,6 +17,7 @@ RESULT_FILTERS: dict[str, list[str]] = {
     "lac_ration": [
         r".*report_ration_per_animal\.ration_per_animal_for_LAC_COW.*",
         r".*report_average_nutrient_requirements\.avg_rqmts_for_LAC_COW.*",
+        r".*report_average_nutrient_evaluation_results\.avg_eval_results_for_LAC_COW.*",
         r".*report_nutrient_amounts\.ration_nutrient_amount_for_LAC_COW.*",
     ],
     "purchases": [r".*FeedManager\.purchase_feed\.ration_interval_.*"],
@@ -55,6 +56,8 @@ class SimulationResult:
     interval_days: list[int] = field(default_factory=list)
     ration_kg_per_cow: list[dict[str, float]] = field(default_factory=list)  # feed id -> kg/vaca/dia (ou 'dry_matter_intake_total')
     requirements: list[dict[str, Any]] = field(default_factory=list)
+    # Balanço da ração feito pelo próprio RuFaS (oferta − exigência, ``NutritionEvaluator``), um por intervalo
+    evaluations: list[dict[str, Any]] = field(default_factory=list)
     cows_in_pen: list[int] = field(default_factory=list)
     purchase_cost: dict[str, list[float]] = field(default_factory=dict)  # feed id -> custo por intervalo
     purchase_amount: dict[str, list[float]] = field(default_factory=dict)
@@ -99,6 +102,8 @@ def parse_outputs(outputs: dict[str, Any]) -> SimulationResult:
                 result.wood.setdefault(int(parity), {})[letter] = float(values[0])
         elif re.search(r"avg_rqmts_for_LAC_COW", key):
             result.requirements = [value for _, value in _series(entry)]
+        elif re.search(r"avg_eval_results_for_LAC_COW", key):
+            result.evaluations = [value for _, value in _series(entry)]
         elif re.search(r"purchase_feed\.ration_interval_(\d+)_(cost|amount_purchased)$", key):
             feed_id, kind = re.search(r"ration_interval_(\d+)_(cost|amount_purchased)$", key).groups()  # type: ignore[union-attr]
             target = result.purchase_cost if kind == "cost" else result.purchase_amount

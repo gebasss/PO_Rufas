@@ -1,6 +1,6 @@
 # Plano de implementação: módulo "Exercício do quadro" ampliado e complementos
 
-**Versão 0.6 (03/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
+**Versão 0.7 (03/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
 comportamento do sistema; as regras estão nos documentos citados e este arquivo só as sequencia.
 
 | Documento | O que fornece ao plano |
@@ -25,7 +25,15 @@ comportamento do sistema; as regras estão nos documentos citados e este arquivo
 | E5 | **Feita (03/11/2026)** | Tela 1 com o seletor "Exercício simples" × "Avaliar dietas (vaca real)" e os cartões Vaca, Dietas, Preços e limites e Resultado (`ExerciseView`, `ModuleView`, `views/module/`); build em `frontend/` por `scripts\build-web.ps1`; conferida no navegador (NASEM e NRC, categoria de crescimento, painel de ≈ 800 px e tela de 375 px, sem rolagem horizontal da página). **Fica de fora:** o seletor de padrão da simulação (FSD A.3.1) e a persistência em `localStorage` |
 | E6 | **Feita (03/11/2026)** | `module/compare.py` (relatório sobre o resultado de `evaluate`, CSV), `POST /api/module/compare`, cartão "Comparação com o RuFaS" na tela (`CompareCard`) com tolerância editável e botão de CSV; 13 testes novos (84 no total) |
 | E7 | **Feita (03/11/2026)** | `module/optimize.py` (LP por ponto da grade de escalares, refinamento, resgate, preços-sombra, verificação com as funções do RuFaS, SLSQP em várias sementes), tarefa `optimize` com cancelamento (`jobs.py`: estado `cancelled`, `POST /api/jobs/<id>/cancel`), cartão "Dieta ótima" e coluna "Desvio do ótimo" no ranking; 31 testes novos (115 no total, ≈ 80 s) |
-| E8 | Não iniciada | |
+| E8a, E8b | **Feitas (03/11/2026)** | RF-27 (`ration_checks.py`, cartão Verificações) e RF-19 (`ration_balance.py`, cartão Balanço nutricional), na tela Vaca leiteira; o balanço vem da avaliação do próprio RuFaS (`avg_eval_results_for_LAC_COW`); 17 testes novos (132 no total) |
+| E8c a E8h | Não iniciadas | |
+
+Achados do E8a e E8b: (i) o RuFaS já calcula o balanço da ração (`NutritionEvaluator`); bastou incluir `avg_eval_results_for_LAC_COW` no
+filtro de saída e a simulação guardada antes disso roda de novo (cache sem `evaluations` é descartado); (ii) a saída de exigências
+do RuFaS tem todas as parcelas de energia, então o balanço mostra oferta = exigência + diferença sem recalcular nada; (iii) a
+proteína e o consumo só chegam como "dentro da faixa" ou a distância até o limite; (iv) a FDN sai do RuFaS com 45,0000006%, o
+que exige tolerância nas verificações; (v) na simulação real do "Conjunto base" em NRC: V1 alerta (+29,5%), V2 atenção (45,0%) e
+balanço sem déficit (cálcio 345% acima da exigência).
 
 Achados do E7: (i) a formulação foi validada pelo ponto exato: nos escalares do melhor SLSQP o LP reproduz o custo (erro relativo
 < 1e-6) em NRC e NASEM, para lactação, vaca seca e novilha; (ii) no caso-base do NRC o LP fica 0,008% acima do melhor do RuFaS

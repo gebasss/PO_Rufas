@@ -1259,9 +1259,9 @@ Não foram identificadas pendências que impeçam a manutenção da versão atua
 
 ---
 
-## Anexo A. Especificação dos Requisitos Planejados RF-24, RF-26 e RF-27 (NÃO implementados)
+## Anexo A. Especificação dos Requisitos Planejados RF-24, RF-26 e RF-27 (RF-27 implementado; RF-24 e RF-26 não)
 
-> **Status:** este anexo especifica funcionalidades que **ainda não existem** na interface. Nada aqui descreve o comportamento da interface atual. **Já implementados no back-end em 02/11/2026** (etapas E1 a E3 de `PLANO_IMPLEMENTACAO.md`): o padrão NASEM nos cenários e na biblioteca (A.3.2 e A.3.3), e as rotas `/api/module/defaults`, `/api/module/requirements` e `/api/module/evaluate` (B.3, B.6 e B.7). Foi escrito a partir de uma leitura do NASEM 2021 (notas em `docs/nasem2021_notas/`), do código do RuFaS v1.0.6 e dos resultados de simulação já guardados em `runs/_cache/`. Onde um fato do RuFaS ainda não foi verificado, o texto diz **"a verificar"**. Os limiares e as decisões marcados **(a confirmar)** dependem do professor ou da equipe (seção A.6).
+> **Status (03/11/2026):** o **RF-27** (A.4) está implementado, junto com o balanço nutricional (RF-19, A.4b); veja as notas "Implementado" nas seções A.4 e A.4b. Os demais itens deste anexo **ainda não existem** na interface e o texto abaixo, fora dessas notas, não descreve a interface atual. **Já implementados no back-end em 02/11/2026** (etapas E1 a E3 de `PLANO_IMPLEMENTACAO.md`): o padrão NASEM nos cenários e na biblioteca (A.3.2 e A.3.3), e as rotas `/api/module/defaults`, `/api/module/requirements` e `/api/module/evaluate` (B.3, B.6 e B.7). Foi escrito a partir de uma leitura do NASEM 2021 (notas em `docs/nasem2021_notas/`), do código do RuFaS v1.0.6 e dos resultados de simulação já guardados em `runs/_cache/`. Onde um fato do RuFaS ainda não foi verificado, o texto diz **"a verificar"**. Os limiares e as decisões marcados **(a confirmar)** dependem do professor ou da equipe (seção A.6).
 
 ### A.1 Visão geral
 
@@ -1340,6 +1340,18 @@ Ordem de implementação sugerida: RF-27, RF-24, RF-26. O RF-27 usa só dados qu
 
 ### A.4 RF-27: painel de verificações de consistência
 
+> **Implementado em 03/11/2026 (etapa E8a):** `backend/dietopt/ration_checks.py` e `web/src/views/cow/ChecksCard.tsx`. Como ficou:
+> - V1 a V5 como na tabela A.4.2, calculadas em `simulation_payload` e devolvidas em `checks` (`id`, `label`, `status`, `value`,
+>   `limit`, `detail` e `metrics`) e `checks_summary`. A **média** dos intervalos decide o estado de V1 a V4; o **pior intervalo**
+>   só pode elevá-lo a "atenção" (V1 mostra os dois).
+> - Tolerância de 1e-3 ponto percentual nos limites: o otimizador do RuFaS deixa a FDN em 45,0000006%, que vale como 45% (atenção).
+> - O amido vem da coluna `starch` das duas bibliotecas (`FeedInfo.starch` passou a existir também no NRC; a interface do NRC
+>   continua sem ele).
+> - Na tela: cartão **Verificações** entre os indicadores e o gráfico da ração (resumo no título, estado em texto e ícone, nota da
+>   Tabela 5-1) e aviso no topo (destrutivo com alerta, padrão com só atenção). A coluna "Verif." da sensibilidade (A.4.1) **não** foi feita.
+> - Aceite: os seis critérios de A.4.5 estão em `tests/test_ration_checks.py`.
+> - Conferência em simulação real (NRC, "Conjunto base", 03/11/2026): V1 alerta (+29,5% em média), V2 atenção (45,0%), V3, V4 e V5 ok.
+
 **Objetivo.** Mostrar, junto dos resultados, se a ração obtida é coerente com o que o NRC e o NASEM consideram plausível. As verificações **só informam**: não alteram margem, custo nem ração, e não filtram cenários.
 
 **A.4.1 Onde aparece**
@@ -1390,6 +1402,24 @@ Ordem de implementação sugerida: RF-27, RF-24, RF-26. O RF-27 usa só dados qu
 
 **A.4.6 Observação sobre os resultados já guardados**
 Das 57 simulações em `runs/_cache/` (preços ilustrativos), o estimado ficou em ≈ 25,8 kg e a ração entre 28 e 34 kg, várias no teto de ≈ 33,5 kg (+30%). A FDN total ficou em 45% (o teto do RuFaS) na maioria; a FDN de forragem ficou entre 30% e 45% e o amido entre 2% e 28%, o que cumpre a Tabela 5-1. Uma ração com 11 kg/dia de farelo de arroz chegou exatamente a 7,0% de gordura. Esses números são o motivo de V1, V2 e V4.
+
+### A.4b RF-19: balanço nutricional
+
+> **Implementado em 03/11/2026 (etapa E8b)**, sem especificação prévia neste anexo. `backend/dietopt/ration_balance.py` e
+> `web/src/views/cow/BalanceCard.tsx`. O RuFaS já avalia a ração a cada intervalo (`NutritionEvaluator`) e o filtro de saída
+> `lac_ration` passou a guardar `avg_eval_results_for_LAC_COW` (`SimulationResult.evaluations`); resultados guardados em
+> `runs/_cache/` antes disso não têm a avaliação e a simulação roda de novo.
+> - Linhas: energia total, de mantença e atividade, de lactação e gestação e de crescimento (Mcal/dia); proteína metabolizável
+>   (g/dia); cálcio e fósforo (g/dia); consumo de MS (kg/dia); FDN total, FDN de forragem e gordura (% da MS).
+> - Convenções do RuFaS: energia, cálcio e fósforo = oferta − exigência (a oferta mostrada é exigência + diferença); proteína
+>   metabolizável e consumo = 0 dentro da faixa aceita (1 a 1,5 vezes a exigência; 0,7 a 1,3 vezes o estimado), senão a distância
+>   até o limite (a oferta exata não aparece); FDN total = 0 entre 25% e 45%; FDN de forragem = % − 15; gordura = 7 − %. A exigência de
+>   fósforo é a maior entre a da vaca e a do processo; a de energia soma mantença, atividade, crescimento, gestação e lactação.
+> - Cada linha mostra a diferença média dos intervalos, a do pior intervalo (mais desfavorável) e o estado: **Atende**, **Déficit**
+>   ou **Fora da faixa**, a partir do pior intervalo. A oferta de FDN, FDN de forragem, gordura e consumo é a da ração média.
+> - Cartão **Balanço nutricional** logo depois das verificações. Os números vêm do RuFaS, não do modelo linear do módulo ampliado.
+> - Observação: o RuFaS marca a ração como inválida se a diferença de gordura não for 0, embora ela seja 7 − % (positiva em
+>   qualquer ração abaixo do teto); a tela trata gordura ≥ 0 como atendida.
 
 ### A.5 RF-26: alimentos personalizados (arroz em grão)
 
