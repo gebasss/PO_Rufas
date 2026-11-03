@@ -300,6 +300,46 @@ export interface PriceImportResult {
   warnings: string[]
 }
 
+// ---- Cenários salvos em arquivo (RF-21; POST /api/scenario/*)
+export type ScenarioKind = 'cow' | 'module'
+export interface ScenarioFeed {
+  id: number
+  price: number
+  min: number
+  max: number
+}
+/** Configuração da análise de sensibilidade guardada no cenário da vaca. */
+export interface SensitivitySetup {
+  method: string
+  levels: number
+  factors: Record<string, { on: boolean; low: number; high: number }>
+}
+export interface CowScenario {
+  standard: NutrientStandard
+  params: SimParams
+  feeds: ScenarioFeed[]
+  sensitivity?: SensitivitySetup
+}
+export interface ModuleScenario {
+  standard: NutrientStandard
+  category: ModuleCategory
+  animalType: string
+  cow: Record<string, number | string>
+  override: Record<string, number>
+  feeds: ScenarioFeed[]
+  diets: { name: string; amounts: Record<string, number> }[]
+  tolerance: number
+  resolution: OptimizationResolution
+  seeds: number
+}
+export interface ScenarioLoad<T> {
+  kind: ScenarioKind
+  version: number
+  saved_at: string | null
+  data: T
+  warnings: string[]
+}
+
 // ---- Curva de lactação
 export interface Wood {
   l: number
@@ -404,6 +444,18 @@ export interface SensResult {
   rows: SensRow[]
   effects: { fator: string; spearman: number | null }[]
   feeds: { id: number; label: string }[]
+}
+/** Um fator da sensibilidade na tela: ligado ou não e a faixa de variação. */
+export interface SensFactorState {
+  on: boolean
+  low: number
+  high: number
+}
+/** Configuração da análise de sensibilidade (fica na memória da página e vai no cenário salvo). */
+export interface SensSetup {
+  overrides: Record<string, SensFactorState>
+  method: string
+  levels: number
 }
 export interface SensFactor {
   key: string

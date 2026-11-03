@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 
 import ExportButtons from '@/components/ExportButtons'
+import ScenarioFile from '@/components/ScenarioFile'
 import FeedPicker from '@/components/FeedPicker'
 import { finite, JobProgress, KpiCard, NumberInput, PageHeader } from '@/components/shared'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -25,7 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { runJob } from '@/lib/api'
 import { nf, shortName, usd } from '@/lib/format'
-import type { SimResult } from '@/lib/types'
+import type { CowScenario, SimResult } from '@/lib/types'
 import { useApp } from '@/providers/AppProvider'
 
 import BalanceCard from './cow/BalanceCard'
@@ -61,7 +62,7 @@ export function simulationBody(
 }
 
 export default function CowView() {
-  const { connection, selected, params, setParams, sim, setSim } = useApp()
+  const { connection, selected, params, setParams, sim, setSim, cowScenario, loadCowScenario } = useApp()
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState({ done: 0, total: 0, status: 'queued' })
 
@@ -148,6 +149,8 @@ export default function CowView() {
                 dele a simulação aborta.
               </p>
             </div>
+
+            <ScenarioFile<CowScenario> kind='cow' getData={cowScenario} onLoad={loadCowScenario} />
 
             <FeedPicker />
 

@@ -275,7 +275,7 @@ aplicacao RuFaS/
 | Item | Observação |
 |---|---|
 | Balanço nutricional (oferta × exigência) da ração obtida | Requisito RF-19, pendente. Hoje só as exigências são exibidas. |
-| Exportação de tabelas e relatórios; salvar e carregar cenários | RF-20 e RF-21, pendentes. Não existem. |
+| Exportação de tabelas e relatórios; salvar e carregar cenários | RF-20 e RF-21, implementados em 03/11/2026 (A.10 e A.11). |
 | Importação de preços (CEPEA ou CSV) | RF-22, pendente. Preços são digitados. |
 | Mais nutrientes no exercício do quadro | RF-23, pendente. Os nutrientes são fixos (carboidrato e proteína). |
 | Padrão NASEM 2021 | RF-24, pendente; especificado no Anexo A.3. O sistema usa só a NRC 2001. |
@@ -1573,6 +1573,48 @@ A simulação passou a devolver `limits` (mínimo e máximo de cada alimento) pa
 
 **Aceite.** `tests/test_exports.py`: conteúdo de cada CSV, formato brasileiro e seções dos relatórios, escape de HTML, ordem do
 ranking, coluna de desvio só com a dieta ótima, despacho e pedidos inválidos.
+
+### A.11 RF-21: salvar e abrir cenários (implementado em 03/11/2026, etapa E8f)
+
+**Objetivo.** Reusar uma configuração entre sessões e enviá-la a outra pessoa, sem depender do navegador. O cenário é um arquivo
+JSON local; o servidor não guarda nada.
+
+**Onde.** Botões **Salvar cenário** e **Abrir cenário** no cartão Cenário da tela Vaca leiteira e no topo da tela Avaliar dietas.
+Abrir um arquivo de outro tipo mostra uma mensagem pedindo a tela correspondente.
+
+**Formato (versão 1).**
+
+```json
+{ "format": "dietopt-scenario", "version": 1, "kind": "cow" | "module", "saved_at": "2026-11-03T16:00:00", "data": { ... } }
+```
+
+| `kind` | Conteúdo de `data` |
+|---|---|
+| `cow` (Vaca leiteira) | `standard`, `params` (`milkPrice`, `years`, `maxReduction`), `feeds` (`id`, `price`, `min`, `max`) e, se houver, `sensitivity` (`method`, `levels`, `factors` com `on`, `low` e `high` por alimento ou `milk_price`) |
+| `module` (Avaliar dietas) | `standard`, `category`, `animalType`, `cow` (campos da vaca), `override` (exigências sobrescritas), `feeds`, `diets` (`name` e `amounts` por id), `tolerance`, `resolution` e `seeds` |
+
+O arquivo guarda **só entradas**, nunca resultados: ao abrir, a tela recalcula (os resultados da tela são descartados). Campos da vaca
+ainda vazios ficam vazios.
+
+**Validação** (`backend/dietopt/scenario_files.py`, na ida e na volta): formato e versão; faixas dos parâmetros; preço obrigatório e
+mínimo não maior que o máximo (máximo vazio vale o teto padrão do alimento); categoria e tipo de animal; campos da vaca e exigências
+conhecidos; até 10 dietas; resolução e sementes. Alimentos que não existem na biblioteca do padrão, fatores de alimentos fora do
+cenário e quantidades de alimentos fora da tabela são **removidos com aviso**. Qualquer outro problema recusa o arquivo com o motivo.
+
+**Versionamento.** Um arquivo de versão **mais nova** que a do programa é recusado ("atualize o programa"). Para versões mais antigas
+existe a tabela `MIGRATIONS` (versão n para n + 1), vazia enquanto só existe a versão 1; uma mudança incompatível do formato soma a
+versão e acrescenta a migração.
+
+**API.** `POST /api/scenario/save` com `{ kind, data }` devolve `{ filename, mime, content }`; `POST /api/scenario/load` com
+`{ text }` devolve `{ kind, version, saved_at, data, warnings }`. Erros no formato da seção 11.3.
+
+**Efeito colateral.** Os fatores, o método e os níveis da sensibilidade passaram a ficar na memória da página (antes eram locais da
+tela e se perdiam ao trocar de página); continuam sem ir para o navegador (`dietopt.v1` só guarda a seleção e os parâmetros).
+
+**Não feito.** Histórico de cenários, salvamento automático e cenário do Exercício simples.
+
+**Aceite.** `tests/test_scenario_files.py`: ida e volta (idempotente), avisos de alimento removido, os dados inválidos de cada campo,
+arquivo inválido ou de versão mais nova, BOM e migração.
 
 ### A.8 Alterações previstas em outras partes deste documento (quando implementado)
 

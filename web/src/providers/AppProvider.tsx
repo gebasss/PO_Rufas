@@ -15,9 +15,11 @@ import {
 import { api } from '@/lib/api'
 import type {
   Defaults,
+  CowScenario,
   Feed,
   Selected,
   SensResult,
+  SensSetup,
   SimParams,
   SimResult,
   ToyBound,
@@ -56,6 +58,13 @@ interface AppContextValue {
   setSim: (value: SimResult | null) => void
   sens: SensResult | null
   setSens: (value: SensResult | null) => void
+  /** Fatores, método e níveis da sensibilidade; ficam aqui para sobreviver à navegação e irem no cenário salvo. */
+  sensSetup: SensSetup
+  setSensSetup: Dispatch<SetStateAction<SensSetup>>
+  /** Entradas da tela Vaca leiteira (e da sensibilidade) para salvar em arquivo. */
+  cowScenario: () => unknown
+  /** Aplica um cenário aberto de arquivo: troca alimentos, parâmetros e fatores e descarta os resultados. */
+  loadCowScenario: (scenario: CowScenario) => void
 
   toyFoods: ToyFood[]
   setToyFoods: (value: ToyFood[]) => void
@@ -79,6 +88,7 @@ export type ExerciseMode = 'simple' | 'module'
 const AppContext = createContext<AppContextValue | null>(null)
 
 const INITIAL_PARAMS: SimParams = { milkPrice: 0.45, years: 1, maxReduction: 5 }
+const INITIAL_SENS: SensSetup = { overrides: {}, method: 'grid', levels: 3 }
 
 const INITIAL_TOY_FOODS: ToyFood[] = [
   { name: 'Arroz', cost: 1.5, carb: 0.77, prot: 0.08 },
@@ -101,6 +111,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [params, setParamsState] = useState<SimParams>(INITIAL_PARAMS)
   const [sim, setSim] = useState<SimResult | null>(null)
   const [sens, setSens] = useState<SensResult | null>(null)
+  const [sensSetup, setSensSetup] = useState<SensSetup>(INITIAL_SENS)
   const [toyFoods, setToyFoods] = useState<ToyFood[]>(INITIAL_TOY_FOODS)
   const [toyBounds, setToyBounds] = useState<ToyBound[]>(INITIAL_TOY_BOUNDS)
   const [toyResult, setToyResult] = useState<ToyResult | null>(null)
@@ -206,6 +217,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [buildSelection, feeds, defaults]
   )
 
+  const cowScenario = useCallback(
+    () => ({
+      standard: 'NRC',
+      params,
+      feeds: Object.entries(selected).map(([id, feed]) => ({ id: Number(id), ...feed })),
+      sensitivity: { method: sensSetup.method, levels: sensSetup.levels, factors: sensSetup.overrides }
+    }),
+    [params, selected, sensSetup]
+  )
+
+  const loadCowScenario = useCallback((scenario: CowScenario) => {
+    setSelected(Object.fromEntries(scenario.feeds.map(({ id, ...feed }) => [id, feed])))
+    setParamsState(scenario.params)
+    setSensSetup(
+      scenario.sensitivity
+        ? { overrides: scenario.sensitivity.factors, method: scenario.sensitivity.method, levels: scenario.sensitivity.levels }
+        : INITIAL_SENS
+    )
+    setSim(null)
+    setSens(null)
+  }, [])
+
   const setParams = useCallback((patch: Partial<SimParams>) => setParamsState(p => ({ ...p, ...patch })), [])
 
   const value: AppContextValue = {
@@ -224,6 +257,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSim,
     sens,
     setSens,
+    sensSetup,
+    setSensSetup,
+    cowScenario,
+    loadCowScenario,
     toyFoods,
     setToyFoods,
     toyBounds,

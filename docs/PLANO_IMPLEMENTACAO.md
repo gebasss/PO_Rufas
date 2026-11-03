@@ -1,6 +1,6 @@
 # Plano de implementação: módulo "Exercício do quadro" ampliado e complementos
 
-**Versão 0.9 (03/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
+**Versão 0.10 (03/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
 comportamento do sistema; as regras estão nos documentos citados e este arquivo só as sequencia.
 
 | Documento | O que fornece ao plano |
@@ -28,7 +28,14 @@ comportamento do sistema; as regras estão nos documentos citados e este arquivo
 | E8a, E8b | **Feitas (03/11/2026)** | RF-27 (`ration_checks.py`, cartão Verificações) e RF-19 (`ration_balance.py`, cartão Balanço nutricional), na tela Vaca leiteira; o balanço vem da avaliação do próprio RuFaS (`avg_eval_results_for_LAC_COW`); 17 testes novos (132 no total) |
 | E8d | **Feita (03/11/2026)** | RF-22: `prices.py`, `POST /api/prices/import`, componente `PriceImport` nas telas Vaca leiteira e Avaliar dietas; 19 testes novos (151 no total) |
 | E8e | **Feita (03/11/2026)** | RF-20: `exports.py` (CSV e relatório HTML), `POST /api/export/<csv\|report>/<tela>`, `ExportButtons` nas quatro telas; 8 testes novos (159 no total) |
-| E8c, E8f a E8h | Não iniciadas | |
+| E8f | **Feita (03/11/2026)** | RF-21: `scenario_files.py`, `POST /api/scenario/save` e `/load`, `ScenarioFile` nas telas Vaca leiteira e Avaliar dietas; 29 testes novos (188 no total) |
+| E8c, E8g, E8h | Não iniciadas | |
+
+Achados do E8f: (i) o arquivo guarda só entradas e é validado na ida e na volta pelo servidor, então um arquivo salvo sempre abre e um
+arquivo feito à mão é conferido; (ii) a configuração da sensibilidade era estado local da tela e se perdia ao trocar de página:
+foi para a memória da página (`AppProvider`) e entra no cenário da vaca; (iii) o formato é versionado desde a versão 1, com a
+tabela de migrações pronta e arquivos de versão mais nova recusados; (iv) alimentos que a biblioteca do padrão não tem saem com
+aviso em vez de derrubar o arquivo.
 
 Achados do E8e: (i) o servidor monta os arquivos a partir do JSON que a tela já tem, o que os deixa testáveis sem navegador e sem
 gravar nada em disco; (ii) a simulação não devolvia os limites por alimento e passou a devolvê-los (`limits`) para o relatório;
