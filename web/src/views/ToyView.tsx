@@ -6,7 +6,7 @@ import { PlayIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 import { toast } from 'sonner'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 
-import { finite, heat, KpiCard, NumberInput, PageHeader } from '@/components/shared'
+import { finite, heat, KpiCard, NumberInput } from '@/components/shared'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -124,11 +124,6 @@ export default function ToyView() {
 
   return (
     <>
-      <PageHeader
-        title='Exercício do quadro'
-        description='Dieta de custo mínimo respeitando o mínimo e o máximo diário de cada nutriente. É a modelagem de Pesquisa Operacional que dá base ao restante do sistema.'
-      />
-
       <div className='grid gap-6 xl:grid-cols-2'>
         <Card>
           <CardHeader>
