@@ -103,7 +103,9 @@ def simulate(scenario: Scenario) -> tuple[bool, float, SimulationResult | None, 
     path = CACHE_DIR / f"{cache_key(scenario)}.json"
     if path.exists():
         with open(path, encoding="utf-8") as handle:
-            return True, 0.0, result_from_dict(json.load(handle)), "cache"
+            cached = result_from_dict(json.load(handle))
+        if cached.evaluations:  # resultados guardados antes do balanço (RF-19) não o têm: a simulação roda de novo
+            return True, 0.0, cached, "cache"
     run: RunResult = run_scenario(scenario)
     if not run.ok:
         return False, run.seconds, None, run.stdout_tail[-400:]

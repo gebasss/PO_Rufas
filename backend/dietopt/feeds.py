@@ -30,7 +30,7 @@ class FeedInfo:
     calcium: float
     phosphorus: float
     default_price: float | None  # US$/kg MS (ilustrativo)
-    starch: float | None = None  # % da MS (só na biblioteca NASEM)
+    starch: float | None = None  # % da MS (as duas bibliotecas têm; só o NASEM o envia à interface)
     de_base: float | None = None  # Mcal/kg MS, coluna ``DE_Base`` (só na biblioteca NASEM)
 
     @property
@@ -91,7 +91,7 @@ def load_feed_library(standard: str = "NRC") -> list[FeedInfo]:
                     calcium=float(row["calcium"]),
                     phosphorus=float(row["phosphorus"]),
                     default_price=DEFAULT_PRICES.get(feed_id),
-                    starch=float(row["starch"]) if is_nasem else None,
+                    starch=float(row["starch"]) if row.get("starch") else None,
                     de_base=float(row["DE_Base"]) if is_nasem else None,
                 )
             )

@@ -27,6 +27,9 @@ import { nf, shortName, usd } from '@/lib/format'
 import type { SimResult } from '@/lib/types'
 import { useApp } from '@/providers/AppProvider'
 
+import BalanceCard from './cow/BalanceCard'
+import ChecksCard, { ChecksAlert } from './cow/ChecksCard'
+
 const YEARS = [
   { value: '1', label: '1 ano' },
   { value: '2', label: '2 anos' }
@@ -251,6 +254,15 @@ function Results({ sim }: { sim: SimResult }) {
           </AlertDescription>
         </Alert>
       )}
+
+      {sim.checks && sim.checks.length > 0 && (
+        <>
+          <ChecksAlert checks={sim.checks} />
+          <ChecksCard checks={sim.checks} />
+        </>
+      )}
+
+      {sim.balance && sim.balance.length > 0 && <BalanceCard rows={sim.balance} />}
 
       <Card>
         <CardHeader>

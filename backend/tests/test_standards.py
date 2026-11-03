@@ -28,7 +28,7 @@ def test_bibliotecas_tem_os_alimentos_do_conjunto_base_e_so_o_nrc_tem_o_trocado(
 def test_biblioteca_nasem_traz_amido_e_ed_base_e_a_nrc_nao():
     nasem, nrc = feed_library("NASEM"), feed_library("NRC")
     assert nasem[44].starch and nasem[44].de_base
-    assert nrc[44].starch is None and nrc[44].de_base is None
+    assert nrc[44].starch is not None and nrc[44].de_base is None  # o amido existe nas duas bibliotecas (RF-27); a ED base, só no NASEM
     assert all(f.kind not in {"Milk", "Starter"} for f in nasem.values())
 
 
