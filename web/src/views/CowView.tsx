@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 
-import { PlayIcon, WheatIcon } from 'lucide-react'
+import { CoinsIcon, DropletsIcon, MilkIcon, PlayIcon, TrendingUpIcon, WalletIcon, WheatIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 
@@ -62,7 +62,7 @@ export function simulationBody(
 }
 
 export default function CowView() {
-  const { connection, selected, params, setParams, sim, setSim, cowScenario, loadCowScenario } = useApp()
+  const { connection, selected, params, setParams, sim, setSim, cowScenario, loadCowScenario, trackTask } = useApp()
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState({ done: 0, total: 0, status: 'queued' })
 
@@ -76,16 +76,20 @@ export default function CowView() {
     setRunning(true)
     setProgress({ done: 0, total: 0, status: 'queued' })
 
+    const task = trackTask('Simulação do RuFaS')
+
     try {
-      const result = await runJob<SimResult>('simulate', simulationBody(selected, params), (done, total, status) =>
+      const result = await runJob<SimResult>('simulate', simulationBody(selected, params), (done, total, status) => {
         setProgress({ done, total, status })
-      )
+        task.update(done, total)
+      })
 
       setSim(result)
       toast.success('Simulação concluída.')
     } catch (error) {
       toast.error(error instanceof Error ? error.message.split('\n')[0] : 'Falha na simulação')
     } finally {
+      task.end()
       setRunning(false)
     }
   }
@@ -194,6 +198,19 @@ function Results({ sim }: { sim: SimResult }) {
 
   const avgCows = sim.daily.milking_cows.reduce((a, b) => a + b, 0) / Math.max(sim.daily.milking_cows.length, 1)
   const milkPerCow = s.leite_kg / (avgCows * Math.max(sim.daily.day.length, 1))
+  // Séries da própria simulação para os mini gráficos dos cartões (a cada 5 dias, para ficarem leves).
+  const trends = useMemo(() => {
+    const every = (values: number[], step = 5) => values.filter((_, i) => i % step === 0 && Number.isFinite(values[i]))
+    const { milk_kg: milk, milking_cows: cows } = sim.daily
+
+    return {
+      milk: every(milk),
+      revenue: every(milk.map(kg => kg * s.milk_price)),
+      milkPerCow: every(milk.map((kg, i) => kg / Math.max(cows[i], 1))),
+      cowCost: sim.intervals.cost_per_cow_day,
+      herdCost: sim.intervals.cost_per_cow_day.map((cost, i) => cost * (sim.intervals.cows[i] ?? 0))
+    }
+  }, [sim, s.milk_price])
 
   const rationConfig = Object.fromEntries(
     feedIds.map((id, i) => [`f${id}`, { label: shortName(labelById[id], 30), color: seriesColor(i) }])
@@ -235,12 +252,12 @@ function Results({ sim }: { sim: SimResult }) {
       <ExportButtons screen='simulation' data={sim} meta={{ standard: 'NRC 2001' }} />
 
       <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'>
-        <KpiCard tone='primary' label='Margem sobre custo de alimentação' value={usd(s.margem)} />
-        <KpiCard label='Receita do leite' value={usd(s.receita)} />
-        <KpiCard label='Custo de alimentação (rebanho)' value={usd(s.custo_alimentacao)} />
-        <KpiCard label='Custo da ração, vaca em lactação' value={`${usd(s.custo_vaca_dia, 2)}/dia`} />
-        <KpiCard label='Leite por vaca' value={`${nf(milkPerCow, 1)} kg/dia`} />
-        <KpiCard label='Leite total' value={`${nf(s.leite_kg / 1000, 0)} t`} />
+        <KpiCard tone='primary' icon={TrendingUpIcon} label='Margem sobre custo de alimentação' value={usd(s.margem)} />
+        <KpiCard icon={WalletIcon} color='info' label='Receita do leite' value={usd(s.receita)} trend={trends.revenue} />
+        <KpiCard icon={WheatIcon} color='violet' label='Custo de alimentação (rebanho)' value={usd(s.custo_alimentacao)} trend={trends.herdCost} />
+        <KpiCard icon={CoinsIcon} color='warning' label='Custo da ração, vaca em lactação' value={`${usd(s.custo_vaca_dia, 2)}/dia`} trend={trends.cowCost} />
+        <KpiCard icon={MilkIcon} color='info' label='Leite por vaca' value={`${nf(milkPerCow, 1)} kg/dia`} trend={trends.milkPerCow} />
+        <KpiCard icon={DropletsIcon} label='Leite total' value={`${nf(s.leite_kg / 1000, 0)} t`} trend={trends.milk} />
         {s.reducao_leite > 0.005 && (
           <KpiCard
             tone='warning'

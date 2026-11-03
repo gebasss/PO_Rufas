@@ -83,7 +83,7 @@ export default function CurveView() {
         title='Curva de lactação'
         description='Curva de Wood por paridade, y(t) = l · t^m · e^(−n·t). Depois do PEV a vaca pode ser inseminada; se emprenhar logo, o parto seguinte ocorre cerca de PEV + gestação dias depois do parto atual.'
         actions={
-          <Badge variant='outline' className={fromRufas ? 'text-primary border-primary/40' : undefined}>
+          <Badge variant='outline' className={fromRufas ? 'text-brand border-brand/40' : undefined}>
             {fromRufas ? 'parâmetros calibrados pela simulação RuFaS' : 'parâmetros de referência'}
           </Badge>
         }
@@ -136,11 +136,11 @@ export default function CurveView() {
               <ReferenceArea
                 x1={pevDays}
                 x2={Math.min(calving, maxDay)}
-                fill='var(--primary)'
+                fill='var(--brand)'
                 fillOpacity={0.07}
                 label={{ value: `gestação ${nf(finite(gestation), 0)} d`, position: 'insideBottom', fontSize: 12, fill: 'var(--primary)' }}
               />
-              <ReferenceLine x={pevDays} stroke='var(--primary)' strokeDasharray='5 4' label={{ value: `PEV (${nf(pevDays, 0)} d)`, position: 'top', fontSize: 12, fill: 'var(--primary)' }} />
+              <ReferenceLine x={pevDays} stroke='var(--brand)' strokeDasharray='5 4' label={{ value: `PEV (${nf(pevDays, 0)} d)`, position: 'top', fontSize: 12, fill: 'var(--primary)' }} />
               <ReferenceLine x={dryDay} stroke='var(--chart-2)' strokeDasharray='5 4' label={{ value: `secagem (${nf(dryDay, 0)} d)`, position: 'top', fontSize: 12, fill: 'var(--chart-2)' }} />
               <ReferenceLine x={calving} stroke='var(--chart-4)' strokeDasharray='5 4' label={{ value: `parto (${nf(calving, 0)} d)`, position: 'top', fontSize: 12, fill: 'var(--chart-4)' }} />
               {parities.map(p => (

@@ -47,7 +47,7 @@ const messageOf = (error: unknown, fallback: string) =>
   (error instanceof Error ? error.message : fallback).split('\n')[0]
 
 export default function ModuleView() {
-  const { connection, defaults: appDefaults, moduleState: state, setModuleState: setState } = useApp()
+  const { connection, defaults: appDefaults, moduleState: state, setModuleState: setState, trackTask } = useApp()
   const online = connection === 'online'
   const { feeds, byId, error: libraryError } = useFeedLibrary(state.standard, online)
 
@@ -362,11 +362,16 @@ export default function ModuleView() {
     setOptimizeError(null)
     setOptimizeProgress(null)
 
+    const task = trackTask('Dieta ótima (LP)')
+
     try {
       const optimal = await runJob<ModuleOptimization>(
         'optimize',
         optimizePayload,
-        (done, total) => setOptimizeProgress({ done, total }),
+        (done, total) => {
+          setOptimizeProgress({ done, total })
+          task.update(done, total)
+        },
         { onStart: id => (optimizeJob.current = id), intervalMs: 700 }
       )
 
@@ -374,6 +379,7 @@ export default function ModuleView() {
     } catch (e) {
       if (!(e instanceof JobCancelledError)) setOptimizeError(messageOf(e, 'Falha ao calcular a dieta ótima'))
     } finally {
+      task.end()
       optimizeJob.current = null
       setOptimizing(false)
     }

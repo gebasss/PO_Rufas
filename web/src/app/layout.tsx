@@ -28,7 +28,7 @@ const RootLayout = ({ children }: Readonly<{ children: ReactNode }>) => {
       suppressHydrationWarning
     >
       <body className='flex min-h-full w-full flex-auto flex-col font-sans'>
-        <ThemeProvider attribute='class' defaultTheme='system' enableSystem>
+        <ThemeProvider attribute='class' defaultTheme='dark' enableSystem>
           <TooltipProvider>
             <SidebarProvider defaultOpen>
               <AppProvider>

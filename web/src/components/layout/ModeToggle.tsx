@@ -12,7 +12,7 @@ const ModeToggle = () => {
     <Button
       variant='ghost'
       size='icon'
-      className='relative'
+      className='relative rounded-full'
       onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
     >
       <MoonStarIcon className='scale-100 dark:scale-0' />

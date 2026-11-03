@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from 'recharts'
 
 import ExportButtons from '@/components/ExportButtons'
+import { HighlightBars } from '@/components/charts'
 import { feedTitle } from '@/components/FeedPicker'
 import { finite, heat, JobProgress, NumberInput, PageHeader } from '@/components/shared'
 import { Button } from '@/components/ui/button'
@@ -32,10 +33,9 @@ const MILK = 'milk_price'
 const SECONDS_PER_SIMULATION = 17
 
 const effectsConfig = { spearman: { label: 'Spearman', color: 'var(--chart-1)' } } satisfies ChartConfig
-const marginConfig = { margem: { label: 'Margem (US$)', color: 'var(--chart-1)' } } satisfies ChartConfig
 
 export default function SensitivityView() {
-  const { connection, selected, feedById, params, sens, setSens, sensSetup, setSensSetup } = useApp()
+  const { connection, selected, feedById, params, sens, setSens, sensSetup, setSensSetup, trackTask } = useApp()
   const { overrides, method, levels } = sensSetup
   const setOverrides = (change: (previous: Record<string, FactorState>) => Record<string, FactorState>) =>
     setSensSetup(s => ({ ...s, overrides: change(s.overrides) }))
@@ -77,11 +77,16 @@ export default function SensitivityView() {
     setRunning(true)
     setProgress({ done: 0, total: 0, status: 'queued' })
 
+    const task = trackTask('Análise de sensibilidade')
+
     try {
       const result = await runJob<SensResult>(
         'sensitivity',
         { ...simulationBody(selected, params), factors, method, n },
-        (done, total, status) => setProgress({ done, total, status })
+        (done, total, status) => {
+          setProgress({ done, total, status })
+          task.update(done, total)
+        }
       )
 
       setSens(result)
@@ -89,6 +94,7 @@ export default function SensitivityView() {
     } catch (error) {
       toast.error(error instanceof Error ? error.message.split('\n')[0] : 'Falha na análise')
     } finally {
+      task.end()
       setRunning(false)
     }
   }
@@ -106,7 +112,7 @@ export default function SensitivityView() {
             <CardTitle>Fatores</CardTitle>
             <CardDescription>
               Usa os alimentos escolhidos na aba{' '}
-              <Link href='/vaca' className='text-primary underline-offset-4 hover:underline'>
+              <Link href='/vaca' className='text-brand underline-offset-4 hover:underline'>
                 Vaca leiteira
               </Link>
               . Marque o que variar e informe a faixa.
@@ -196,6 +202,7 @@ function SensResults({ result }: { result: SensResult }) {
     .filter(e => e.spearman !== null)
     .map(e => ({ fator: shortName(e.fator, 26), spearman: e.spearman as number }))
   const marginData = result.rows.filter(r => r.Res !== null).map(r => ({ cenario: r.cenario, margem: r.Res as number }))
+  const best = marginData.reduce<(typeof marginData)[number] | null>((a, b) => (a === null || b.margem > a.margem ? b : a), null)
 
   return (
     <div className='min-w-0 space-y-6'>
@@ -286,18 +293,15 @@ function SensResults({ result }: { result: SensResult }) {
         <Card>
           <CardHeader>
             <CardTitle>Margem por cenário</CardTitle>
-            <CardDescription>US$ sobre o custo de alimentação.</CardDescription>
+            <CardDescription>US$ sobre o custo de alimentação; o melhor cenário em verde vivo.</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={marginConfig} className='aspect-auto h-56 w-full'>
-              <BarChart data={marginData}>
-                <CartesianGrid vertical={false} />
-                <XAxis dataKey='cenario' tickLine={false} axisLine={false} />
-                <YAxis tickLine={false} axisLine={false} width={56} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey='margem' fill='var(--color-margem)' radius={4} />
-              </BarChart>
-            </ChartContainer>
+            <HighlightBars
+              data={marginData.map(d => ({ name: d.cenario, value: d.margem }))}
+              highlight={best?.cenario}
+              format={value => usd(value, 0)}
+              height={240}
+            />
           </CardContent>
         </Card>
       </div>
