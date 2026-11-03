@@ -2,42 +2,27 @@
 
 import { useMemo, useState } from 'react'
 
-import { CoinsIcon, DropletsIcon, MilkIcon, PlayIcon, TrendingUpIcon, WalletIcon, WheatIcon } from 'lucide-react'
+import { AlertTriangleIcon, MilkIcon } from 'lucide-react'
 import { toast } from 'sonner'
-import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 
-import ExportButtons from '@/components/ExportButtons'
-import ScenarioFile from '@/components/ScenarioFile'
+import { EmptyState, ResultsSkeleton } from '@/components/EmptyState'
 import FeedPicker from '@/components/FeedPicker'
-import { finite, JobProgress, KpiCard, NumberInput, PageHeader } from '@/components/shared'
+import RunButton, { type RunState } from '@/components/RunButton'
+import ScenarioFile from '@/components/ScenarioFile'
+import { finite, NumberInput, PageHeader } from '@/components/shared'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig
-} from '@/components/ui/chart'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { runJob } from '@/lib/api'
-import { nf, shortName, usd } from '@/lib/format'
 import type { CowScenario, SimResult } from '@/lib/types'
 import { useApp } from '@/providers/AppProvider'
-
-import BalanceCard from './cow/BalanceCard'
-import ChecksCard, { ChecksAlert } from './cow/ChecksCard'
+import Results from '@/views/cow/Results'
 
 const YEARS = [
   { value: '1', label: '1 ano' },
   { value: '2', label: '2 anos' }
 ]
-
-const seriesColor = (index: number) => `var(--chart-${(index % 8) + 1})`
 
 export function simulationBody(
   selected: ReturnType<typeof useApp>['selected'],
@@ -61,10 +46,19 @@ export function simulationBody(
   }
 }
 
+const messageOf = (error: unknown) => (error instanceof Error ? error.message : 'Falha na simulação').split('\n')[0]
+const showResults = () => document.getElementById('resultados')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
 export default function CowView() {
-  const { connection, selected, params, setParams, sim, setSim, cowScenario, loadCowScenario, trackTask } = useApp()
+  const { connection, selected, params, setParams, sim, setSim, simKey, setSimKey, cowScenario, loadCowScenario, trackTask } =
+    useApp()
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState({ done: 0, total: 0, status: 'queued' })
+  const [error, setError] = useState<string | null>(null)
+
+  const bodyKey = useMemo(() => JSON.stringify(simulationBody(selected, params)), [selected, params])
+  const stale = sim !== null && simKey !== null && simKey !== bodyKey
+  const state: RunState = running ? 'running' : error ? 'error' : sim && !stale ? 'done' : 'idle'
 
   const run = async () => {
     if (Object.keys(selected).length < 3) {
@@ -74,6 +68,7 @@ export default function CowView() {
     }
 
     setRunning(true)
+    setError(null)
     setProgress({ done: 0, total: 0, status: 'queued' })
 
     const task = trackTask('Simulação do RuFaS')
@@ -85,14 +80,29 @@ export default function CowView() {
       })
 
       setSim(result)
+      setSimKey(bodyKey)
       toast.success('Simulação concluída.')
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message.split('\n')[0] : 'Falha na simulação')
+    } catch (e) {
+      setError(messageOf(e))
+      toast.error(messageOf(e))
     } finally {
       task.end()
       setRunning(false)
     }
   }
+
+  const runButton = (
+    <RunButton
+      state={state}
+      progress={progress}
+      label='Executar simulação'
+      unit='simulações do RuFaS'
+      error={error}
+      disabled={connection !== 'online'}
+      onRun={run}
+      onView={showResults}
+    />
+  )
 
   return (
     <>
@@ -101,18 +111,17 @@ export default function CowView() {
         description='Escolha os alimentos, informe preços e limites e simule com o RuFaS (padrão NRC 2001). O otimizador do RuFaS formula a ração de custo mínimo e o sistema calcula custo, leite e margem.'
       />
 
-      <div className='grid items-start gap-6 xl:grid-cols-[23rem_minmax(0,1fr)]'>
-        <Card>
+      <div className='grid items-start gap-6 max-xl:pb-20 xl:grid-cols-[24rem_minmax(0,1fr)]'>
+        <Card className='xl:sticky xl:top-24 xl:max-h-[calc(100dvh-7rem)]'>
           <CardHeader>
-            <CardTitle>Cenário</CardTitle>
+            <CardTitle>Parâmetros</CardTitle>
             <CardDescription>Preços em US$/kg de matéria seca; limites em kg de MS por vaca por dia.</CardDescription>
           </CardHeader>
-          <CardContent className='space-y-5'>
+          <CardContent className='min-h-0 flex-1 space-y-5 overflow-y-auto'>
             <div className='grid grid-cols-2 gap-3'>
               <div className='space-y-1.5'>
                 <Label>Preço do leite (US$/kg)</Label>
                 <NumberInput
-                  className='h-9'
                   value={params.milkPrice}
                   onChange={v => setParams({ milkPrice: v })}
                   aria-label='Preço do leite em dólares por quilo'
@@ -141,7 +150,6 @@ export default function CowView() {
             <div className='space-y-1.5'>
               <Label>Redução máxima de leite tolerada (kg/vaca/dia)</Label>
               <NumberInput
-                className='h-9'
                 step={0.25}
                 min={0}
                 value={params.maxReduction}
@@ -157,267 +165,42 @@ export default function CowView() {
             <ScenarioFile<CowScenario> kind='cow' getData={cowScenario} onLoad={loadCowScenario} />
 
             <FeedPicker />
-
-            <Button className='w-full' onClick={run} disabled={running || connection !== 'online'}>
-              <PlayIcon /> {running ? 'Simulando…' : 'Simular com o RuFaS'}
-            </Button>
-            {running && <JobProgress {...progress} />}
           </CardContent>
+          <CardFooter className='border-t pt-(--card-spacing) max-xl:hidden'>
+            <div className='w-full'>{runButton}</div>
+          </CardFooter>
         </Card>
 
-        {sim ? (
-          <Results sim={sim} />
-        ) : (
-          <Card>
-            <CardContent className='text-muted-foreground flex flex-col items-center gap-3 py-16 text-center text-sm'>
-              <WheatIcon className='size-10 opacity-40' />
-              <p className='max-w-sm text-balance'>
-                Escolha os alimentos e clique em “Simular com o RuFaS”. Cada simulação leva de 30 a 60 segundos.
-              </p>
-            </CardContent>
-          </Card>
-        )}
+        <div className='min-w-0 space-y-6'>
+          {state === 'error' && (
+            <Alert variant='destructive'>
+              <AlertTriangleIcon />
+              <AlertTitle>A simulação não terminou</AlertTitle>
+              <AlertDescription>{error} Confira os alimentos, os limites e a conexão com o servidor.</AlertDescription>
+            </Alert>
+          )}
+
+          {sim ? (
+            <Results sim={sim} stale={stale} />
+          ) : running ? (
+            <ResultsSkeleton />
+          ) : (
+            <EmptyState
+              icon={MilkIcon}
+              title='Nenhuma simulação ainda'
+              steps={[
+                'Escolha os alimentos (ou use o Conjunto base) e ajuste preços e limites.',
+                'Clique em Executar simulação: cada uma leva de 30 a 60 segundos.',
+                'Analise os indicadores, a ração e a nutrição, e exporte o relatório.'
+              ]}
+            />
+          )}
+        </div>
+      </div>
+
+      <div className='bg-card/90 border-border fixed inset-x-3 bottom-3 z-30 rounded-2xl border p-2 backdrop-blur-xl xl:hidden'>
+        {runButton}
       </div>
     </>
-  )
-}
-
-function Results({ sim }: { sim: SimResult }) {
-  const s = sim.summary
-  const feedIds = useMemo(
-    () =>
-      sim.feeds
-        .map(f => f.id)
-        .filter(id => sim.intervals.ration.some(r => (r[String(id)] ?? 0) > 1e-3))
-        // o ingrediente principal fica com a cor primária
-        .sort((a, b) => (sim.average_ration[String(b)] ?? 0) - (sim.average_ration[String(a)] ?? 0)),
-    [sim]
-  )
-  const labelById = useMemo(() => Object.fromEntries(sim.feeds.map(f => [f.id, f.label])), [sim])
-  const priceById = useMemo(() => Object.fromEntries(sim.feeds.map(f => [f.id, f.price ?? 0])), [sim])
-
-  const avgCows = sim.daily.milking_cows.reduce((a, b) => a + b, 0) / Math.max(sim.daily.milking_cows.length, 1)
-  const milkPerCow = s.leite_kg / (avgCows * Math.max(sim.daily.day.length, 1))
-  // Séries da própria simulação para os mini gráficos dos cartões (a cada 5 dias, para ficarem leves).
-  const trends = useMemo(() => {
-    const every = (values: number[], step = 5) => values.filter((_, i) => i % step === 0 && Number.isFinite(values[i]))
-    const { milk_kg: milk, milking_cows: cows } = sim.daily
-
-    return {
-      milk: every(milk),
-      revenue: every(milk.map(kg => kg * s.milk_price)),
-      milkPerCow: every(milk.map((kg, i) => kg / Math.max(cows[i], 1))),
-      cowCost: sim.intervals.cost_per_cow_day,
-      herdCost: sim.intervals.cost_per_cow_day.map((cost, i) => cost * (sim.intervals.cows[i] ?? 0))
-    }
-  }, [sim, s.milk_price])
-
-  const rationConfig = Object.fromEntries(
-    feedIds.map((id, i) => [`f${id}`, { label: shortName(labelById[id], 30), color: seriesColor(i) }])
-  ) satisfies ChartConfig
-  const rationData = sim.intervals.day.map((day, i) => ({
-    day: `dia ${day}`,
-    ...Object.fromEntries(feedIds.map(id => [`f${id}`, sim.intervals.ration[i][String(id)] ?? 0]))
-  }))
-
-  const requirementData = sim.intervals.day.map((day, i) => ({
-    day: `dia ${day}`,
-    nel: sim.intervals.requirements[i]?.NEl_requirement,
-    dmi: sim.intervals.requirements[i]?.DMIest_requirement,
-    mp: sim.intervals.requirements[i]?.MP_requirement
-  }))
-  const requirementConfig = {
-    nel: { label: 'NEL exigida (Mcal/dia)', color: 'var(--chart-1)' },
-    dmi: { label: 'DMI estimado (kg/dia)', color: 'var(--chart-2)' },
-    mp: { label: 'Proteína metabolizável (g/dia)', color: 'var(--chart-3)' }
-  } satisfies ChartConfig
-
-  const milkData = sim.daily.day.map((day, i) => ({
-    day,
-    milk: sim.daily.milk_kg[i],
-    cows: sim.daily.milking_cows[i]
-  }))
-  const milkConfig = {
-    milk: { label: 'Leite do rebanho (kg/dia)', color: 'var(--chart-1)' },
-    cows: { label: 'Vacas em lactação', color: 'var(--chart-4)' }
-  } satisfies ChartConfig
-
-  const total = Object.values(sim.average_ration).reduce((a, b) => a + b, 0)
-  const tableRows = Object.entries(sim.average_ration)
-    .filter(([, kg]) => kg > 1e-3)
-    .sort((a, b) => b[1] - a[1])
-
-  return (
-    <div className='min-w-0 space-y-6'>
-      <ExportButtons screen='simulation' data={sim} meta={{ standard: 'NRC 2001' }} />
-
-      <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'>
-        <KpiCard tone='primary' icon={TrendingUpIcon} label='Margem sobre custo de alimentação' value={usd(s.margem)} />
-        <KpiCard icon={WalletIcon} color='info' label='Receita do leite' value={usd(s.receita)} trend={trends.revenue} />
-        <KpiCard icon={WheatIcon} color='violet' label='Custo de alimentação (rebanho)' value={usd(s.custo_alimentacao)} trend={trends.herdCost} />
-        <KpiCard icon={CoinsIcon} color='warning' label='Custo da ração, vaca em lactação' value={`${usd(s.custo_vaca_dia, 2)}/dia`} trend={trends.cowCost} />
-        <KpiCard icon={MilkIcon} color='info' label='Leite por vaca' value={`${nf(milkPerCow, 1)} kg/dia`} trend={trends.milkPerCow} />
-        <KpiCard icon={DropletsIcon} label='Leite total' value={`${nf(s.leite_kg / 1000, 0)} t`} trend={trends.milk} />
-        {s.reducao_leite > 0.005 && (
-          <KpiCard
-            tone='warning'
-            label='Leite perdido por ração insuficiente'
-            value={`−${nf(s.reducao_leite, 2)} kg/vaca/dia`}
-            hint='O RuFaS reduziu o leite para fechar a ração.'
-          />
-        )}
-      </div>
-
-      {s.reducao_leite > 0.005 && (
-        <Alert>
-          <AlertTitle>A ração não atendeu a todas as exigências</AlertTitle>
-          <AlertDescription>
-            Para continuar a simulação, o RuFaS reduziu a produção de leite em média {nf(s.reducao_leite, 2)} kg por
-            vaca por dia (limite configurado: {nf(s.max_reducao, 2)}). Revise os alimentos, os preços e os limites.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {sim.checks && sim.checks.length > 0 && (
-        <>
-          <ChecksAlert checks={sim.checks} />
-          <ChecksCard checks={sim.checks} />
-        </>
-      )}
-
-      {sim.balance && sim.balance.length > 0 && <BalanceCard rows={sim.balance} />}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Ração das vacas em lactação</CardTitle>
-          <CardDescription>
-            kg de matéria seca por vaca por dia, a cada 30 dias de simulação (formulada pelo otimizador do RuFaS).
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ChartContainer config={rationConfig} className='aspect-auto h-80 w-full'>
-            <BarChart data={rationData}>
-              <CartesianGrid vertical={false} />
-              <XAxis dataKey='day' tickLine={false} axisLine={false} interval={0} fontSize={11} />
-              <YAxis tickLine={false} axisLine={false} width={36} />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <ChartLegend content={<ChartLegendContent />} />
-              {feedIds.map(id => (
-                <Bar key={id} dataKey={`f${id}`} stackId='ration' fill={`var(--color-f${id})`} />
-              ))}
-            </BarChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
-
-      <div className='grid gap-6 2xl:grid-cols-2'>
-        <Card>
-          <CardHeader>
-            <CardTitle>Composição média</CardTitle>
-            <CardDescription>Média dos intervalos de 30 dias.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Alimento</TableHead>
-                  <TableHead className='text-right'>kg MS/dia</TableHead>
-                  <TableHead className='text-right'>% MS</TableHead>
-                  <TableHead className='text-right'>US$/dia</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tableRows.map(([id, kg]) => (
-                  <TableRow key={id}>
-                    <TableCell className='max-w-56 truncate' title={labelById[Number(id)]}>
-                      <span
-                        className='mr-2 inline-block size-2.5 rounded-sm align-middle'
-                        style={{ backgroundColor: seriesColor(Math.max(feedIds.indexOf(Number(id)), 0)) }}
-                      />
-                      {shortName(labelById[Number(id)] ?? id, 34)}
-                    </TableCell>
-                    <TableCell className='text-right tabular-nums'>{nf(kg, 2)}</TableCell>
-                    <TableCell className='text-right tabular-nums'>{nf((100 * kg) / total, 1)}%</TableCell>
-                    <TableCell className='text-right tabular-nums'>{nf(kg * (priceById[Number(id)] ?? 0), 2)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-              <TableFooter>
-                <TableRow>
-                  <TableCell className='font-semibold'>Total</TableCell>
-                  <TableCell className='text-right font-semibold tabular-nums'>{nf(total, 2)}</TableCell>
-                  <TableCell className='text-right tabular-nums'>100%</TableCell>
-                  <TableCell className='text-right font-semibold tabular-nums'>{nf(s.custo_vaca_dia, 2)}</TableCell>
-                </TableRow>
-              </TableFooter>
-            </Table>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Exigências (NRC 2001)</CardTitle>
-            <CardDescription>Energia e consumo (eixo esquerdo) e proteína metabolizável (direito).</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={requirementConfig} className='aspect-auto h-72 w-full'>
-              <LineChart data={requirementData}>
-                <CartesianGrid vertical={false} />
-                <XAxis dataKey='day' tickLine={false} axisLine={false} interval={1} fontSize={11} />
-                <YAxis yAxisId='left' tickLine={false} axisLine={false} width={36} domain={['auto', 'auto']} />
-                <YAxis
-                  yAxisId='right'
-                  orientation='right'
-                  tickLine={false}
-                  axisLine={false}
-                  width={44}
-                  domain={['auto', 'auto']}
-                />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <ChartLegend content={<ChartLegendContent />} />
-                <Line yAxisId='left' dataKey='nel' stroke='var(--color-nel)' strokeWidth={2} dot={false} />
-                <Line yAxisId='left' dataKey='dmi' stroke='var(--color-dmi)' strokeWidth={2} dot={false} />
-                <Line yAxisId='right' dataKey='mp' stroke='var(--color-mp)' strokeWidth={2} dot={false} />
-              </LineChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Leite do rebanho</CardTitle>
-          <CardDescription>Produção diária e número de vacas em lactação.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ChartContainer config={milkConfig} className='aspect-auto h-64 w-full'>
-            <LineChart data={milkData}>
-              <CartesianGrid vertical={false} />
-              <XAxis dataKey='day' tickLine={false} axisLine={false} minTickGap={32} />
-              <YAxis yAxisId='left' tickLine={false} axisLine={false} width={44} domain={['auto', 'auto']} />
-              <YAxis
-                yAxisId='right'
-                orientation='right'
-                tickLine={false}
-                axisLine={false}
-                width={36}
-                domain={['auto', 'auto']}
-              />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <ChartLegend content={<ChartLegendContent />} />
-              <Line yAxisId='left' dataKey='milk' stroke='var(--color-milk)' strokeWidth={2} dot={false} />
-              <Line
-                yAxisId='right'
-                dataKey='cows'
-                stroke='var(--color-cows)'
-                strokeWidth={1.5}
-                strokeDasharray='4 3'
-                dot={false}
-              />
-            </LineChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
-    </div>
   )
 }

@@ -1,7 +1,7 @@
 # Sistema de design e roteiro da repaginação
 
-**Versão 0.1 (03/11/2026).** Define a linguagem visual do sistema (tokens, componentes, gráficos), registra as decisões de
-produto da repaginação e o roteiro por etapas. A etapa 1 (tokens, estrutura e componentes-base) está implementada; as demais
+**Versão 0.2 (03/11/2026).** Define a linguagem visual do sistema (tokens, componentes, gráficos), registra as decisões de
+produto da repaginação e o roteiro por etapas. As etapas D1 (tokens, estrutura e componentes-base) e D2 (tela Vaca leiteira) estão implementadas; as demais
 estão descritas na seção 7. Código: `web/src/app/globals.css`, `web/src/components/`. Complementa o `DESIGN.md` (descrição detalhada do que existe).
 
 ## 1. Princípios
@@ -41,7 +41,13 @@ estão descritas na seção 7. Código: `web/src/app/globals.css`, `web/src/comp
 | Pill (`ui/badge`) | `secondary` = esmeralda a 12% (atende, viável); `destructive` = vermelho a 12%; `warning` = âmbar a 12%; `neutral` = cinza |
 | Tabela (`ui/table`) | cabeçalho de 12 px em caixa-alta e cinza, linhas de ~52 px, hover a 3%, linha selecionada em esmeralda a 10% |
 | `IconTile` e `DeltaPill` (`components/shared`) | ícone em quadrado com a cor a 12%; variação em pill, verde quando melhora e vermelho quando piora (`better` diz se subir é bom) |
-| `KpiCard` | ícone, valor grande, delta, dica e mini gráfico de tendência (`Sparkline`) |
+| `KpiCard` | ícone, valor grande, delta, dica e mini gráfico de tendência (`Sparkline`) em linha própria, na largura do cartão |
+| `RunButton` | botão Executar com os quatro estados: pronto (claro), executando (barra de progresso dentro do botão, "n de N"), concluído (esmeralda, "ver resultados", com "executar de novo") e erro (vermelho, "tentar de novo") |
+| `ChartCard` | cartão de gráfico com a alternância **gráfico / tabela** (mesmo dado, para conferir números e por acessibilidade) |
+| `Tabs` (`ui/tabs`) | abas em pílula; a aba ativa ganha o fundo do cartão |
+| `EmptyState` e `ResultsSkeleton` | estado vazio (ícone, título e os passos do fluxo) e esqueleto dos resultados enquanto a execução roda |
+| `Bullet` (`charts`) | valor sobre as faixas ok, atenção e alerta; o valor sempre vem também em texto |
+| `DivergingBars`, `TimeSeries`, `SeriesLegend` (`charts`) | barras divergentes a partir do zero; áreas e linhas no tempo (podem empilhar, com eixo direito); legenda fora do gráfico |
 | Barra superior | pílula flutuante: alternar sidebar, tela atual, busca `Ctrl K` / `⌘K` (paleta de comandos), **Tarefas** (simulações e otimizações em andamento), tema, estado da conexão |
 | Sidebar | flutuante e recolhível; item ativo em esmeralda a 12% |
 
@@ -82,8 +88,19 @@ estão descritas na seção 7. Código: `web/src/app/globals.css`, `web/src/comp
 | Etapa | Conteúdo | Situação |
 |---|---|---|
 | D1 | Tokens, barra superior em pílula, sidebar flutuante, paleta de comandos, menu Tarefas, `KpiCard` com ícone e tendência, `HighlightBars`, cartões, botões, campos, pills e tabelas | **Feita (03/11/2026)** |
-| D2 | Tela Vaca leiteira: painel de parâmetros fixo, botão Executar com quatro estados, gráficos de ração (barras horizontais), balanço (barras divergentes), verificações (bullet), série de custo e de leite | Planejada |
+| D2 | Tela Vaca leiteira: painel de parâmetros fixo, botão Executar com quatro estados, gráficos de ração (barras horizontais), balanço (barras divergentes), verificações (bullet), série de custo e de leite | **Feita (03/11/2026)** |
 | D3 | Histórico de execuções no servidor (API, tabela com busca, filtro, status, ações e paginação), estrela do cenário-base, tela de detalhe e deltas dos KPIs | Planejada |
 | D4 | Sensibilidade: histograma, tornado e comparação de cenários com o base; tabela de cenários com o padrão da D3 | Planejada |
 | D5 | Avaliar dietas: ranking, erro de linearização, comparação com o RuFaS e dieta ótima em gráficos | Planejada |
 | D6 | Exercício do quadro e Curva de lactação, estados vazio, carregando e erro, "ver como tabela" em todos os gráficos | Planejada |
+
+## 8. Tela Vaca leiteira (D2)
+
+- **Painel de parâmetros** à esquerda (24 rem), fixo ao rolar em telas largas, com a rolagem só na lista de alimentos e o botão **Executar simulação** sempre visível no rodapé do painel. Abaixo de 1280 px o botão vira uma barra fixa na parte de baixo da tela.
+- **Estado da execução:** o botão acompanha pronto → executando → concluído → erro. Se os parâmetros mudam depois da simulação, o botão volta a "Executar simulação" e os resultados ficam esmaecidos com uma faixa de aviso (a chave dos parâmetros fica no `AppProvider`, `simKey`).
+- **Resultados em abas:**
+  - **Visão geral:** KPIs com mini gráfico, alertas, **ração média** (barras horizontais, o ingrediente principal em verde vivo), **balanço nutricional** (barras divergentes da oferta em relação à exigência, cortadas em +150% com o valor real no rótulo), **leite do rebanho** (área com as vacas em lactação em linha tracejada no eixo direito) e **custo da ração por vaca**.
+  - **Ração:** ração ao longo do tempo (áreas empilhadas) e composição média.
+  - **Nutrição:** verificações V1 a V5 com a faixa (bullet) abaixo do nome, balanço em tabela e exigências.
+- Cada gráfico novo tem a alternância **gráfico / tabela**. Sem simulação, a tela mostra o estado vazio com os três passos do fluxo; enquanto a primeira roda, o esqueleto dos resultados.
+- Não feito nesta etapa: o delta dos KPIs (depende do cenário-base da D3) e o botão Cancelar da simulação (o RuFaS roda em outro processo e o servidor só cancela tarefas na fila).
