@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils'
 import { useApp } from '@/providers/AppProvider'
 import Results from '@/views/cow/Results'
 import { KindPill, StatusPill } from '@/views/history/RunsTable'
-import { SensResults } from '@/views/SensitivityView'
+import SensResults from '@/views/sensitivity/Results'
 
 type Params = Record<string, unknown>
 
@@ -368,7 +368,7 @@ export default function RunDetail({ id, onBack, onDuplicate, onExport, onDeleted
           ) : run.kind === 'simulation' ? (
             <Results sim={run.result as SimResult} />
           ) : run.kind === 'sensitivity' ? (
-            <SensResults result={run.result as SensResult} />
+            <SensResults result={run.result as SensResult} years={Number((run.params as Record<string, unknown>).years) || undefined} />
           ) : run.kind === 'evaluation' ? (
             <EvaluationResult result={run.result as ModuleEvaluation} />
           ) : (

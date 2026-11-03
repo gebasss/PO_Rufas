@@ -1,7 +1,7 @@
 # Sistema de design e roteiro da repaginação
 
-**Versão 0.3 (03/11/2026).** Define a linguagem visual do sistema (tokens, componentes, gráficos), registra as decisões de
-produto da repaginação e o roteiro por etapas. As etapas D1 (tokens, estrutura e componentes-base), D2 (tela Vaca leiteira) e D3 (histórico de execuções) estão implementadas; as demais
+**Versão 0.4 (03/11/2026).** Define a linguagem visual do sistema (tokens, componentes, gráficos), registra as decisões de
+produto da repaginação e o roteiro por etapas. As etapas D1 (tokens, estrutura e componentes-base), D2 (tela Vaca leiteira), D3 (histórico de execuções) e D4 (Sensibilidade) estão implementadas; as demais
 estão descritas na seção 7. Código: `web/src/app/globals.css`, `web/src/components/`. Complementa o `DESIGN.md` (descrição detalhada do que existe).
 
 ## 1. Princípios
@@ -90,7 +90,7 @@ estão descritas na seção 7. Código: `web/src/app/globals.css`, `web/src/comp
 | D1 | Tokens, barra superior em pílula, sidebar flutuante, paleta de comandos, menu Tarefas, `KpiCard` com ícone e tendência, `HighlightBars`, cartões, botões, campos, pills e tabelas | **Feita (03/11/2026)** |
 | D2 | Tela Vaca leiteira: painel de parâmetros fixo, botão Executar com quatro estados, gráficos de ração (barras horizontais), balanço (barras divergentes), verificações (bullet), série de custo e de leite | **Feita (03/11/2026)** |
 | D3 | Histórico de execuções no servidor (API, tabela com busca, filtro, status, ações e paginação), estrela do cenário-base, tela de detalhe e deltas dos KPIs | **Feita (03/11/2026)** |
-| D4 | Sensibilidade: histograma, tornado e comparação de cenários com o base; tabela de cenários com o padrão da D3 | Planejada |
+| D4 | Sensibilidade: histograma, tornado e comparação de cenários com o base; tabela de cenários com o padrão da D3 | **Feita (03/11/2026)** |
 | D5 | Avaliar dietas: ranking, erro de linearização, comparação com o RuFaS e dieta ótima em gráficos | Planejada |
 | D6 | Exercício do quadro e Curva de lactação, estados vazio, carregando e erro, "ver como tabela" em todos os gráficos | Planejada |
 
@@ -113,3 +113,14 @@ Especificação completa em `FSD.md`, seção A.12. Resumo do que a repaginaçã
 - **Detalhe da execução** (`?id=`): parâmetros usados à esquerda e resultados à direita; a simulação e a sensibilidade reaproveitam as telas de resultados já feitas.
 - **Deltas dos KPIs** na tela Vaca leiteira: pills verdes (melhora) e vermelhas (piora) em relação à simulação marcada como base, com a explicação do que é o base logo abaixo das abas.
 - Cada tarefa e a avaliação de dietas gravam a execução no servidor (`runs/_history`); o resultado traz `run_id`.
+
+## 10. Tela Sensibilidade (D4)
+
+- **Painel de fatores** fixo à esquerda, como na Vaca leiteira: lista de fatores com a faixa de cada um, método e níveis, a estimativa de cenários, simulações e tempo, e o `RunButton` no rodapé (barra fixa no celular). Estados vazio, carregando (esqueleto) e erro iguais aos da D2. Os fatores e os parâmetros ficam na memória da página; se mudam depois da análise, os resultados esmaecem com um aviso (`sensKey` no `AppProvider`).
+- **Resultados em abas** (`views/sensitivity/Results`, também usados no detalhe de uma execução):
+  - **Visão geral:** KPIs (melhor margem com delta contra a simulação-base e mini gráfico das margens, pior margem, amplitude, cenários com resultado); **margem por cenário** (barras; o cenário ótimo em verde vivo e a linha tracejada da simulação-base); **distribuição das margens** (histograma, a faixa do ótimo em verde vivo); **ração do cenário ótimo**.
+  - **Fatores:** **efeito de cada fator** em tornado (barras divergentes ordenadas por |ρ| de Spearman, verde sobe a margem e vermelho a reduz) e **margem em função de um fator** (dispersão com um ponto por cenário, o ótimo em verde vivo, com seletor do fator).
+  - **Cenários:** a tabela de cenários, com o ótimo destacado.
+- **Referência do base:** a linha tracejada e o delta só aparecem quando há uma simulação-base **com o mesmo período** (a margem cresce com os anos); sem base, ou com período diferente, os gráficos não mostram a referência.
+- Gráficos com a alternância gráfico/tabela; eixos de valores em US$ mostrados em milhares ("450 mil") para não quebrar a linha, enquanto os rótulos e balões mostram o valor inteiro.
+- Componentes novos em `charts`: `ScatterPlot`; `HighlightBars` e `ScatterPlot` ganham o formato curto dos eixos (`axisFormat`, `yAxisFormat`).

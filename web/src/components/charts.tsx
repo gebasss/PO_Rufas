@@ -14,6 +14,8 @@ import {
   Line,
   ReferenceLine,
   ResponsiveContainer,
+  Scatter,
+  ScatterChart,
   Tooltip,
   XAxis,
   YAxis
@@ -385,6 +387,85 @@ export function Bullet({
         className='bg-foreground absolute top-1/2 h-4 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full'
         style={{ left: `${pct(value)}%` }}
       />
+    </div>
+  )
+}
+
+export interface ScatterDatum {
+  name: string
+  x: number
+  y: number
+}
+
+/** Dispersão (um ponto por cenário): todos apagados e só o de interesse em verde vivo; o balão mostra o nome e os dois valores. */
+export function ScatterPlot({
+  data,
+  highlight,
+  xFormat = value => String(value),
+  yFormat = value => String(value),
+  yAxisFormat,
+  xLabel,
+  height = 260,
+  className
+}: {
+  data: ScatterDatum[]
+  highlight?: string
+  xFormat?: (value: number) => string
+  yFormat?: (value: number) => string
+  /** Formato mais curto para os números do eixo vertical; padrão: o de `yFormat`. */
+  yAxisFormat?: (value: number) => string
+  xLabel?: string
+  height?: number
+  className?: string
+}) {
+  return (
+    <div className={cn('w-full', className)} style={{ height }}>
+      <ResponsiveContainer width='100%' height='100%'>
+        <ScatterChart margin={{ top: 12, right: 16, bottom: xLabel ? 18 : 4, left: 0 }}>
+          <CartesianGrid stroke={CHART.grid} />
+          <XAxis
+            type='number'
+            dataKey='x'
+            domain={['auto', 'auto']}
+            {...AXIS}
+            tickFormatter={value => xFormat(Number(value))}
+            label={xLabel ? { value: xLabel, position: 'insideBottom', offset: -10, fill: CHART.tick, fontSize: 11 } : undefined}
+          />
+          <YAxis type='number' dataKey='y' domain={['auto', 'auto']} {...AXIS} width={56} tickFormatter={value => (yAxisFormat ?? yFormat)(Number(value))} />
+          <Tooltip
+            cursor={{ strokeDasharray: '3 3', stroke: CHART.tick }}
+            content={({ active, payload }) => {
+              const point = payload?.[0]?.payload as ScatterDatum | undefined
+
+              if (!active || !point) return null
+
+              return (
+                <div className='bg-popover text-popover-foreground border-border rounded-xl border px-3 py-2 text-xs'>
+                  <p className='mb-0.5 font-semibold'>{point.name}</p>
+                  <p className='text-muted-foreground tabular-nums'>
+                    {xLabel ?? 'x'}: {xFormat(point.x)}
+                  </p>
+                  <p className='font-semibold tabular-nums'>{yFormat(point.y)}</p>
+                </div>
+              )
+            }}
+          />
+          <Scatter
+            data={data}
+            isAnimationActive={false}
+            shape={(props: { cx?: number; cy?: number; payload?: ScatterDatum }) => (
+              <circle
+                cx={props.cx}
+                cy={props.cy}
+                r={props.payload?.name === highlight ? 8 : 5.5}
+                fill={props.payload?.name === highlight ? CHART.vivid : CHART.dim}
+                stroke='var(--card)'
+                strokeWidth={1.5}
+              />
+            )}
+          />
+        </ScatterChart>
+      </ResponsiveContainer>
     </div>
   )
 }

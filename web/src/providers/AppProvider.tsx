@@ -61,6 +61,9 @@ interface AppContextValue {
   setSimKey: (value: string | null) => void
   sens: SensResult | null
   setSens: (value: SensResult | null) => void
+  /** Parâmetros (serializados) com que `sens` foi calculada; diferente dos atuais = análise desatualizada. */
+  sensKey: string | null
+  setSensKey: (value: string | null) => void
   /** Fatores, método e níveis da sensibilidade; ficam aqui para sobreviver à navegação e irem no cenário salvo. */
   sensSetup: SensSetup
   setSensSetup: Dispatch<SetStateAction<SensSetup>>
@@ -132,6 +135,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [sim, setSim] = useState<SimResult | null>(null)
   const [simKey, setSimKey] = useState<string | null>(null)
   const [sens, setSens] = useState<SensResult | null>(null)
+  const [sensKey, setSensKey] = useState<string | null>(null)
   const [sensSetup, setSensSetup] = useState<SensSetup>(INITIAL_SENS)
   const [toyFoods, setToyFoods] = useState<ToyFood[]>(INITIAL_TOY_FOODS)
   const [toyBounds, setToyBounds] = useState<ToyBound[]>(INITIAL_TOY_BOUNDS)
@@ -260,6 +264,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSim(null)
     setSimKey(null)
     setSens(null)
+    setSensKey(null)
   }, [])
 
   const trackTask = useCallback((label: string): TaskHandle => {
@@ -293,6 +298,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSimKey,
     sens,
     setSens,
+    sensKey,
+    setSensKey,
     sensSetup,
     setSensSetup,
     cowScenario,
