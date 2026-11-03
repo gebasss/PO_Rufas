@@ -8,6 +8,7 @@ from typing import Any, Mapping
 from ..standards import get_standard
 from .categories import CATEGORY_ANIMAL_TYPES, CATEGORY_LABELS, constraints_for, parse_animal_type, parse_category
 from .fields import fields_for
+from .compare import TOLERANCE_PCT, build_report, report_csv
 from .evaluate import evaluate_diets
 from .requirements import REQUIREMENT_FIELDS, compute_requirements, rufas_diet_defaults
 
@@ -46,6 +47,13 @@ def evaluate_payload(body: Mapping[str, Any]) -> dict[str, Any]:
         body.get("limits"),
         body.get("animal_type"),
     )
+
+
+def compare_payload(body: Mapping[str, Any]) -> dict[str, Any]:
+    """Comparação do modelo linear com o RuFaS (FSD, Anexo B.8, fase 1), com o mesmo corpo da avaliação e ``tolerance_pct?``."""
+    tolerance = body.get("tolerance_pct")
+    report = build_report(evaluate_payload(body), TOLERANCE_PCT if tolerance in (None, "") else float(tolerance))
+    return {**report, "csv": report_csv(report)}
 
 
 def requirements_payload(body: Mapping[str, Any]) -> dict[str, Any]:

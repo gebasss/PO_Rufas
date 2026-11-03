@@ -4,6 +4,7 @@ import type {
   Defaults,
   Feed,
   ModuleCategory,
+  ModuleComparison,
   ModuleEvaluation,
   ModuleField,
   NutrientStandard,
@@ -98,6 +99,10 @@ export interface ModuleState {
   result: ModuleEvaluation | null
   /** Requisição que gerou `result`; diferente da atual = resultado desatualizado. */
   resultKey: string | null
+  /** Tolerância do erro de linearização (% da oferta do RuFaS) e a última comparação com o RuFaS. */
+  tolerance: number
+  comparison: ModuleComparison | null
+  comparisonKey: string | null
 }
 
 export function initialModuleState(): ModuleState {
@@ -112,7 +117,10 @@ export function initialModuleState(): ModuleState {
     diets: [],
     nextUid: 1,
     result: null,
-    resultKey: null
+    resultKey: null,
+    tolerance: 1,
+    comparison: null,
+    comparisonKey: null
   }
 }
 
