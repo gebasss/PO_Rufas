@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import ExportButtons from '@/components/ExportButtons'
+import ScenarioFile from '@/components/ScenarioFile'
 import { JobCancelledError, api, cancelJob, runJob } from '@/lib/api'
 import type {
   ModuleCategory,
   ModuleDefaults,
   ModuleOptimization,
+  ModuleScenario,
   ModuleRequirements,
   NutrientStandard,
   OptimizationResolution
@@ -27,6 +29,7 @@ import {
   dietProblems,
   evaluateBody,
   exampleDiets,
+  initialModuleState,
   initialSetting,
   optimizeBody,
   optimizeProblems,
@@ -312,6 +315,46 @@ export default function ModuleView() {
     }
   }
 
+  // ---- cenário em arquivo (RF-21): só entradas; os resultados são recalculados
+  const scenarioData = () => ({
+    standard: state.standard,
+    category: state.category,
+    animalType: state.animalType,
+    cow: state.cow,
+    override: state.override,
+    feeds: state.feedIds.map(id => ({ id, ...state.feedSettings[id] })),
+    diets: state.diets.map(diet => ({
+      name: diet.name,
+      amounts: Object.fromEntries(Object.entries(diet.amounts).filter(([, kg]) => Number.isFinite(kg)))
+    })),
+    tolerance: state.tolerance,
+    resolution: state.resolution,
+    seeds: state.seeds
+  })
+
+  const loadScenario = (data: ModuleScenario) => {
+    setNotice(null)
+    setState({
+      ...initialModuleState(),
+      standard: data.standard,
+      category: data.category,
+      animalType: data.animalType,
+      cow: data.cow,
+      override: data.override,
+      feedIds: data.feeds.map(feed => feed.id),
+      feedSettings: Object.fromEntries(data.feeds.map(({ id, ...feed }) => [id, feed])),
+      diets: data.diets.map((diet, index) => ({
+        uid: index + 1,
+        name: diet.name,
+        amounts: Object.fromEntries(Object.entries(diet.amounts).map(([id, kg]) => [Number(id), kg]))
+      })),
+      nextUid: data.diets.length + 1,
+      tolerance: data.tolerance,
+      resolution: data.resolution,
+      seeds: data.seeds
+    })
+  }
+
   const optimize = async () => {
     if (!optimizePayload || optimizeBlockers.length > 0) return
 
@@ -342,6 +385,7 @@ export default function ModuleView() {
 
   return (
     <div className='space-y-6'>
+      <ScenarioFile<ModuleScenario> kind='module' getData={scenarioData} onLoad={loadScenario} />
       <CowCard
         state={state}
         defaults={defaults}

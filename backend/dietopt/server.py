@@ -27,6 +27,7 @@ from .ration_balance import build_balance
 from .ration_checks import composition, consistency_checks, summarize
 from .rufas_adapter import PROJECT_ROOT, Scenario
 from .scenarios import DEFAULT_MILK_PRICE, DEFAULT_PRICES, Economics, evaluate
+from .scenario_files import pack as pack_scenario, unpack as unpack_scenario
 from .sensitivity import Factor, run_sensitivity
 from .standards import get_standard
 
@@ -321,6 +322,10 @@ class Handler(BaseHTTPRequestHandler):
             if path.startswith("/api/export/"):
                 fmt, screen = (path.split("/") + ["", ""])[3:5]
                 return self._json(export_file(fmt, screen, body.get("data") or {}, body.get("meta")))
+            if path == "/api/scenario/save":
+                return self._json(pack_scenario(body.get("kind"), body.get("data")))
+            if path == "/api/scenario/load":
+                return self._json(unpack_scenario(str(body.get("text") or "")))
             if path == "/api/prices/import":
                 fx = body.get("fx")
                 return self._json(import_prices(body.get("standard"), str(body.get("csv") or ""), None if fx in (None, "") else float(fx)))

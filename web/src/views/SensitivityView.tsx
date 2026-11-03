@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { runJob } from '@/lib/api'
 import { nf, shortName, usd } from '@/lib/format'
-import type { SensFactor, SensResult } from '@/lib/types'
+import type { SensFactor, SensFactorState as FactorState, SensResult } from '@/lib/types'
 import { useApp } from '@/providers/AppProvider'
 import { simulationBody } from '@/views/CowView'
 
@@ -31,20 +31,16 @@ const METHODS = [
 const MILK = 'milk_price'
 const SECONDS_PER_SIMULATION = 17
 
-interface FactorState {
-  on: boolean
-  low: number
-  high: number
-}
-
 const effectsConfig = { spearman: { label: 'Spearman', color: 'var(--chart-1)' } } satisfies ChartConfig
 const marginConfig = { margem: { label: 'Margem (US$)', color: 'var(--chart-1)' } } satisfies ChartConfig
 
 export default function SensitivityView() {
-  const { connection, selected, feedById, params, sens, setSens } = useApp()
-  const [overrides, setOverrides] = useState<Record<string, FactorState>>({})
-  const [method, setMethod] = useState('grid')
-  const [levels, setLevels] = useState(3)
+  const { connection, selected, feedById, params, sens, setSens, sensSetup, setSensSetup } = useApp()
+  const { overrides, method, levels } = sensSetup
+  const setOverrides = (change: (previous: Record<string, FactorState>) => Record<string, FactorState>) =>
+    setSensSetup(s => ({ ...s, overrides: change(s.overrides) }))
+  const setMethod = (value: string) => setSensSetup(s => ({ ...s, method: value }))
+  const setLevels = (value: number) => setSensSetup(s => ({ ...s, levels: value }))
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState({ done: 0, total: 0, status: 'queued' })
 

@@ -9,6 +9,7 @@ import type {
   ModuleRequirements,
   NutrientStandard,
   PriceImportResult,
+  ScenarioLoad,
   ToyResult,
   ToySens
 } from '@/lib/types'
@@ -42,6 +43,9 @@ export const api = {
   moduleCompare: (body: unknown) => request<ModuleComparison>('/api/module/compare', body),
   importPrices: (standard: NutrientStandard, csv: string, fx: number | null) =>
     request<PriceImportResult>('/api/prices/import', { standard, csv, fx }),
+  saveScenario: (kind: 'cow' | 'module', data: unknown) =>
+    request<{ filename: string; mime: string; content: string }>('/api/scenario/save', { kind, data }),
+  loadScenario: <T>(text: string) => request<ScenarioLoad<T>>('/api/scenario/load', { text }),
   exportFile: (format: 'csv' | 'report', screen: 'simulation' | 'sensitivity' | 'toy' | 'module', data: unknown, meta: unknown) =>
     request<{ filename: string; mime: string; content: string }>(`/api/export/${format}/${screen}`, { data, meta })
 }

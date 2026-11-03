@@ -1,7 +1,7 @@
 # Documento de Requisitos do Produto (PRD)
 
 **Produto:** Dieta Ótima com RuFaS
-**Versão do documento:** 0.14 (rascunho para avaliação)
+**Versão do documento:** 0.15 (rascunho para avaliação)
 **Data:** 02/11/2026
 **Status:** Versão web implementada; documento em revisão
 **Autor(es):** _[a preencher]_
@@ -246,7 +246,7 @@ o navegador no endereço local tem as mesmas permissões. A tabela abaixo descre
 |---|---|---|---|---|
 | RF-19 | O sistema deve mostrar o **balanço nutricional** (oferta × exigência de NEL, proteína metabolizável, Ca, P, FDN) da ração obtida. | M | Implementado | A nutricionista precisa auditar a ração; hoje só as exigências são exibidas. Feito em 03/11/2026 (etapa E8b): cartão **Balanço nutricional** com as diferenças que o próprio RuFaS calcula a cada intervalo (média e pior intervalo; FSD, A.4b). |
 | RF-20 | O sistema deve **exportar** tabela de cenários e resultados (CSV) e gerar relatório. | S | Implementado | Documentar a recomendação. Feito em 03/11/2026 (etapa E8e): CSV das tabelas e relatório HTML imprimível nas telas Vaca leiteira, Sensibilidade, Exercício e Avaliar dietas (FSD, A.10). |
-| RF-21 | O sistema deve **salvar e carregar** configurações de cenário. | S | Pendente | Reuso entre sessões. |
+| RF-21 | O sistema deve **salvar e carregar** configurações de cenário. | S | Implementado | Reuso entre sessões. Feito em 03/11/2026 (etapa E8f): arquivo JSON local e versionado, nas telas Vaca leiteira (com a sensibilidade) e Avaliar dietas (FSD, A.11). |
 | RF-22 | O sistema deve permitir **importar preços** (CSV) para cenários com cotações reais, por exemplo do CEPEA. | S | Implementado | Hoje os preços são digitados à mão e os valores iniciais são ilustrativos. Preços em US$; a regra de conversão está em `LINEARIZACAO.md`, seção 7.2. Feito em 03/11/2026 (etapa E8d): importação de CSV nas telas Vaca leiteira e Avaliar dietas, com conversão para US$/kg MS e lista do que não casou (FSD, A.9). |
 | RF-23 | O sistema deve permitir adicionar **nutrientes** ao exercício do quadro. | C | Pendente | Generalização do exercício. |
 | RF-24 | O sistema deve oferecer o padrão **NASEM 2021** como alternativa à NRC 2001 e permitir **comparar os dois padrões** no mesmo cenário. | S | Parcial | Previsto no quadro do professor. **Especificado** no FSD, Anexo A.3; **back-end implementado em 02/11/2026** (`standard` nos cenários, biblioteca por padrão, `GET /api/feeds?standard=`, preços restritos à biblioteca); faltam o seletor na interface, o aviso de alimentos removidos e a comparação dos dois padrões; viabilidade técnica verificada (o RuFaS já aceita `NASEM`; todos os alimentos dos presets existem na biblioteca NASEM; o modo NASEM roda o "Conjunto base" desde que os preços sejam restritos à biblioteca, FSD A.7.1). Depende da decisão Q6. |
@@ -343,7 +343,7 @@ registrada na seção 15.
 ### 8.2 O que o sistema não guarda
 
 - Dados pessoais, credenciais ou qualquer identificação do usuário.
-- Histórico de cenários e de recomendações (RF-21, pendente).
+- Histórico de cenários e de recomendações (o RF-21 salva um arquivo por vez, sem histórico).
 - Preços de mercado obtidos de fontes externas (RF-22, pendente).
 
 ### 8.3 Cuidados com a integridade dos dados
@@ -460,7 +460,7 @@ ilustrativos.
 | HU6 | nutricionista | saber quando a ração não atende às exigências | confiar no resultado | Falha explícita ou "leite perdido" mostrado, nunca zero silencioso |
 | HU7 | produtor | ver a margem e o custo por vaca por dia em destaque | decidir rápido | Indicadores principais no topo da tela de resultados |
 | HU8 | professor | ver a curva de lactação com PEV e gestação | conferir o gráfico pedido | Curva de Wood por paridade com marcos ajustáveis |
-| HU9 | nutricionista | guardar e exportar cenários e resultados | documentar a recomendação | **Parcial** (RF-20 feito; falta salvar e carregar, RF-21) |
+| HU9 | nutricionista | guardar e exportar cenários e resultados | documentar a recomendação | **Feito** (RF-20 e RF-21) |
 | HU10 | nutricionista | ver o balanço entre o que a ração oferece e o que a vaca exige | auditar a ração | **Feito** (RF-19) |
 | HU11 | nutricionista | importar cotações reais de uma planilha | usar preços de mercado sem digitar | **Feito** (RF-22; CSV com conversão de reais, saca e matéria natural) |
 | HU12 | professor, nutricionista | simular o mesmo cenário em NRC 2001 e NASEM 2021 e ver as diferenças | comparar os dois padrões do quadro | **Pendente** (RF-24; FSD, Anexo A.3) |
@@ -603,7 +603,7 @@ Limitações conhecidas, para que ninguém leia mais certeza do que o sistema en
 | L3 | Os preços iniciais são ilustrativos e não vêm do CEPEA. | Valores em dólar demonstram comportamento; não servem para decidir compras. | P4, RF-22, M7 |
 | L4 | O resultado não foi comparado com uma referência profissional. | Não se deve usar a ração para alimentar animais sem revisão. | M6, RNF-10, R9 |
 | L5 | Não há balanço de nutrientes (oferta × exigência) da ração obtida. | Só as exigências são exibidas; o profissional não audita a ração por completo. | RF-19 |
-| L6 | Não há salvamento de cenários (a exportação existe desde 03/11/2026). | Os fatores se perdem ao recarregar; os resultados podem ser exportados em CSV e em relatório. | RF-20, RF-21 |
+| L6 | ~~Não há exportação nem salvamento de cenários.~~ Resolvida em 03/11/2026: há exportação (RF-20) e cenários em arquivo (RF-21). | Não há histórico de cenários nem salvamento automático no servidor; a tela Vaca leiteira ainda guarda a última seleção no navegador. | RF-20, RF-21 |
 | L7 | Só a NRC 2001 está disponível. | O NASEM 2021, citado no quadro, não é oferecido. Já há especificação (FSD, Anexo A.3). | RF-24, Q6 |
 | L8 | As bibliotecas NRC 2001 e NASEM 2021 **do RuFaS** só têm farelo de arroz; o livro do NASEM traz o arroz em grão (Tabela 19-1, p. 427), que o RuFaS não carrega. | O "arroz" do exercício é representado pelo farelo de arroz. | C2, RN-07, RF-26 |
 | L9 | O tamanho do rebanho não é ajustável na interface. | Usa-se o rebanho padrão do RuFaS. | RF-13 |
@@ -654,7 +654,7 @@ A coluna "Proposta" é o que o autor assumiria se não houver resposta; **precis
 |---|---|---|
 | RF-19 | Balanço nutricional | Quais nutrientes (NEL, PM, Ca, P, FDN), onde a oferta é lida no RuFaS, forma de exibir déficit e excesso |
 | RF-20 | Exportação | Formato do CSV (colunas, separador, unidades), conteúdo e layout do relatório |
-| RF-21 | Salvar e carregar | Onde guardar (arquivo local ou navegador), nome, versão do formato |
+| RF-21 | Salvar e carregar | Onde guardar (arquivo local ou navegador), nome, versão do formato | **Decidido em 03/11/2026:** arquivo local JSON (`format`, `version`, `kind`); o formato é versionado e arquivos de versão mais nova são recusados.
 | RF-22 | Importar preços | Layout do CSV, mapeamento de nomes para ids do RuFaS, tratamento de itens sem correspondência |
 | RF-13 | Tamanho do rebanho | Limites mínimo e máximo, efeito no tempo e na memória |
 | RF-23 | Mais nutrientes | Só se o professor exigir |
@@ -915,3 +915,4 @@ próprio RuFaS.
 | 0.12 | 03/11/2026 | _[a preencher]_ | Etapas E8a e E8b: painel de verificações de consistência (RF-27) e balanço nutricional (RF-19) na tela Vaca leiteira. |
 | 0.13 | 03/11/2026 | _[a preencher]_ | Etapa E8d: importação de preços por CSV (RF-22) com conversão para US$/kg MS. |
 | 0.14 | 03/11/2026 | _[a preencher]_ | Etapa E8e: exportação de CSV e relatório HTML dos resultados (RF-20). |
+| 0.15 | 03/11/2026 | _[a preencher]_ | Etapa E8f: salvar e abrir cenários em arquivo JSON versionado (RF-21). |
