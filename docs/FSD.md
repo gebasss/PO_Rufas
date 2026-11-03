@@ -940,7 +940,7 @@ Não há log estruturado, retenção definida nem serviço centralizado.
 
 ## 18. Uploads, Anexos, Relatórios e Exportações
 
-Não se aplica. O sistema não possui upload, anexos, relatórios nem exportações (RF-20 e RF-22 pendentes). A forma atual de registrar um resultado é a captura de tela.
+O sistema tem **exportação** (CSV e relatório HTML, seção A.10) e **importação de preços** por CSV (seção A.9), mas não tem anexos nem armazenamento de arquivos no servidor: o arquivo importado é lido no navegador e os exportados são baixados na hora.
 
 ---
 
@@ -1546,6 +1546,33 @@ preços foram aplicados, a conversão linha a linha e as linhas sem correspondê
 **Aceite.** `tests/test_prices.py`: dólar por kg de MS sem conversão; reais por saca na matéria natural (70 R$ por saca de
 60 kg a R$ 5,00 por US$ viram `70 ÷ 60 ÷ MS ÷ 5`); câmbio da tela e da linha; id fora da biblioteca do padrão; nome ambíguo;
 separador e vírgula decimal; cabeçalho incompleto.
+
+### A.10 RF-20: exportar tabelas e relatório (implementado em 03/11/2026, etapa E8e)
+
+**Objetivo.** Registrar um resultado sem captura de tela: a tabela em CSV, para abrir no Excel, e um relatório que se lê e se imprime.
+
+**Onde.** Botões **Baixar CSV** e **Baixar relatório**, com um campo "Observação para o relatório", no topo dos resultados das telas
+Vaca leiteira, Sensibilidade e Avaliar dietas; o Exercício simples só tem o CSV da tabela de cenários.
+
+| Tela | CSV | Relatório (HTML) |
+|---|---|---|
+| Vaca leiteira | `racao-media.csv`: por alimento, kg de MS por vaca e dia, % da dieta, preço e custo (mais a linha TOTAL) | Indicadores, ração média com preços e limites, verificações (A.4) e balanço nutricional (A.4b) |
+| Sensibilidade | `cenarios-sensibilidade.csv`: uma linha por cenário com os fatores, `Res`, indicadores, a ração (uma coluna por alimento) e o erro, se falhou | Resumo (melhor e pior margem, ração do melhor cenário), tabela de cenários e correlação de Spearman |
+| Exercício simples | `cenarios-exercicio.csv`: fatores, `Res` e a quantidade de cada alimento | (só CSV) |
+| Avaliar dietas | `avaliacao-de-dietas.csv`: uma linha por dieta e restrição, com a posição no ranking | Ranking (com o desvio do ótimo, se a dieta ótima estiver atualizada), dieta ótima e comparação com o RuFaS |
+
+**Formato.** CSV com vírgula como separador, ponto decimal e BOM (o Excel reconhece os acentos); células sem valor ficam vazias, e o
+cenário que falhou não ganha números. O relatório é um HTML único, sem arquivos externos, com números no formato brasileiro, estilo de
+impressão (salvar em PDF pelo navegador) e a data da geração. Todo texto vindo do usuário (observação, nomes) é **escapado**.
+
+**API.** `POST /api/export/<csv|report>/<simulation|sensitivity|toy|module>` com `{ data, meta }` (o resultado que está na tela e
+dados extras: `note`, `standard`, `feed_names`, `optimal`). Resposta: `{ filename, mime, content }`. Nada é gravado no servidor.
+A simulação passou a devolver `limits` (mínimo e máximo de cada alimento) para o relatório mostrar os que valeram.
+
+**Não feito.** PDF gerado no servidor, exportação da curva de lactação e dos gráficos, e exportação do histórico (não existe).
+
+**Aceite.** `tests/test_exports.py`: conteúdo de cada CSV, formato brasileiro e seções dos relatórios, escape de HTML, ordem do
+ranking, coluna de desvio só com a dieta ótima, despacho e pedidos inválidos.
 
 ### A.8 Alterações previstas em outras partes deste documento (quando implementado)
 

@@ -9,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { api } from '@/lib/api'
+import { downloadText } from '@/lib/download'
 import { nf } from '@/lib/format'
 import type { NutrientStandard, PriceImportResult } from '@/lib/types'
 
@@ -18,15 +19,7 @@ const TEMPLATE = `id,preco,moeda,cambio,unidade_kg,base,fonte
 44,70,BRL,5.0,60,MN,saca de 60 kg em reais na matéria natural
 `
 
-function downloadTemplate() {
-  const url = URL.createObjectURL(new Blob(['﻿', TEMPLATE], { type: 'text/csv;charset=utf-8' }))
-  const link = document.createElement('a')
-
-  link.href = url
-  link.download = 'modelo-precos.csv'
-  link.click()
-  URL.revokeObjectURL(url)
-}
+const downloadTemplate = () => downloadText('modelo-precos.csv', `\ufeff${TEMPLATE}`, 'text/csv;charset=utf-8')
 
 interface Props {
   standard: NutrientStandard

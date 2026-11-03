@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import ExportButtons from '@/components/ExportButtons'
 import { JobCancelledError, api, cancelJob, runJob } from '@/lib/api'
 import type {
   ModuleCategory,
@@ -396,6 +397,17 @@ export default function ModuleView() {
         onSelect={setSelected}
         onEvaluate={evaluate}
       />
+      {state.result && (
+        <ExportButtons
+          screen='module'
+          data={state.result}
+          meta={{
+            standard: standardName(state.standard),
+            optimal: state.optimal && !optimalStale ? state.optimal : null,
+            feed_names: Object.fromEntries(state.feedIds.map(id => [id, library[id]?.name ?? String(id)]))
+          }}
+        />
+      )}
       <OptimalCard
         library={library}
         result={state.optimal}

@@ -1,6 +1,6 @@
 # Plano de implementação: módulo "Exercício do quadro" ampliado e complementos
 
-**Versão 0.8 (03/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
+**Versão 0.9 (03/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
 comportamento do sistema; as regras estão nos documentos citados e este arquivo só as sequencia.
 
 | Documento | O que fornece ao plano |
@@ -27,7 +27,13 @@ comportamento do sistema; as regras estão nos documentos citados e este arquivo
 | E7 | **Feita (03/11/2026)** | `module/optimize.py` (LP por ponto da grade de escalares, refinamento, resgate, preços-sombra, verificação com as funções do RuFaS, SLSQP em várias sementes), tarefa `optimize` com cancelamento (`jobs.py`: estado `cancelled`, `POST /api/jobs/<id>/cancel`), cartão "Dieta ótima" e coluna "Desvio do ótimo" no ranking; 31 testes novos (115 no total, ≈ 80 s) |
 | E8a, E8b | **Feitas (03/11/2026)** | RF-27 (`ration_checks.py`, cartão Verificações) e RF-19 (`ration_balance.py`, cartão Balanço nutricional), na tela Vaca leiteira; o balanço vem da avaliação do próprio RuFaS (`avg_eval_results_for_LAC_COW`); 17 testes novos (132 no total) |
 | E8d | **Feita (03/11/2026)** | RF-22: `prices.py`, `POST /api/prices/import`, componente `PriceImport` nas telas Vaca leiteira e Avaliar dietas; 19 testes novos (151 no total) |
-| E8c, E8e a E8h | Não iniciadas | |
+| E8e | **Feita (03/11/2026)** | RF-20: `exports.py` (CSV e relatório HTML), `POST /api/export/<csv\|report>/<tela>`, `ExportButtons` nas quatro telas; 8 testes novos (159 no total) |
+| E8c, E8f a E8h | Não iniciadas | |
+
+Achados do E8e: (i) o servidor monta os arquivos a partir do JSON que a tela já tem, o que os deixa testáveis sem navegador e sem
+gravar nada em disco; (ii) a simulação não devolvia os limites por alimento e passou a devolvê-los (`limits`) para o relatório;
+(iii) o HTML do relatório escapa observação e nomes (teste com `<script>`); (iv) o CSV leva BOM para o Excel e usa ponto decimal,
+enquanto o relatório usa o formato brasileiro.
 
 Achados do E8d: (i) os nomes da biblioteca têm vírgulas ("Corn, Yellow") e o mesmo nome curto serve a dezenas de alimentos, então o
 mapeamento seguro é por id do RuFaS; o nome só vale inteiro ("nome — descrição") e vem entre aspas no CSV; (ii) o preço de um

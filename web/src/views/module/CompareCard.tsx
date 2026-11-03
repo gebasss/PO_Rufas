@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { downloadText } from '@/lib/download'
 import { nf, signedPct } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { ComparisonDiet, ComparisonProbe, ComparisonRow, ModuleComparison } from '@/lib/types'
@@ -37,16 +38,9 @@ function Verdict({ ok, yes, no }: { ok: boolean; yes: string; no: string }) {
 
 const probeAt = (probes: ComparisonProbe[] | undefined, scale: number) => probes?.find(p => p.scale === scale)
 
-function downloadCsv(report: ModuleComparison) {
-  // BOM para o Excel reconhecer os acentos.
-  const url = URL.createObjectURL(new Blob(['﻿', report.csv], { type: 'text/csv;charset=utf-8' }))
-  const link = document.createElement('a')
-
-  link.href = url
-  link.download = 'comparacao-linear-rufas.csv'
-  link.click()
-  URL.revokeObjectURL(url)
-}
+// BOM para o Excel reconhecer os acentos.
+const downloadCsv = (report: ModuleComparison) =>
+  downloadText('comparacao-linear-rufas.csv', `\ufeff${report.csv}`, 'text/csv;charset=utf-8')
 
 function ComparisonTable({ diet, scales, tolerance }: { diet: ComparisonDiet; scales: number[]; tolerance: number }) {
   return (

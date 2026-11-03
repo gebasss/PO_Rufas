@@ -41,7 +41,9 @@ export const api = {
   moduleEvaluate: (body: unknown) => request<ModuleEvaluation>('/api/module/evaluate', body),
   moduleCompare: (body: unknown) => request<ModuleComparison>('/api/module/compare', body),
   importPrices: (standard: NutrientStandard, csv: string, fx: number | null) =>
-    request<PriceImportResult>('/api/prices/import', { standard, csv, fx })
+    request<PriceImportResult>('/api/prices/import', { standard, csv, fx }),
+  exportFile: (format: 'csv' | 'report', screen: 'simulation' | 'sensitivity' | 'toy' | 'module', data: unknown, meta: unknown) =>
+    request<{ filename: string; mime: string; content: string }>(`/api/export/${format}/${screen}`, { data, meta })
 }
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))

@@ -6,6 +6,7 @@ import { PlayIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 import { toast } from 'sonner'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 
+import ExportButtons from '@/components/ExportButtons'
 import { finite, heat, KpiCard, NumberInput } from '@/components/shared'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -377,6 +378,8 @@ export default function ToyView() {
           <Button onClick={generate} disabled={generating || connection !== 'online'}>
             {generating ? 'Gerando…' : 'Gerar cenários'}
           </Button>
+
+          {toySens && <ExportButtons screen='toy' data={toySens} csvOnly />}
 
           {toySens && (
             <Table>

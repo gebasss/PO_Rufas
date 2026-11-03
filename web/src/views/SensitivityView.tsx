@@ -8,6 +8,7 @@ import { PlayIcon, SlidersHorizontalIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from 'recharts'
 
+import ExportButtons from '@/components/ExportButtons'
 import { feedTitle } from '@/components/FeedPicker'
 import { finite, heat, JobProgress, NumberInput, PageHeader } from '@/components/shared'
 import { Button } from '@/components/ui/button'
@@ -202,6 +203,8 @@ function SensResults({ result }: { result: SensResult }) {
 
   return (
     <div className='min-w-0 space-y-6'>
+      <ExportButtons screen='sensitivity' data={result} meta={{ standard: 'NRC 2001' }} />
+
       <Card>
         <CardHeader>
           <CardTitle>Tabela de cenários</CardTitle>
