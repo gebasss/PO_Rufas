@@ -19,7 +19,7 @@ from . import linear
 from .categories import constraints_for, parse_animal_type, parse_category
 from .fields import DIET_FIELDS
 from .library import build_feeds
-from .requirements import compute_requirements
+from .requirements import RequirementsResult, compute_requirements
 from .rufas import rufas
 
 MAX_DIETS = 10  # (a confirmar com o professor; FSD B.4)
@@ -67,7 +67,7 @@ def parse_diets(raw: Any, standard: str) -> tuple[list[Diet], list[str]]:
     return diets, warnings
 
 
-def _limits(standard: str, feed_ids: Sequence[int], given: Mapping[Any, Any] | None) -> dict[int, tuple[float, float]]:
+def resolve_limits(standard: str, feed_ids: Sequence[int], given: Mapping[Any, Any] | None) -> dict[int, tuple[float, float]]:
     """Limites de inclusão (kg MS/dia): os informados ou os tetos padrão do alimento (FSD 14.2)."""
     library = feed_library(standard)
     given = {int(k): v for k, v in (given or {}).items()}
@@ -113,7 +113,7 @@ def _nonlinear_supply(spec_name: str, constraint: linear.LinearConstraint, x: np
     return slack + constraint.requirement if constraint.sense == "ge" else constraint.requirement - slack
 
 
-def _evaluate_diet(
+def evaluate_diet(
     standard: str,
     category: str,
     animal_type: str,
@@ -123,16 +123,21 @@ def _evaluate_diet(
     prices: Mapping[int, float],
     limits: Mapping[int, tuple[float, float]],
     pen: tuple[float, float] | None,
+    fixed: RequirementsResult | None = None,
 ) -> dict[str, Any]:
+    """Avalia uma dieta. Com ``fixed``, usa essas exigências (as da otimização) em vez de calcular as da própria dieta."""
     rf = rufas()
     ids = sorted(diet.amounts)
     feeds = build_feeds(standard, ids, prices, limits)
     x = np.array([diet.amounts[i] for i in ids], dtype=float)
     body_weight = float(cow["body_weight"])
 
-    derived = _derived_inputs(standard, feeds, x, body_weight)
-    cow_for_diet = {**{k: v for k, v in derived.items() if k in DIET_FIELDS[standard]}, **{k: v for k, v in cow.items() if v not in (None, "")}}
-    required = compute_requirements(standard, category, cow_for_diet, overrides, animal_type)
+    if fixed is None:
+        derived = _derived_inputs(standard, feeds, x, body_weight)
+        cow_for_diet = {**{k: v for k, v in derived.items() if k in DIET_FIELDS[standard]}, **{k: v for k, v in cow.items() if v not in (None, "")}}
+        required = compute_requirements(standard, category, cow_for_diet, overrides, animal_type)
+    else:
+        required = fixed
     nutrition = required.nutrition_requirements
 
     config = rf.ration_config(
@@ -260,7 +265,7 @@ def rank(diets: Sequence[Mapping[str, Any]]) -> tuple[list[str], str | None]:
     return ordered, (feasible[-1]["name"] if feasible else None)
 
 
-def _pen(standard: str, cow: Mapping[str, Any]) -> tuple[float, float] | None:
+def pen_inputs(standard: str, cow: Mapping[str, Any]) -> tuple[float, float] | None:
     methane, nitrogen = cow.get("enteric_methane"), cow.get("urinary_nitrogen")
     if standard != "NASEM" or (methane in (None, "") and nitrogen in (None, "")):
         return None
@@ -290,12 +295,12 @@ def evaluate_diets(
         raise ValueError(f"Informe o preço (US$/kg MS) dos alimentos: {missing}")
     if any(p < 0 for p in price_map.values()):
         raise ValueError("Os preços devem ser maiores ou iguais a zero")
-    limit_map = _limits(nutrient_standard, used, limits)
-    pen = _pen(nutrient_standard, cow)
+    limit_map = resolve_limits(nutrient_standard, used, limits)
+    pen = pen_inputs(nutrient_standard, cow)
 
     baseline = compute_requirements(nutrient_standard, category_.value, cow, overrides, animal)
     results = [
-        _evaluate_diet(nutrient_standard, category_.value, animal, cow, overrides, diet, price_map, limit_map, pen)
+        evaluate_diet(nutrient_standard, category_.value, animal, cow, overrides, diet, price_map, limit_map, pen)
         for diet in parsed
     ]
     if nutrient_standard == "NASEM":

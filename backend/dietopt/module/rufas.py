@@ -17,6 +17,7 @@ def rufas() -> SimpleNamespace:
     if str(RUFAS_DIR) not in sys.path:
         sys.path.append(str(RUFAS_DIR))
     from RUFAS.biophysical.animal.animal_module_constants import AnimalModuleConstants
+    from RUFAS.biophysical.animal.data_types.animal_combination import AnimalCombination
     from RUFAS.biophysical.animal.data_types.animal_types import AnimalType
     from RUFAS.biophysical.animal.nutrients.nasem_requirements_calculator import NASEMRequirementsCalculator
     from RUFAS.biophysical.animal.nutrients.nrc_requirements_calculator import NRCRequirementsCalculator
@@ -34,6 +35,7 @@ def rufas() -> SimpleNamespace:
     return SimpleNamespace(
         constants=AnimalModuleConstants,
         animal_type=AnimalType,
+        animal_combination=AnimalCombination,
         calculators={"NRC": NRCRequirementsCalculator, "NASEM": NASEMRequirementsCalculator},
         supply=NutritionSupplyCalculator,
         feed_in_ration=FeedInRation,

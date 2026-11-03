@@ -45,11 +45,14 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 /** Dispara um job do RuFaS e consulta o andamento até terminar. */
 export async function runJob<T>(
-  kind: 'simulate' | 'sensitivity',
+  kind: 'simulate' | 'sensitivity' | 'optimize',
   body: unknown,
-  onProgress: (done: number, total: number, status: Job<T>['status']) => void
+  onProgress: (done: number, total: number, status: Job<T>['status']) => void,
+  options: { onStart?: (jobId: string) => void; intervalMs?: number } = {}
 ): Promise<T> {
   const job = await request<Job<T>>(`/api/jobs/${kind}`, body)
+
+  options.onStart?.(job.id)
 
   for (;;) {
     const current = await request<Job<T>>(`/api/jobs/${job.id}`)
@@ -57,8 +60,19 @@ export async function runJob<T>(
     onProgress(current.done, current.total, current.status)
 
     if (current.status === 'done') return current.result as T
+    if (current.status === 'cancelled') throw new JobCancelledError()
     if (current.status === 'error') throw new Error(current.error)
 
-    await sleep(1500)
+    await sleep(options.intervalMs ?? 1500)
   }
 }
+
+/** O job terminou porque o usuário o cancelou (não é uma falha). */
+export class JobCancelledError extends Error {
+  constructor() {
+    super('Cancelado')
+  }
+}
+
+/** Pede o cancelamento de um job; ele para na próxima verificação. */
+export const cancelJob = (jobId: string) => request<Job<unknown>>(`/api/jobs/${jobId}/cancel`, {})

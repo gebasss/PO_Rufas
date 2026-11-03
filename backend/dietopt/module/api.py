@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 from ..standards import get_standard
 from .categories import CATEGORY_ANIMAL_TYPES, CATEGORY_LABELS, constraints_for, parse_animal_type, parse_category
 from .fields import fields_for
 from .compare import TOLERANCE_PCT, build_report, report_csv
 from .evaluate import evaluate_diets
+from .optimize import optimize_diet
 from .requirements import REQUIREMENT_FIELDS, compute_requirements, rufas_diet_defaults
 
 DEFAULT_STANDARD = "NASEM"  # padrão principal do módulo (o NRC é apoio)
@@ -54,6 +55,29 @@ def compare_payload(body: Mapping[str, Any]) -> dict[str, Any]:
     tolerance = body.get("tolerance_pct")
     report = build_report(evaluate_payload(body), TOLERANCE_PCT if tolerance in (None, "") else float(tolerance))
     return {**report, "csv": report_csv(report)}
+
+
+def optimize_payload(
+    body: Mapping[str, Any],
+    on_progress: Callable[[int, int], None] | None = None,
+    should_stop: Callable[[], bool] | None = None,
+) -> dict[str, Any]:
+    """Dieta ótima entre os alimentos de ``feed_ids`` e comparação com o SLSQP do RuFaS (FSD, Anexo B.8, fase 2)."""
+    seeds = body.get("seeds")
+    return optimize_diet(
+        body.get("standard") or DEFAULT_STANDARD,
+        body.get("category"),
+        body.get("cow") or {},
+        body.get("feed_ids"),
+        body.get("prices") or {},
+        body.get("requirements_override"),
+        body.get("limits"),
+        body.get("animal_type"),
+        body.get("resolution") or "normal",
+        5 if seeds is None else seeds,
+        on_progress,
+        should_stop,
+    )
 
 
 def requirements_payload(body: Mapping[str, Any]) -> dict[str, Any]:

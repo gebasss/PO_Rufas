@@ -393,11 +393,39 @@ verificação da Tabela 5-1 (FDN de forragem, FDN total, amido). Os **preços-so
 unidade da exigência) só existem quando um LP com `x` livre é resolvido: na fase 2 (dieta ótima) ou numa dieta de
 referência; avaliar uma dieta já montada não os produz.
 
-### 7.6 Fase 2 (posterior)
+### 7.6 Fase 2 (implementada em 03/11/2026, etapa E7)
 
-Sugerir e prever a dieta ótima para uma vaca e uma fase específicas: resolver o LP da seção 4 com `x_i` livres, pelo
-ponto fixo (seção 5.1), para cada fase da lactação. O laço de redução de leite do RuFaS (0,25 kg por tentativa, quando a
-ração é inviável) passa a ser um laço externo sobre LPs.
+Sugerir e prever a dieta ótima para uma vaca e uma fase específicas: resolver o LP da seção 4 com `x_i` livres. O laço de
+redução de leite do RuFaS (0,25 kg por tentativa, quando a ração é inviável) passaria a ser um laço externo sobre LPs
+(não implementado).
+
+**Como ficou (`backend/dietopt/module/optimize.py`).** Não se usou o ponto fixo da seção 5.1, e sim a parametrização da 5.1b:
+- Escalares fixos por LP: consumo, TDN% e % de concentrado e, no NASEM, o amido total em kg (a digestibilidade da FDN
+  depende dele, 4.5). O desconto de ingestão `D` sai deles (a fórmula da 4.4, conferida contra a função do RuFaS).
+- Cada LP tem os coeficientes de `linear.build_at` nesses escalares e as igualdades `Σx = DMI`, `Σ TDN_i·x_i = TDN%·DMI`,
+  `Σ_conc x_i = (%conc/100)·DMI` (e `Σ amido_i·x_i = amido`). Disjunções: um LP por ramo da energia total do NRC; no teto de
+  proteína (`min ≤ U`) resolve-se sem ele e só se enumeram os dois ramos se a solução o violar.
+- Busca: faixa de cada escalar por LPs de mínimo e máximo sobre as restrições L e E; grade por regime (TDN% < 60 e ≥ 60);
+  refinamento dos três melhores pontos de cada regime por dois caminhos (busca por padrões e descida guiada pelo LP com as
+  quantidades livres), porque o custo em função dos escalares não é convexo; e, quando a grade acerta menos de seis pontos
+  viáveis (região fina: NASEM de vaca seca e de novilha), um resgate por ponto fixo dos escalares.
+- As exigências são as da vaca sem ração anterior (padrões do RuFaS), como na primeira formulação do RuFaS, e valem em
+  todos os pontos.
+- A solução é conferida com as funções originais do RuFaS (a mesma verificação da avaliação) e comparada com o SLSQP
+  do RuFaS em várias sementes. Os preços-sombra são os duais do LP do ponto ótimo, com os escalares fixos.
+
+**Resultados** (preços e vaca da seção 10.1, 03/11/2026; resolução "normal", 5 sementes):
+
+| Caso | Custo do LP (US$/dia) | Melhor do RuFaS | Diferença | Tempo |
+|---|---|---|---|---|
+| NRC, vaca em lactação | 3,8345 | 3,8342 | +0,008% | ≈ 18 s |
+| NASEM, vaca em lactação (metano 400 g/dia, N urinário 0,2 kg/dia) | 3,08318 | 3,08318 | 0,000% | ≈ 11 s |
+
+Com a resolução "rápida" (≈ 5 s) a diferença no NRC foi de +0,005% a +0,03%. Nas categorias de vaca seca e de novilha, com a
+resolução rápida, o LP ficou igual ao RuFaS no NASEM e nas novilhas do NRC e 0,07% a 0,11% abaixo no NRC de vaca seca (o SLSQP
+é um ótimo local). A fórmula do LP foi validada pelo ponto exato: nos escalares do melhor SLSQP o LP dá o mesmo custo (erro
+relativo abaixo de 1e-6) em quatro casos (NRC e NASEM, lactação, vaca seca e novilha). O SLSQP não é estável: com seis
+alimentos (sem o farelo de arroz), uma de cinco sementes parou em 3,8595 (ótimo local) e outra não convergiu.
 
 ---
 

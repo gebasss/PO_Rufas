@@ -1,7 +1,7 @@
 # Documento de Requisitos do Produto (PRD)
 
 **Produto:** Dieta Ótima com RuFaS
-**Versão do documento:** 0.10 (rascunho para avaliação)
+**Versão do documento:** 0.11 (rascunho para avaliação)
 **Data:** 02/11/2026
 **Status:** Versão web implementada; documento em revisão
 **Autor(es):** _[a preencher]_
@@ -254,8 +254,8 @@ o navegador no endereço local tem as mesmas permissões. A tabela abaixo descre
 | RF-26 | O sistema deve permitir cadastrar **alimentos personalizados**, começando pelo **arroz em grão** (Tabela 19-1 do NASEM, p. 427), que não existe nas bibliotecas do RuFaS. | S | Pendente | O quadro do professor usa arroz; hoje o "arroz" é farelo de arroz (RN-07). **Especificado** no FSD, Anexo A.5; depende de RF-24 (dados completos só no NASEM) e da decisão Q9. |
 | RF-27 | O sistema deve exibir um **painel de verificações de consistência** da ração obtida: consumo × estimado, FDN total, FDN de forragem e amido × Tabela 5-1 do NASEM, gordura e leite perdido. | S | Pendente | Nas simulações já guardadas a ração ficou 3 a 8 kg acima do consumo estimado e várias bateram no teto de +30% do RuFaS. **Especificado** no FSD, Anexo A.4; os limiares dependem da decisão Q8. |
 | RF-28 | O sistema deve **avaliar e comparar dietas já montadas** para uma vaca específica (categoria e fase), no padrão NASEM (principal) ou NRC (apoio): custo, oferta e folga de cada restrição e ordenação das dietas da menos para a mais recomendada (os preços-sombra só existem com a dieta ótima, RF-30). | M | Pendente | Pedido do professor: ampliar o Exercício do quadro. **Especificado** no FSD, Anexo B; base técnica em `LINEARIZACAO.md`. Categorias: as que o RuFaS otimiza (lactação, seca e pré-parto, novilhas em crescimento). Já implementados em 02/11/2026: campos da vaca por categoria e padrão e exigências pelas calculadoras do RuFaS (`/api/module/defaults` e `/api/module/requirements`) e, em 02/11/2026, o modelo linear e a avaliação de dietas no back-end (`POST /api/module/evaluate`: oferta linear × oferta do RuFaS, erro de linearização, folgas, ordenação); e, em 03/11/2026, a **interface** na tela 1 (seletor "Avaliar dietas (vaca real)", cartões Vaca, Dietas, Preços e limites e Resultado); falta a comparação formal com o RuFaS (E6) e o metano/N urinário do lote (L-Q2). |
-| RF-29 | O sistema deve usar um **modelo linear** das restrições nutricionais, com as equações não lineares do RuFaS **linearizadas**, verificar o erro de linearização contra as equações originais e permitir a **comparação com o otimizador do RuFaS**. | M | Parcial | Pedido do professor: só com equações lineares o otimizador próprio é comparável ao do RuFaS. **Especificado** em `LINEARIZACAO.md` e no FSD, Anexo B. Feita em 03/11/2026 a comparação do modelo linear com as funções do RuFaS (erro no ponto e a ±5%, por restrição e por dieta, na tela e em CSV); falta a comparação com o otimizador (fase 2, RF-30). |
-| RF-30 | O sistema deve **sugerir e prever a dieta ótima** (custo mínimo) para uma vaca e uma fase específicas. | S | Pendente | Fase 2; depende de RF-28 e RF-29. Esboço em `LINEARIZACAO.md`, seção 7.6. |
+| RF-29 | O sistema deve usar um **modelo linear** das restrições nutricionais, com as equações não lineares do RuFaS **linearizadas**, verificar o erro de linearização contra as equações originais e permitir a **comparação com o otimizador do RuFaS**. | M | Implementado | Pedido do professor: só com equações lineares o otimizador próprio é comparável ao do RuFaS. **Especificado** em `LINEARIZACAO.md` e no FSD, Anexo B. Feita em 03/11/2026 a comparação do modelo linear com as funções do RuFaS (erro no ponto e a ±5%, por restrição e por dieta, na tela e em CSV); a comparação com o otimizador (fase 2) foi feita em 03/11/2026 com o RF-30. |
+| RF-30 | O sistema deve **sugerir e prever a dieta ótima** (custo mínimo) para uma vaca e uma fase específicas. | S | Implementado | Fase 2 feita em 03/11/2026: dieta ótima por LP com escalares globais fixos, conferida com as funções do RuFaS e comparada com o SLSQP do RuFaS em várias sementes, com preços-sombra e desvio das dietas avaliadas (FSD, B.11; `LINEARIZACAO.md`, 7.6). Falta o laço de redução de leite. |
 
 Os requisitos RF-24, RF-26 e RF-27 têm especificação no FSD, Anexo A, e os requisitos RF-28 a RF-30 no Anexo B e em `LINEARIZACAO.md`; nenhum está implementado. RF-28 e RF-29 são prioridade do professor. O RF-19 é o único requisito de prioridade "deve ter" ainda não atendido; ele é o principal item a especificar antes
 de qualquer uso profissional (seção 15).
@@ -270,7 +270,7 @@ de qualquer uso profissional (seção 15).
 |---|---|---|
 | Linha de comando e relatório em PDF | Entrega combinada em duas fases: primeiro a web completa | Fase seguinte, após a conclusão da web |
 | Implementação do padrão NASEM 2021 (RF-24) | Especificado (FSD, Anexo A.3), mas não implementado nesta versão | Depende da resposta à questão Q6 |
-| Sugestão da dieta ótima para uma vaca e uma fase (RF-30) | Fase 2 do módulo ampliado do Exercício do quadro | Depende de RF-28 e RF-29 |
+| Sugestão da dieta ótima para uma vaca e uma fase (RF-30) | Fase 2 do módulo ampliado do Exercício do quadro | Implementada em 03/11/2026 (sem o laço de redução de leite) |
 | Conversão automática de moeda (R$ para US$) e leitura automática de indicadores do CEPEA | Os preços do módulo ampliado são em US$; o mapeamento e a conversão ficam para depois | Q11, `LINEARIZACAO.md` 7.2 |
 | Preços automáticos do CEPEA | Exige fonte de dados e licença de uso; hoje os preços são digitados | Importação por CSV (RF-22) é o passo intermediário (Q5) |
 | Contas de usuário, hospedagem em nuvem, múltiplos usuários ou fazendas | O sistema é local e de um usuário | Sem previsão |
@@ -466,7 +466,7 @@ ilustrativos.
 | HU12 | professor, nutricionista | simular o mesmo cenário em NRC 2001 e NASEM 2021 e ver as diferenças | comparar os dois padrões do quadro | **Pendente** (RF-24; FSD, Anexo A.3) |
 | HU13 | professor | usar o arroz em grão do exercício na simulação com o RuFaS | representar fielmente o "arroz" do quadro | **Pendente** (RF-26; FSD, Anexo A.5) |
 | HU14 | nutricionista | ver se a ração obtida é coerente com o consumo estimado e com os limites de fibra, amido e gordura | desconfiar de uma ração irreal | **Pendente** (RF-27; FSD, Anexo A.4) |
-| HU15 | professor | ver as equações do RuFaS linearizadas e o erro da linearização, e comparar o otimizador linear com o do RuFaS | verificar que o simulador/otimizador próprio é linear e equivalente | **Parcial** (RF-29; erro de linearização na tela e em CSV; falta a comparação com o otimizador) |
+| HU15 | professor | ver as equações do RuFaS linearizadas e o erro da linearização, e comparar o otimizador linear com o do RuFaS | verificar que o simulador/otimizador próprio é linear e equivalente | **Feito** (RF-29 e RF-30: erro de linearização na tela e em CSV; dieta ótima comparada com o SLSQP do RuFaS) |
 | HU16 | nutricionista, professor | informar uma vaca e várias dietas já montadas e vê-las ordenadas da menos recomendada para a mais recomendada (a dieta ótima de referência entra na fase 2, RF-30), com custo e folga de cada restrição | testar dietas variadas e compará-las entre si | **Pendente** (RF-28; FSD, Anexo B) |
 | HU17 | nutricionista | receber a dieta ótima sugerida para a vaca e a fase | saber o que formular | **Pendente** (RF-30; fase 2) |
 
@@ -786,7 +786,7 @@ por fase; ração que pode passar do consumo estimado em até 30% (limite do RuF
 | **NRC (2001)** | Biblioteca e exigências NRC | Atendido |
 | **NASEM (2021)** | RF-24 (e RF-26, RF-27) | Pendente; especificado no FSD, Anexo A (viabilidade técnica verificada) |
 | **CEPEA** (preços) | RF-22 | Pendente (preços digitados à mão) |
-| Equações do simulador/otimizador **lineares** (pedido do professor, 01/11/2026) | RF-29 | Pendente; especificado em `LINEARIZACAO.md` e no FSD, Anexo B |
+| Equações do simulador/otimizador **lineares** (pedido do professor, 01/11/2026) | RF-29 | Implementado (E3, E6 e E7); especificado em `LINEARIZACAO.md` e no FSD, Anexo B |
 | Dietas variadas testadas e comparadas, da menos recomendada até a ótima | RF-28 e RF-30 | Pendente; especificado (fase 1 no Anexo B; fase 2 em `LINEARIZACAO.md`, 7.6) |
 | Entradas do módulo: características da vaca, exigências NASEM, dieta e preços em US$ (CEPEA) | RF-28 e RF-22 | Pendente; especificado |
 | Vaca recém-parida em consideração | Curva de lactação e ração por intervalo desde o dia 0 da simulação | Parcial: a curva é exibida, mas a dieta não é otimizada por fase da lactação (o RuFaS formula uma ração para o grupo de vacas em lactação) |
@@ -911,3 +911,4 @@ próprio RuFaS.
 | 0.8 | 02/11/2026 | _[a preencher]_ | Etapa E3 no código: modelo linear das restrições e avaliação de dietas no back-end (RF-28 e RF-29 em andamento, sem interface); 71 testes automatizados. |
 | 0.9 | 03/11/2026 | _[a preencher]_ | Etapas E4 e E5: interface do módulo ampliado na tela 1 (RF-28 com interface; falta a comparação formal, E6, e a dieta ótima, RF-30). |
 | 0.10 | 03/11/2026 | _[a preencher]_ | Etapa E6: comparação do modelo linear com o RuFaS (RF-29, fase 1) na tela e em CSV; RF-29 passa a Parcial. |
+| 0.11 | 03/11/2026 | _[a preencher]_ | Etapa E7: dieta ótima (RF-30) por LP com escalares globais, comparada com o SLSQP do RuFaS; RF-29 e RF-30 implementados (sem o laço de redução de leite). |

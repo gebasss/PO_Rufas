@@ -20,7 +20,7 @@ from . import lactation
 from .diet_lp import Food, NutrientBounds, solve_diet
 from .feeds import FeedInfo, feed_library
 from .jobs import Job, JobManager
-from .module.api import compare_payload, defaults_payload, evaluate_payload, requirements_payload
+from .module.api import compare_payload, defaults_payload, evaluate_payload, optimize_payload, requirements_payload
 from .rufas_adapter import PROJECT_ROOT, Scenario
 from .scenarios import DEFAULT_MILK_PRICE, DEFAULT_PRICES, Economics, evaluate
 from .sensitivity import Factor, run_sensitivity
@@ -184,6 +184,13 @@ def simulate_work(job: Job) -> dict[str, Any]:
     return payload
 
 
+def optimize_work(job: Job) -> dict[str, Any]:
+    def progress(done: int, total: int) -> None:
+        job.done, job.total = done, total
+
+    return optimize_payload(job.params, progress, lambda: job.cancel_requested)
+
+
 def sensitivity_work(job: Job) -> dict[str, Any]:
     scenario, economics = scenario_from(job.params, f"web_{job.id}")
     factors = [Factor(str(f["key"]), str(f["label"]), float(f["low"]), float(f["high"])) for f in job.params["factors"]]
@@ -287,6 +294,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(JOBS.submit("simulate", body, simulate_work).public(include_result=False), 202)
             if path == "/api/jobs/sensitivity":
                 return self._json(JOBS.submit("sensitivity", body, sensitivity_work).public(include_result=False), 202)
+            if path == "/api/jobs/optimize":
+                return self._json(JOBS.submit("optimize", body, optimize_work).public(include_result=False), 202)
+            if path.startswith("/api/jobs/") and path.endswith("/cancel"):
+                job = JOBS.cancel(path.split("/")[-2])
+                return self._json(job.public(include_result=False)) if job else self._json({"error": "job não encontrado"}, 404)
             self._json({"error": "rota não encontrada"}, 404)
         except Exception as exc:  # noqa: BLE001
             self._json({"error": f"{type(exc).__name__}: {exc}"}, 500)

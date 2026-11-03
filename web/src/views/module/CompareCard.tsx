@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { nf } from '@/lib/format'
+import { nf, signedPct } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { ComparisonDiet, ComparisonProbe, ComparisonRow, ModuleComparison } from '@/lib/types'
 
@@ -19,9 +19,6 @@ import { ConstraintBadge } from './StatusBadge'
 
 const digits = (value: number) => (Math.abs(value) < 1 ? 3 : 2)
 const fmt = (value: number | null | undefined) => (value == null ? '—' : nf(value, digits(value)))
-/** Erro com sinal; abaixo de meio centésimo vale zero (evita "-0,00%"). */
-const signed = (value: number | undefined) =>
-  value == null ? '—' : Math.abs(value) < 0.005 ? '0,00%' : `${value > 0 ? '+' : ''}${nf(value, 2)}%`
 
 /** Escala 0,95 → "−5%": o rótulo da coluna de erro daquela sondagem. */
 const scaleLabel = (scale: number) => `${scale < 1 ? '−' : '+'}${nf(Math.abs(scale - 1) * 100, 0)}%`
@@ -91,10 +88,10 @@ function ComparisonTable({ diet, scales, tolerance }: { diet: ComparisonDiet; sc
               <TableCell className='text-right tabular-nums'>{fmt(row.supply_original)}</TableCell>
               <TableCell className='text-right tabular-nums'>{fmt(row.slack_linear)}</TableCell>
               <TableCell className='text-right tabular-nums'>{fmt(row.slack_original)}</TableCell>
-              <TableCell className='text-right tabular-nums'>{signed(row.point_error_pct)}</TableCell>
+              <TableCell className='text-right tabular-nums'>{signedPct(row.point_error_pct)}</TableCell>
               {scales.map(scale => (
                 <TableCell key={scale} className='text-right tabular-nums'>
-                  {signed(probeAt(row.probes, scale)?.error_pct)}
+                  {signedPct(probeAt(row.probes, scale)?.error_pct)}
                 </TableCell>
               ))}
               <TableCell

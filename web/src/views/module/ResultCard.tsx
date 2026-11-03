@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 
-import { AlertTriangleIcon, PlayIcon } from 'lucide-react'
+import { AlertTriangleIcon, CheckCircle2Icon, PlayIcon } from 'lucide-react'
 
 import { KpiCard } from '@/components/shared'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { nf, usd } from '@/lib/format'
+import { nf, signedPct, usd } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { ModuleConstraint, ModuleDietResult, ModuleEvaluation } from '@/lib/types'
 
@@ -36,6 +36,8 @@ interface Props {
   error: string | null
   blockers: string[]
   selected: string | null
+  /** Custo da dieta ótima (LP), quando calculada para as entradas atuais: vira a referência final do ranking. */
+  optimalCost: number | null
   onSelect: (name: string) => void
   onEvaluate: () => void
 }
@@ -54,7 +56,7 @@ function Requirement({ row }: { row: ModuleConstraint }) {
   )
 }
 
-function ConstraintTable({ diet }: { diet: ModuleDietResult }) {
+export function ConstraintTable({ diet }: { diet: ModuleDietResult }) {
   return (
     <Table>
       <TableHeader>
@@ -108,7 +110,17 @@ function ConstraintTable({ diet }: { diet: ModuleDietResult }) {
   )
 }
 
-export default function ResultCard({ result, stale, evaluating, error, blockers, selected, onSelect, onEvaluate }: Props) {
+export default function ResultCard({
+  result,
+  stale,
+  evaluating,
+  error,
+  blockers,
+  selected,
+  optimalCost,
+  onSelect,
+  onEvaluate
+}: Props) {
   const ranked = useMemo(
     // O back-end ordena da menos para a mais recomendada; na tela a posição 1 é a mais recomendada.
     () => (result ? [...result.ranking].reverse().map(name => result.diets.find(d => d.name === name)!) : []),
@@ -186,6 +198,11 @@ export default function ResultCard({ result, stale, evaluating, error, blockers,
                     <TableHead>Estado</TableHead>
                     <TableHead className='text-right'>Custo (US$/dia)</TableHead>
                     <TableHead className='text-right'>Custo (US$/kg MS)</TableHead>
+                    {optimalCost !== null && (
+                      <TableHead className='text-right' title='(custo da dieta − custo da dieta ótima) / custo da dieta ótima'>
+                        Desvio do ótimo
+                      </TableHead>
+                    )}
                     <TableHead className='text-right' title='Soma das faltas normalizadas das restrições violadas'>
                       Violação
                     </TableHead>
@@ -219,6 +236,11 @@ export default function ResultCard({ result, stale, evaluating, error, blockers,
                         </TableCell>
                         <TableCell className='text-right tabular-nums'>{usd(diet.cost, 2)}</TableCell>
                         <TableCell className='text-right tabular-nums'>{usd(diet.cost_per_kg, 3)}</TableCell>
+                        {optimalCost !== null && (
+                          <TableCell className='text-right tabular-nums'>
+                            {signedPct(((diet.cost - optimalCost) / optimalCost) * 100, 1)}
+                          </TableCell>
+                        )}
                         <TableCell className='text-right tabular-nums'>{diet.violation > 0 ? nf(diet.violation, 3) : '—'}</TableCell>
                         <TableCell className='text-muted-foreground text-xs'>
                           {diet.violated.length ? diet.violated.map(id => labelOf(diet, id)).join(' · ') : '—'}
@@ -226,8 +248,30 @@ export default function ResultCard({ result, stale, evaluating, error, blockers,
                       </TableRow>
                     )
                   })}
+                  {optimalCost !== null && (
+                    <TableRow className='bg-muted/40'>
+                      <TableCell>Ref.</TableCell>
+                      <TableCell className='font-medium'>Dieta ótima (sugerida)</TableCell>
+                      <TableCell>
+                        <Badge variant='secondary'>
+                          <CheckCircle2Icon aria-hidden /> Viável
+                        </Badge>
+                      </TableCell>
+                      <TableCell className='text-right tabular-nums'>{usd(optimalCost, 2)}</TableCell>
+                      <TableCell />
+                      <TableCell className='text-right tabular-nums'>0,0%</TableCell>
+                      <TableCell />
+                      <TableCell />
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
+              {optimalCost !== null && (
+                <p className='text-muted-foreground text-xs'>
+                  O desvio é em relação à dieta ótima do cartão abaixo, que usa as exigências da vaca sem ração anterior; as
+                  dietas acima usam as exigências calculadas com a própria dieta, então pequenas diferenças são esperadas.
+                </p>
+              )}
               {result.best === null && (
                 <p className='text-muted-foreground text-xs'>Nenhuma das dietas informadas atende a todas as restrições.</p>
               )}

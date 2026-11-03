@@ -14,6 +14,14 @@ function formatter(digits: number) {
 export const nf = (value: number | null | undefined, digits = 2) =>
   value === null || value === undefined || Number.isNaN(value) ? '—' : formatter(digits).format(value)
 
+/** Variação em % com sinal ("+1,2%", "-0,3%"); abaixo de meio passo da última casa vale zero (evita "-0,00%"). */
+export const signedPct = (value: number | null | undefined, digits = 2) =>
+  value === null || value === undefined || Number.isNaN(value)
+    ? '—'
+    : Math.abs(value) < 0.5 * 10 ** -digits
+      ? `${formatter(digits).format(0)}%`
+      : `${value > 0 ? '+' : ''}${formatter(digits).format(value)}%`
+
 export const usd = (value: number | null | undefined, digits = 0) =>
   value === null || value === undefined || Number.isNaN(value) ? '—' : `US$ ${formatter(digits).format(value)}`
 

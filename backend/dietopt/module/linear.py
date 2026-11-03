@@ -132,9 +132,21 @@ def build(
     ``requirements`` é o ``NutritionRequirements`` do RuFaS (já com as sobrescritas); ``pen`` = (metano entérico em g/dia,
     nitrogênio urinário em kg/dia), só para a energia do NASEM.
     """
+    return build_at(standard, animal_type, feeds, reference(feeds, x_ref, body_weight), requirements, body_weight, pen)
+
+
+def build_at(
+    standard: str,
+    animal_type: str,
+    feeds: Sequence[Any],
+    ref: Reference,
+    requirements: Any,
+    body_weight: float,
+    pen: tuple[float, float] | None,
+) -> list[LinearConstraint]:
+    """Como ``build``, mas com os escalares globais dados (``Reference``): é o que a otimização usa para parametrizá-los."""
     rf = rufas()
     const = rf.constants
-    ref = reference(feeds, x_ref, body_weight)
     n = len(feeds)
     ones = np.ones(n)
     ndf = _per_feed(feeds, lambda fd: fd.NDF)

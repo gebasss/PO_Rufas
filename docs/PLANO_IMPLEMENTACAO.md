@@ -1,6 +1,6 @@
 # Plano de implementação: módulo "Exercício do quadro" ampliado e complementos
 
-**Versão 0.5 (03/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
+**Versão 0.6 (03/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
 comportamento do sistema; as regras estão nos documentos citados e este arquivo só as sequencia.
 
 | Documento | O que fornece ao plano |
@@ -24,7 +24,17 @@ comportamento do sistema; as regras estão nos documentos citados e este arquivo
 | E4 | **Feita (03/11/2026)** | Rota feita junto com a E3; formatos conferidos com a interface (E5) |
 | E5 | **Feita (03/11/2026)** | Tela 1 com o seletor "Exercício simples" × "Avaliar dietas (vaca real)" e os cartões Vaca, Dietas, Preços e limites e Resultado (`ExerciseView`, `ModuleView`, `views/module/`); build em `frontend/` por `scripts\build-web.ps1`; conferida no navegador (NASEM e NRC, categoria de crescimento, painel de ≈ 800 px e tela de 375 px, sem rolagem horizontal da página). **Fica de fora:** o seletor de padrão da simulação (FSD A.3.1) e a persistência em `localStorage` |
 | E6 | **Feita (03/11/2026)** | `module/compare.py` (relatório sobre o resultado de `evaluate`, CSV), `POST /api/module/compare`, cartão "Comparação com o RuFaS" na tela (`CompareCard`) com tolerância editável e botão de CSV; 13 testes novos (84 no total) |
-| E7 e E8 | Não iniciadas | |
+| E7 | **Feita (03/11/2026)** | `module/optimize.py` (LP por ponto da grade de escalares, refinamento, resgate, preços-sombra, verificação com as funções do RuFaS, SLSQP em várias sementes), tarefa `optimize` com cancelamento (`jobs.py`: estado `cancelled`, `POST /api/jobs/<id>/cancel`), cartão "Dieta ótima" e coluna "Desvio do ótimo" no ranking; 31 testes novos (115 no total, ≈ 80 s) |
+| E8 | Não iniciada | |
+
+Achados do E7: (i) a formulação foi validada pelo ponto exato: nos escalares do melhor SLSQP o LP reproduz o custo (erro relativo
+< 1e-6) em NRC e NASEM, para lactação, vaca seca e novilha; (ii) no caso-base do NRC o LP fica 0,008% acima do melhor do RuFaS
+(3,8345 contra 3,8342, resolução normal, ≈ 18 s) e no NASEM empata (3,08318); critério de 0,1% atendido; (iii) a busca só por
+grade e padrões travava (NASEM de lactação a +2,6%; NASEM de vaca seca e de novilha sem nenhum ponto viável da grade rápida):
+entraram a descida guiada pelo LP com as quantidades livres e o resgate por ponto fixo dos escalares; (iv) o SLSQP do RuFaS
+é instável: com seis alimentos, uma semente parou em 3,8595 e outra não convergiu; (v) a tolerância de viabilidade do RuFaS
+é relativa de 1e-5 (a estrita de 1e-9 da avaliação marcava como violada uma execução que o SLSQP considera viável).
+O laço de redução de leite (LINEARIZACAO 7.6) e a otimização por fase da lactação ficam para depois.
 
 Achados do E6: (i) nas dietas de exemplo do NRC, o maior erro a ±5% é 0,30% ("Silagem e concentrado") e 0,60% ("Só volumoso"); a
 dieta "Mais concentrado" (TDN 69,9%) chega a 1,86% (energia de crescimento) e 4 das 14 restrições passam de 1%; no NASEM (metano 400 g/dia e N urinário
