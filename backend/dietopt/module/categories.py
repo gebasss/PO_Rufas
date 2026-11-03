@@ -53,14 +53,15 @@ def parse_animal_type(category: Category, value: str | None) -> str:
 class Constraint:
     id: str
     label: str
-    rufas_name: str  # função de restrição do otimizador do RuFaS
+    rufas_name: str  # método de ``RationOptimizer`` que calcula a folga da restrição (o "original" não linear)
     kind: str  # classe de linearização: L, E ou A (LINEARIZACAO.md, seção 4)
 
 
 def constraints_for(standard: str, animal_type: str) -> list[Constraint]:
     """Restrições nutricionais do otimizador do RuFaS para o padrão e o tipo de animal."""
     common = [
-        Constraint("dmi", "Consumo de matéria seca", "DMI_constraint_lower/upper", "L"),
+        Constraint("dmi_min", "Consumo de matéria seca mínimo", "DMI_constraint_lower", "L"),
+        Constraint("dmi_max", "Consumo de matéria seca máximo", "DMI_constraint_upper", "L"),
         Constraint("calcium", "Cálcio", "calcium_constraint", "L"),
         Constraint("phosphorus", "Fósforo", "phosphorus_constraint", "L"),
         Constraint("ndf_min", "FDN total mínima", "NDF_constraint_lower", "E"),

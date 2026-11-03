@@ -20,7 +20,7 @@ from . import lactation
 from .diet_lp import Food, NutrientBounds, solve_diet
 from .feeds import FeedInfo, feed_library
 from .jobs import Job, JobManager
-from .module.api import defaults_payload, requirements_payload
+from .module.api import defaults_payload, evaluate_payload, requirements_payload
 from .rufas_adapter import PROJECT_ROOT, Scenario
 from .scenarios import DEFAULT_MILK_PRICE, DEFAULT_PRICES, Economics, evaluate
 from .sensitivity import Factor, run_sensitivity
@@ -277,6 +277,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(toy_problem(body))
             if path == "/api/toy/sensitivity":
                 return self._json(toy_sensitivity(body))
+            if path == "/api/module/evaluate":
+                return self._json(evaluate_payload(body))
             if path == "/api/module/requirements":
                 return self._json(requirements_payload(body))
             if path == "/api/jobs/simulate":

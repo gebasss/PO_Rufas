@@ -8,6 +8,7 @@ from typing import Any, Mapping
 from ..standards import get_standard
 from .categories import CATEGORY_ANIMAL_TYPES, CATEGORY_LABELS, constraints_for, parse_animal_type, parse_category
 from .fields import fields_for
+from .evaluate import evaluate_diets
 from .requirements import REQUIREMENT_FIELDS, compute_requirements, rufas_diet_defaults
 
 DEFAULT_STANDARD = "NASEM"  # padrão principal do módulo (o NRC é apoio)
@@ -33,6 +34,20 @@ def defaults_payload(standard: str | None, category: str | None, animal_type: st
     }
 
 
+def evaluate_payload(body: Mapping[str, Any]) -> dict[str, Any]:
+    """Avaliação e ordenação das dietas informadas (FSD, Anexo B.7)."""
+    return evaluate_diets(
+        body.get("standard") or DEFAULT_STANDARD,
+        body.get("category"),
+        body.get("cow") or {},
+        body.get("diets"),
+        body.get("prices") or {},
+        body.get("requirements_override"),
+        body.get("limits"),
+        body.get("animal_type"),
+    )
+
+
 def requirements_payload(body: Mapping[str, Any]) -> dict[str, Any]:
     """Exigências calculadas da vaca, com as sobrescritas do usuário."""
     result = compute_requirements(
@@ -42,4 +57,4 @@ def requirements_payload(body: Mapping[str, Any]) -> dict[str, Any]:
         body.get("requirements_override"),
         body.get("animal_type"),
     )
-    return asdict(result)
+    return result.to_dict()

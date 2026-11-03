@@ -241,7 +241,7 @@ Não linearidades: `D(x)`, `pbw(x)` e `%conc(x)` (razões em `x`), a razão `Kd/
 | Amido total em `dNDF_i` (4.5) | `S_tot` em **kg** (`Σ x_j·St_j/100`) | `Dt_St` em **% da MS** (Eq. 3-5a) | A digestibilidade da FDN fica ≈ 0,1 acima; para uma dieta com 35% de FDN, a energia digestível sobe ≈ 0,15 Mcal/kg MS (**estimativa, a confirmar com o código R oficial**) |
 | Oferta de proteína no modo NASEM | Método do NRC (4.6) | O NASEM tem outro sistema de proteína (cap. 6) | Oferta e exigência de padrões diferentes (**a verificar**) |
 | Ponto de partida do `SLSQP` | `random.random()·10` se não há ração anterior | — | O ótimo do RuFaS é local; em 30 execuções o custo variou 0,1% (seção 10) |
-| FDN padrão da ração anterior (calculadora NASEM) | `DEFAULT_NDF_PERCENTAGE = 0,3` (fração) vai à calculadora, que espera **porcentagem** | `NDF_conc` em % (cap. 6) | Sem ração anterior, a PM exigida fica ≈ 5% menor que com 33% (verificado em 02/11/2026; vaca de 650 kg e 40 kg de leite); o módulo replica e avisa |
+| FDN da ração anterior (calculadora NASEM) | Calcula `ndf_supply / consumo` como **fração** (0,33; o padrão é 0,3) e a passa à calculadora, que espera **porcentagem** (`NDF_conc`) | `NDF_conc` em % (cap. 6) | Com a fração, a PM exigida da vaca em lactação fica ≈ 5% menor (2.334 contra 2.449 g) e o **consumo estimado da vaca seca sobe ≈ 19%** (16,8 contra 14,2 kg) e o da novilha ≈ 7% (verificado em 02/11/2026); o módulo replica e avisa. Como o teto de consumo do RuFaS é 130% do estimado, o teto efetivo sobe junto |
 | Piso do desconto de ingestão | Fator `D ≥ 0,6` | TDN **descontado** ≥ 60% (NRC, cap. 2), isto é, `D ≥ 60/TDN1X` | Para TDN1X de 70%, o piso do NRC é 0,857 e o do RuFaS é 0,6; raramente é atingido (`D` de 0,855 a 0,94 nas rações guardadas) |
 
 ---
@@ -368,7 +368,9 @@ CEPEA e data). O mapeamento entre os indicadores do CEPEA e os alimentos da bibl
 `pen_average_enteric_methane` (g/dia) e `pen_average_urine_nitrogen` (kg) são **saídas do RuFaS** para o lote. Para uma
 vaca isolada, o módulo precisa **recebê-las** ou **estimá-las** pelas equações do NASEM (metano e nitrogênio urinário,
 Eq. 3-9 e 3-10a), também congeladas na referência. No RuFaS esses dois valores são a **média do lote** dos valores do dia
-anterior de cada animal (só o NASEM os usa), e não existem para uma vaca isolada. **Decisão pendente (L-Q2).**
+anterior de cada animal (só o NASEM os usa), e não existem para uma vaca isolada. **Decisão pendente (L-Q2).** Enquanto isso, o módulo
+os recebe como campos opcionais (`enteric_methane`, em g/dia, e `urinary_nitrogen`, em kg/dia); sem eles a restrição de energia
+do NASEM fica "indisponível" e a dieta é marcada como incompleta, em vez de usar um valor inventado.
 
 ### 7.4 Comparação de dietas (L-D4)
 

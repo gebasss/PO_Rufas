@@ -87,7 +87,7 @@ O repositório contém também a implementação de referência que este FSD des
 | Ferramentas de build da interface | Node 20.9 ou superior e npm (observado: Node 24.18, npm 11.16); só para quem altera a interface |
 | Dados de referência | Tabelas CSV e JSON do RuFaS (`NRC_comp.csv`, `user_feeds.csv`, exemplo `freestall`) e constantes do código |
 | Instalação e execução | `scripts/setup.ps1` (PowerShell), `scripts/fetch_wheels.py`, `scripts/build-web.ps1`, `iniciar.bat` |
-| Testes automatizados | `pytest`, 33 testes em `backend/tests/` |
+| Testes automatizados | `pytest`, 71 testes em `backend/tests/` |
 | Banco de dados, ORM, framework web de backend, autenticação | Nenhum |
 
 **Padrão arquitetural:** ponte local em três camadas. O navegador (site estático) comunica-se por HTTP/JSON com um servidor Python em loopback, que delega a simulação a um processo filho do RuFaS e a leitura de seus arquivos de saída.
@@ -181,7 +181,7 @@ aplicacao RuFaS/
       sensitivity.py          Sensibilidade e Spearman
       lactation.py            Curva de Wood e marcos
       feeds.py                Biblioteca NRC e tetos padrão
-    tests/                    33 testes (pytest)
+    tests/                    71 testes (pytest)
   web/                        Fontes da interface (Next.js)
     src/app, src/views, src/components, src/providers, src/hooks, src/lib
     package.json, package-lock.json, next.config.ts, LICENSE-TEMPLATE.md
@@ -290,7 +290,7 @@ aplicacao RuFaS/
 | Modificar o código do RuFaS | O RuFaS é usado como está. |
 | Hospedagem em nuvem, vários usuários, várias fazendas | O sistema é local e individual. |
 | CI/CD, ambiente de homologação, fluxo de revisão do repositório Git | Não existem (seção 27). |
-| Testes automatizados de integração e de interface | Não existem; só os 33 testes do back-end. |
+| Testes automatizados de integração e de interface | Não existem; só os 71 testes do back-end. |
 
 ---
 
@@ -1128,7 +1128,9 @@ O sistema é considerado implementado quando:
 | `test_standards.py` | Padrão nutricional (NRC e NASEM): bibliotecas, preços restritos à biblioteca, montagem do cenário NASEM com limites |
 | `test_module_requirements.py` | Exigências da vaca pelas calculadoras do RuFaS, validação dos campos, sobrescritas, restrições por categoria, rotas do módulo |
 
-Total: 33 testes passando. Integração real com o RuFaS e interface foram verificadas manualmente, **sem teste automatizado**.
+| `test_module_evaluate.py` | Avaliação de dietas: oferta linear = oferta do RuFaS no ponto, erro fora do ponto, razões exatas, `min` da proteína, categorias, ordenação, replicações do RuFaS, entradas inválidas |
+
+Total: 71 testes passando. Integração real com o RuFaS e interface foram verificadas manualmente, **sem teste automatizado**.
 
 ---
 
@@ -1259,7 +1261,7 @@ Não foram identificadas pendências que impeçam a manutenção da versão atua
 
 ## Anexo A. Especificação dos Requisitos Planejados RF-24, RF-26 e RF-27 (NÃO implementados)
 
-> **Status:** este anexo especifica funcionalidades que **ainda não existem** na interface. Nada aqui descreve o comportamento da interface atual. **Já implementados no back-end em 02/11/2026** (etapas E1 e E2 de `PLANO_IMPLEMENTACAO.md`): o padrão NASEM nos cenários e na biblioteca (A.3.2 e A.3.3), e as rotas `/api/module/defaults` e `/api/module/requirements` (B.3 e B.7). Foi escrito a partir de uma leitura do NASEM 2021 (notas em `docs/nasem2021_notas/`), do código do RuFaS v1.0.6 e dos resultados de simulação já guardados em `runs/_cache/`. Onde um fato do RuFaS ainda não foi verificado, o texto diz **"a verificar"**. Os limiares e as decisões marcados **(a confirmar)** dependem do professor ou da equipe (seção A.6).
+> **Status:** este anexo especifica funcionalidades que **ainda não existem** na interface. Nada aqui descreve o comportamento da interface atual. **Já implementados no back-end em 02/11/2026** (etapas E1 a E3 de `PLANO_IMPLEMENTACAO.md`): o padrão NASEM nos cenários e na biblioteca (A.3.2 e A.3.3), e as rotas `/api/module/defaults`, `/api/module/requirements` e `/api/module/evaluate` (B.3, B.6 e B.7). Foi escrito a partir de uma leitura do NASEM 2021 (notas em `docs/nasem2021_notas/`), do código do RuFaS v1.0.6 e dos resultados de simulação já guardados em `runs/_cache/`. Onde um fato do RuFaS ainda não foi verificado, o texto diz **"a verificar"**. Os limiares e as decisões marcados **(a confirmar)** dependem do professor ou da equipe (seção A.6).
 
 ### A.1 Visão geral
 
@@ -1609,7 +1611,7 @@ Para cada dieta `d`, com os coeficientes avaliados **na própria dieta** (ponto 
    normalizada** `V = Σ max(0, (exigência − oferta)/exigência)` (`LINEARIZACAO.md`, 7.4).
 6. **Custo** `= Σ p_i·x_i`, em US$/dia.
 
-Na fase 1 **não há otimização**; logo, **não há preços-sombra** (eles existem só quando um LP com `x` livre é resolvido,
+Na fase 1 **não há otimização** (implementada em 02/11/2026, etapa E3); logo, **não há preços-sombra** (eles existem só quando um LP com `x` livre é resolvido,
 RF-30). Na disjunção de energia do NRC, a oferta usada é a do ramo que cobre a exigência total, ou a maior, se nenhum cobre.
 O RuFaS é replicado onde diverge do livro (amido em kg; oferta de proteína do NRC no modo NASEM), com aviso no resultado.
 
@@ -1618,12 +1620,34 @@ O RuFaS é replicado onde diverge do livro (amido em kg; oferta de proteína do 
 2. Dietas **viáveis**, em ordem decrescente de custo.
 A dieta viável de menor custo é marcada **"melhor entre as informadas"** (não "ótima": a ótima é do RF-30).
 
-### B.7 API (proposta)
+### B.7 API (implementada em 02/11/2026, etapas E2 e E3)
 
 | Método e rota | Corpo | Resposta |
 |---|---|---|
 | `GET /api/module/defaults?standard=<NASEM\|NRC>&category=<LAC_COW\|CLOSE_UP\|GROWING>` | — | Campos da vaca da categoria, com unidade e se são obrigatórios; restrições aplicáveis |
 | `POST /api/module/evaluate` | `{ standard, category, cow: {…}, requirements_override?: {…}, diets: [{ name, amounts: { <id>: <kg MS/dia> } }], prices: { <id>: <US$/kg MS> } }` | Para cada dieta: `cost`, `feasible`, `violation`, `constraints: [{ id, label, requirement, supply_linear, supply_nonlinear, error_pct, slack, status }]`, `warnings`; mais `requirements` calculadas e `ranking` (lista de nomes, da menos para a mais recomendada) |
+
+Rota adicional (E2): `POST /api/module/requirements` com `{ standard, category, animal_type?, cow, requirements_override? }` devolve as
+exigências calculadas, as sobrescritas aplicadas, os valores efetivamente enviados à calculadora e os avisos.
+
+Detalhes da implementação de `POST /api/module/evaluate`:
+
+- Corpo, além do acima: `limits?` (`{ <id>: [mín, máx] }` em kg MS/dia; padrão: 0 e o teto padrão do alimento, seção 14.2),
+  `animal_type?` (`DRY_COW` ou `HEIFER_III` em `CLOSE_UP`; `HEIFER_I` ou `HEIFER_II` em `GROWING`) e, em `cow`, os campos do
+  lote `enteric_methane` (g/dia) e `urinary_nitrogen` (kg/dia), usados só na energia do NASEM (`LINEARIZACAO.md`, 7.3).
+  Sem eles, a restrição `ne_nasem` fica com estado `indisponivel` e a dieta, `incomplete: true` (decisão L-Q2 pendente).
+- Resposta: `requirements` (calculadas com os padrões do RuFaS), `diets[]` (`cost`, `cost_per_kg`, `feasible`, `violation`,
+  `violated[]`, `incomplete`, `intake`, `requirements` da própria dieta, `constraints[]`, `warnings[]`), `ranking[]` (da menos para a
+  mais recomendada), `best` (viável de menor custo ou `null`) e `warnings[]`.
+- Cada `constraints[]` traz `id`, `label`, `unit`, `kind` (L, E ou A), `sense` (`ge` ou `le`), `requirement`, `supply_linear`,
+  `supply_nonlinear` (do `RationOptimizer` do RuFaS), `error_pct`, `slack` e `status` (`ok`, `no_limite`, `violada` ou
+  `indisponivel`). Os limites por alimento entram como `limit_ge_<id>` e `limit_le_<id>`.
+- As exigências são calculadas **para cada dieta**, com a própria dieta como "ração anterior" (TDN%, energia e FDN), como o RuFaS
+  faz com a ração do dia anterior; valores informados pelo usuário nesses campos prevalecem.
+- `error_pct` é o maior desvio, entre −5% e +5% das quantidades, da oferta linear (coeficientes congelados na dieta) em relação
+  à oferta original, **em % da oferta original** (não da exigência: a exigência de crescimento do NRC é pequena e inflaria o
+  número). É 0 nas classes L e E, que são exatas.
+- "No limite": folga de até 0,5% da exigência. Até 10 dietas por avaliação.
 
 Erros no formato da seção 11.3. A rota é síncrona. O `id` dos alimentos é o `rufas_id` da biblioteca do padrão.
 
@@ -1639,16 +1663,22 @@ Erros no formato da seção 11.3. A rota é síncrona. O `id` dos alimentos é o
 
 1. **Identidade no ponto:** para cada dieta, a oferta linearizada avaliada em `x_d` é igual à não linear, dentro de 1e-6.
 2. **Erro fora do ponto:** com os coeficientes de `x_d` e as quantidades da dieta variadas de −5% a +5%, o erro de oferta
-   fica em até 1% da exigência (`LINEARIZACAO.md`, seções 6 e 10: a ±10% o erro de energia chegou a 1,5%) **(a confirmar)**.
+   fica em até 1% da oferta original (`LINEARIZACAO.md`, seções 6 e 10: a ±10% o erro de energia chegou a 1,5%) **(a confirmar)**.
+   Medido em 02/11/2026 (NRC, vaca em lactação, quantidades de −5% a +5%): no regime sem desconto (TDN% ≤ 60, `D` = 1) o erro
+   de energia é 0 e o de proteína fica em até 0,4%; no regime com desconto, o erro cresce com o TDN%: 0,5% a 0,7% (TDN 61%),
+   1,2% a 2,4% (TDN 70%) e 2% a 4% (TDN 77%); a proteína fica em até 0,2%. O critério de 1% **não vale** para dietas com
+   `D` < 1 e TDN% acima de ≈ 65; o erro é mostrado em cada restrição (`error_pct`), e a decisão L-Q1 (tolerância) fica para o
+   professor. Na fase 2 o problema não aparece, porque a parametrização congela os escalares globais de forma exata.
 3. **Razões exatas:** em dietas aleatórias, a forma linear de FDN, FDN de forragem e gordura (4.3) dá o **mesmo** estado
    viável/inviável que a razão original.
 4. **`min` de proteína:** as duas restrições lineares equivalem ao `min` (4.6) em dietas aleatórias.
 5. **Categorias:** novilhas e vacas secas, no modo NRC, **não** têm as restrições `NE_total` e `NE_lactation`.
 6. **Ordenação:** inviáveis antes de viáveis; entre inviáveis, `V` decrescente; entre viáveis, custo decrescente.
-7. **Vetores de teste:** as três rações de `LINEARIZACAO.md`, 5.3, reproduzem os valores de desconto `D` (0,908; 0,935;
-   0,855) e de oferta de energia da tabela, dentro de 1%.
+7. **Vetores de teste:** as três rações guardadas de `LINEARIZACAO.md`, 5.3, não estão no repositório (`runs/` é local). O teste usa
+   a ração do "Conjunto base" (TDN% = 59,97, `D` = 1) e uma com mais concentrado (TDN% = 69,9, `D` < 1), com ofertas de
+   referência gravadas a partir do próprio RuFaS.
 8. **Replicação do RuFaS:** o amido total em kg é usado na digestibilidade da FDN do NASEM, e o resultado traz o aviso.
-9. **Testes automatizados** (`pytest`) para os itens 1 a 7; o RuFaS **não** é modificado.
+9. **Testes automatizados** (`pytest`) para os itens 1 a 8, em `backend/tests/test_module_evaluate.py`; o RuFaS **não** é modificado.
 
 ### B.10 Riscos e itens a verificar antes de implementar
 

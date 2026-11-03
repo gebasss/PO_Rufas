@@ -1,6 +1,6 @@
 # Plano de implementação: módulo "Exercício do quadro" ampliado e complementos
 
-**Versão 0.2 (02/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
+**Versão 0.3 (02/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
 comportamento do sistema; as regras estão nos documentos citados e este arquivo só as sequencia.
 
 | Documento | O que fornece ao plano |
@@ -20,7 +20,16 @@ comportamento do sistema; as regras estão nos documentos citados e este arquivo
 | E0 | Em aberto | Valem as propostas registradas; perguntas ao professor em `PERGUNTAS_PROFESSOR.md` |
 | E1 | **Feita no back-end (02/11/2026)** | `standards.py`, `paths.py`; `Scenario.nutrient_standard` grava a biblioteca do padrão (com limites) e o `metadata`; preços restritos à biblioteca; `GET /api/feeds?standard=`; falta o seletor na interface (FSD A.3.1) |
 | E2 | **Feita (02/11/2026)** | `module/` (`categories`, `fields`, `requirements`, `api`); `GET /api/module/defaults`, `POST /api/module/requirements`; padrão do módulo é NASEM |
-| E3 a E8 | Não iniciadas | |
+| E3 | **Feita (02/11/2026)** | `module/linear.py` (classes L, E e A, em NRC e NASEM, todas as categorias), `module/evaluate.py` (oferta linear × `RationOptimizer`, erro fora do ponto, estados, violação, ordenação), `module/library.py`, `module/rufas.py`; `POST /api/module/evaluate`; 71 testes passando, e a sabotagem de coeficientes confirmou que os testes falham quando algo está errado |
+| E4 | Rota feita junto com a E3 | Falta só conferir os formatos finais com a interface (E5) |
+| E5 a E8 | Não iniciadas | |
+
+Achados do E3: (i) a oferta linear coincide com a do RuFaS no ponto em todas as restrições, nas seis combinações de padrão e
+categoria; (ii) a energia do NASEM exige metano e nitrogênio urinário do lote (L-Q2), que viraram campos opcionais, com
+restrição "indisponível" sem eles; (iii) o RuFaS passa a FDN da ração anterior como fração, o que muda o consumo estimado da
+vaca seca (+19%) e da novilha (+7%) e a PM da vaca em lactação (−5%); (iv) o erro de linearização foi medido contra a oferta
+original, não contra a exigência, porque a exigência de crescimento do NRC é pequena e inflava o número; (v) com desconto de
+ingestão (`D` < 1) o erro a ±5% passa de 1% quando o TDN% sobe (até 4% a 77%), o que reforça a parametrização da fase 2.
 
 Achados do E2: (i) a idade (`days_born`) é obrigatória só no NRC para novilhas; (ii) o intervalo entre partos vazio quebra a
 calculadora para vacas de 1ª e 2ª paridade, então vale 0 (que o RuFaS trata como "sem ganho de peso") com aviso; (iii) os

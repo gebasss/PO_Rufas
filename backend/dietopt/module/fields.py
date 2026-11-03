@@ -43,6 +43,8 @@ FIELDS: tuple[FieldSpec, ...] = (
     FieldSpec("housing", "Alojamento", "", choices=("Barn", "Grazing")),
     FieldSpec("distance", "Distância percorrida", "m", 0, 20000),
     FieldSpec("process_based_phosphorus_requirement", "Fósforo do processo", "g/dia", 0, 500),
+    FieldSpec("enteric_methane", "Metano entérico do lote", "g/dia", 0, 1500, group="lote"),
+    FieldSpec("urinary_nitrogen", "Nitrogênio urinário do lote", "kg/dia", 0, 2, group="lote"),
     FieldSpec("ndf_percentage", "FDN da ração anterior", "% da MS", 0, 100, group="dieta"),
     FieldSpec("tdn_percentage", "TDN da ração anterior", "% da MS", 0, 100, group="dieta"),
     FieldSpec("net_energy_diet_concentration", "Energia da ração anterior", "Mcal/kg", 0, 5, group="dieta"),
@@ -83,9 +85,14 @@ DIET_FIELDS = {
 }
 
 
+# Entradas do lote que o RuFaS usa na energia do NASEM (média dos valores do dia anterior dos animais do lote). Não entram
+# nas calculadoras de exigência; servem à oferta de energia (LINEARIZACAO.md, 7.3).
+PEN_FIELDS = {"NRC": (), "NASEM": ("enteric_methane", "urinary_nitrogen")}
+
+
 def usage(key: str, standard: str, animal_type: str) -> Usage | None:
     """Como a calculadora do padrão usa o campo para o tipo de animal (``None`` = ignora)."""
-    if key == "process_based_phosphorus_requirement" or key in DIET_FIELDS[standard]:
+    if key == "process_based_phosphorus_requirement" or key in DIET_FIELDS[standard] or key in PEN_FIELDS[standard]:
         return "optional"
     if key not in _USED[(standard, animal_type)]:
         return None
