@@ -1,6 +1,7 @@
 'use client'
 
 import { feedTitle } from '@/components/FeedPicker'
+import PriceImport from '@/components/PriceImport'
 import { NumberInput } from '@/components/shared'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -12,9 +13,10 @@ interface Props {
   state: ModuleState
   library: Record<number, Feed>
   onSetting: (id: number, field: 'price' | 'min' | 'max', value: number) => void
+  onPrices: (prices: Record<number, number>) => void
 }
 
-export default function PricesCard({ state, library, onSetting }: Props) {
+export default function PricesCard({ state, library, onSetting, onPrices }: Props) {
   return (
     <Card>
       <CardHeader>
@@ -24,7 +26,8 @@ export default function PricesCard({ state, library, onSetting }: Props) {
           valores iniciais são ilustrativos. Os limites por alimento (kg de MS por dia) entram como restrições da avaliação.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className='space-y-4'>
+        <PriceImport standard={state.standard} selectedIds={state.feedIds} onApply={onPrices} />
         {state.feedIds.length === 0 ? (
           <p className='text-muted-foreground text-sm'>Os alimentos das dietas aparecem aqui.</p>
         ) : (

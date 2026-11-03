@@ -1512,6 +1512,41 @@ A ração do NASEM ficou em 14,81 kg (id 50), 16,8 kg (id 110), 0,17 kg (id 138)
 mudou (nenhuma redução por ração insuficiente). Os números são ilustrativos (preços ilustrativos) e **não** indicam qual
 padrão é "melhor": as exigências diferem por construção (mantença de 0,08 para 0,10 Mcal/kg^0,75, gestação, DMI).
 
+### A.9 RF-22: importar preços por CSV (implementado em 03/11/2026, etapa E8d)
+
+**Objetivo.** Usar cotações reais (por exemplo, do CEPEA) sem digitá-las à mão. O sistema não busca o indicador sozinho: o
+usuário traz um arquivo e diz a que alimento do RuFaS cada preço se refere.
+
+**Arquivo.** Texto com cabeçalho; separador vírgula, ponto e vírgula ou tabulação; vírgula decimal aceita; linhas em branco e
+linhas que começam com `#` são ignoradas. Colunas (sem acento e em qualquer ordem; apelidos entre parênteses):
+
+| Coluna | Obrigatória | Significado |
+|---|---|---|
+| `id` (`rufas_id`) ou `alimento` (`nome`) | uma das duas | Id do alimento na biblioteca do padrão, ou o nome exato (sem diferença de caixa ou acento; "nome" ou "nome — descrição"). O nome que serve a mais de um alimento é recusado com a lista de ids |
+| `preco` (`valor`) | sim | Preço, na moeda, unidade e base abaixo |
+| `moeda` | não (USD) | `USD` ou `BRL` |
+| `cambio` | só em BRL | R$ por US$; se faltar, vale o campo "Câmbio" da tela |
+| `unidade_kg` | não (1) | kg por unidade comercial (saca de 60 kg: 60; tonelada: 1000) |
+| `base` | não (MS) | `MS` (matéria seca) ou `MN` (matéria natural, dividida pela MS do alimento) |
+| `fonte` | não | Indicador e data, só para registro |
+
+**Conversão** (`LINEARIZACAO.md`, 7.2): `US$/kg MS = preço ÷ unidade_kg ÷ (MS/100, se MN) ÷ câmbio (se BRL)`.
+
+**API.** `POST /api/prices/import` com `{ standard, csv, fx? }`. Resposta: `prices` (id → US$/kg MS), `items` (linha, id, nome,
+preço, valor original e fonte), `problems` (linha, texto e motivo) e `warnings` (id repetido: vale o último). Falta de cabeçalho
+ou de colunas, ou câmbio inválido, voltam como erro 500 no formato da seção 11.3. Linhas inválidas **não** derrubam as outras.
+
+**Tela.** Botão **Importar preços (CSV)**, campo de câmbio e botão **Modelo** (baixa um CSV de exemplo), nos cartões de
+alimentos da tela Vaca leiteira e de **Preços e limites** do módulo Avaliar dietas. Só os alimentos já selecionados têm o preço
+trocado; os demais do arquivo aparecem como "fora da seleção" (não são adicionados). Depois da importação a tela mostra quantos
+preços foram aplicados, a conversão linha a linha e as linhas sem correspondência ou inválidas, cada uma com o motivo.
+
+**Não feito.** Leitura automática de indicadores do CEPEA, histórico de preços e mapeamento automático indicador × alimento.
+
+**Aceite.** `tests/test_prices.py`: dólar por kg de MS sem conversão; reais por saca na matéria natural (70 R$ por saca de
+60 kg a R$ 5,00 por US$ viram `70 ÷ 60 ÷ MS ÷ 5`); câmbio da tela e da linha; id fora da biblioteca do padrão; nome ambíguo;
+separador e vírgula decimal; cabeçalho incompleto.
+
 ### A.8 Alterações previstas em outras partes deste documento (quando implementado)
 
 | Seção | Alteração |
@@ -1655,6 +1690,8 @@ vazios usam o padrão do RuFaS apenas onde o RuFaS define um **(a verificar)**; 
 - Campos de origem (regra de conversão em `LINEARIZACAO.md`, 7.2): valor original, unidade comercial, moeda, câmbio (R$ por
   US$), base (matéria natural ou MS) e fonte (indicador do CEPEA e data). A conversão automática e o mapeamento CEPEA ×
   biblioteca **ficam para depois**; nesta fase o usuário informa o valor em US$/kg MS, ou o valor original com o câmbio.
+  **Implementado em 03/11/2026 (etapa E8d):** a importação de preços por CSV (seção A.9) aplica essa conversão; o mapeamento
+  indicador × alimento é feito pelo usuário no arquivo (por id do RuFaS ou nome), e a leitura automática do CEPEA segue pendente.
 
 ### B.6 Cálculo
 

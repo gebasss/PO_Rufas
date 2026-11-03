@@ -1,6 +1,6 @@
 # Plano de implementação: módulo "Exercício do quadro" ampliado e complementos
 
-**Versão 0.7 (03/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
+**Versão 0.8 (03/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
 comportamento do sistema; as regras estão nos documentos citados e este arquivo só as sequencia.
 
 | Documento | O que fornece ao plano |
@@ -26,7 +26,13 @@ comportamento do sistema; as regras estão nos documentos citados e este arquivo
 | E6 | **Feita (03/11/2026)** | `module/compare.py` (relatório sobre o resultado de `evaluate`, CSV), `POST /api/module/compare`, cartão "Comparação com o RuFaS" na tela (`CompareCard`) com tolerância editável e botão de CSV; 13 testes novos (84 no total) |
 | E7 | **Feita (03/11/2026)** | `module/optimize.py` (LP por ponto da grade de escalares, refinamento, resgate, preços-sombra, verificação com as funções do RuFaS, SLSQP em várias sementes), tarefa `optimize` com cancelamento (`jobs.py`: estado `cancelled`, `POST /api/jobs/<id>/cancel`), cartão "Dieta ótima" e coluna "Desvio do ótimo" no ranking; 31 testes novos (115 no total, ≈ 80 s) |
 | E8a, E8b | **Feitas (03/11/2026)** | RF-27 (`ration_checks.py`, cartão Verificações) e RF-19 (`ration_balance.py`, cartão Balanço nutricional), na tela Vaca leiteira; o balanço vem da avaliação do próprio RuFaS (`avg_eval_results_for_LAC_COW`); 17 testes novos (132 no total) |
-| E8c a E8h | Não iniciadas | |
+| E8d | **Feita (03/11/2026)** | RF-22: `prices.py`, `POST /api/prices/import`, componente `PriceImport` nas telas Vaca leiteira e Avaliar dietas; 19 testes novos (151 no total) |
+| E8c, E8e a E8h | Não iniciadas | |
+
+Achados do E8d: (i) os nomes da biblioteca têm vírgulas ("Corn, Yellow") e o mesmo nome curto serve a dezenas de alimentos, então o
+mapeamento seguro é por id do RuFaS; o nome só vale inteiro ("nome — descrição") e vem entre aspas no CSV; (ii) o preço de um
+alimento fora da seleção não é aplicado nem o alimento é adicionado, e a tela o lista; (iii) a tela Vaca leiteira já guardava a
+seleção no navegador (`dietopt.v1`), então os preços importados persistem ali.
 
 Achados do E8a e E8b: (i) o RuFaS já calcula o balanço da ração (`NutritionEvaluator`); bastou incluir `avg_eval_results_for_LAC_COW` no
 filtro de saída e a simulação guardada antes disso roda de novo (cache sem `evaluations` é descartado); (ii) a saída de exigências
