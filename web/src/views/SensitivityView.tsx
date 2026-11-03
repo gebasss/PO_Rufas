@@ -1,29 +1,26 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import Link from 'next/link'
 
-import { PlayIcon, SlidersHorizontalIcon } from 'lucide-react'
+import { AlertTriangleIcon, SlidersHorizontalIcon } from 'lucide-react'
 import { toast } from 'sonner'
-import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from 'recharts'
 
-import ExportButtons from '@/components/ExportButtons'
-import { HighlightBars } from '@/components/charts'
+import { EmptyState, ResultsSkeleton } from '@/components/EmptyState'
 import { feedTitle } from '@/components/FeedPicker'
-import { finite, heat, JobProgress, NumberInput, PageHeader } from '@/components/shared'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import RunButton, { type RunState } from '@/components/RunButton'
+import { finite, NumberInput, PageHeader } from '@/components/shared'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { runJob } from '@/lib/api'
-import { nf, shortName, usd } from '@/lib/format'
-import type { SensFactor, SensFactorState as FactorState, SensResult } from '@/lib/types'
+import { api, runJob } from '@/lib/api'
+import type { RunMeta, SensFactor, SensFactorState as FactorState, SensResult } from '@/lib/types'
 import { useApp } from '@/providers/AppProvider'
 import { simulationBody } from '@/views/CowView'
+import SensResults from '@/views/sensitivity/Results'
 
 const METHODS = [
   { value: 'grid', label: 'Grade (todas as combinações)' },
@@ -32,10 +29,11 @@ const METHODS = [
 const MILK = 'milk_price'
 const SECONDS_PER_SIMULATION = 17
 
-const effectsConfig = { spearman: { label: 'Spearman', color: 'var(--chart-1)' } } satisfies ChartConfig
+const messageOf = (error: unknown) => (error instanceof Error ? error.message : 'Falha na análise').split('\n')[0]
+const showResults = () => document.getElementById('resultados')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
 export default function SensitivityView() {
-  const { connection, selected, feedById, params, sens, setSens, sensSetup, setSensSetup, trackTask } = useApp()
+  const { connection, selected, feedById, params, sens, setSens, sensKey, setSensKey, sensSetup, setSensSetup, trackTask } = useApp()
   const { overrides, method, levels } = sensSetup
   const setOverrides = (change: (previous: Record<string, FactorState>) => Record<string, FactorState>) =>
     setSensSetup(s => ({ ...s, overrides: change(s.overrides) }))
@@ -43,6 +41,20 @@ export default function SensitivityView() {
   const setLevels = (value: number) => setSensSetup(s => ({ ...s, levels: value }))
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState({ done: 0, total: 0, status: 'queued' })
+  const [error, setError] = useState<string | null>(null)
+  const [base, setBase] = useState<RunMeta | null>(null)
+
+  // simulação-base (D3): linha de referência dos gráficos e delta da melhor margem
+  const loadBase = useCallback(() => {
+    api
+      .historyBase('simulation')
+      .then(setBase)
+      .catch(() => setBase(null))
+  }, [])
+
+  useEffect(() => {
+    if (connection === 'online') loadBase()
+  }, [connection, loadBase])
 
   const rows = useMemo(() => {
     const list = Object.entries(selected).map(([id, s]) => ({
@@ -73,31 +85,61 @@ export default function SensitivityView() {
   const points = factors.length ? (method === 'grid' ? n ** factors.length : n) : 0
   const sims = factors.length ? (method === 'grid' ? n ** feedFactors : n) : 0
 
+  const body = useMemo(
+    () => ({ ...simulationBody(selected, params), factors, method, n }),
+    // `factors` é derivado de `rows`, `overrides`; a chave serializada abaixo cobre a identidade
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selected, params, JSON.stringify(factors), method, n]
+  )
+  const bodyKey = JSON.stringify(body)
+  const stale = sens !== null && sensKey !== null && sensKey !== bodyKey
+  const state: RunState = running ? 'running' : error ? 'error' : sens && !stale ? 'done' : 'idle'
+  const blocked = !factors.length || connection !== 'online' || Object.keys(selected).length < 3
+
   const run = async () => {
     setRunning(true)
+    setError(null)
     setProgress({ done: 0, total: 0, status: 'queued' })
 
     const task = trackTask('Análise de sensibilidade')
 
     try {
-      const result = await runJob<SensResult>(
-        'sensitivity',
-        { ...simulationBody(selected, params), factors, method, n },
-        (done, total, status) => {
-          setProgress({ done, total, status })
-          task.update(done, total)
-        }
-      )
+      const result = await runJob<SensResult>('sensitivity', body, (done, total, status) => {
+        setProgress({ done, total, status })
+        task.update(done, total)
+      })
 
       setSens(result)
+      setSensKey(bodyKey)
       toast.success('Análise concluída.')
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message.split('\n')[0] : 'Falha na análise')
+    } catch (e) {
+      setError(messageOf(e))
+      toast.error(messageOf(e))
     } finally {
       task.end()
       setRunning(false)
     }
   }
+
+  const runButton = (
+    <div className='space-y-2'>
+      <p className='text-muted-foreground text-xs' aria-live='polite'>
+        {factors.length
+          ? `${points} cenários, até ${sims} simulações do RuFaS (cerca de ${Math.max(1, Math.ceil((sims * SECONDS_PER_SIMULATION) / 60))} min).`
+          : 'Marque ao menos um fator.'}
+      </p>
+      <RunButton
+        state={state}
+        progress={progress}
+        label='Executar sensibilidade'
+        unit='simulações do RuFaS'
+        error={error}
+        disabled={blocked}
+        onRun={run}
+        onView={showResults}
+      />
+    </div>
+  )
 
   return (
     <>
@@ -106,8 +148,8 @@ export default function SensitivityView() {
         description='Varia preços de alimentos e do leite, roda o RuFaS para cada combinação e mostra como a margem reage. Cada combinação de preços de alimentos exige uma simulação; o preço do leite só recalcula a receita.'
       />
 
-      <div className='grid items-start gap-6 xl:grid-cols-[23rem_minmax(0,1fr)]'>
-        <Card>
+      <div className='grid items-start gap-6 max-xl:pb-32 xl:grid-cols-[24rem_minmax(0,1fr)]'>
+        <Card className='xl:sticky xl:top-24 xl:max-h-[calc(100dvh-7rem)]'>
           <CardHeader>
             <CardTitle>Fatores</CardTitle>
             <CardDescription>
@@ -118,7 +160,7 @@ export default function SensitivityView() {
               . Marque o que variar e informe a faixa.
             </CardDescription>
           </CardHeader>
-          <CardContent className='space-y-5'>
+          <CardContent className='min-h-0 flex-1 space-y-5 overflow-y-auto'>
             <div className='space-y-2'>
               <div className='text-muted-foreground grid grid-cols-[1.25rem_1fr_4.5rem_4.5rem] gap-2 text-[11px]'>
                 <span />
@@ -135,8 +177,8 @@ export default function SensitivityView() {
                     <span className='text-xs leading-snug' title={r.label}>
                       {r.label}
                     </span>
-                    <NumberInput className='h-7 px-1.5 text-xs' value={s.low} onChange={v => patch(r.key, r.defaults, { low: v })} aria-label={`${r.label}, mínimo`} />
-                    <NumberInput className='h-7 px-1.5 text-xs' value={s.high} onChange={v => patch(r.key, r.defaults, { high: v })} aria-label={`${r.label}, máximo`} />
+                    <NumberInput className='h-8 px-1.5 text-xs' value={s.low} onChange={v => patch(r.key, r.defaults, { low: v })} aria-label={`${r.label}, mínimo`} />
+                    <NumberInput className='h-8 px-1.5 text-xs' value={s.high} onChange={v => patch(r.key, r.defaults, { high: v })} aria-label={`${r.label}, máximo`} />
                   </div>
                 )
               })}
@@ -160,151 +202,45 @@ export default function SensitivityView() {
               </div>
               <div className='space-y-1.5'>
                 <Label>Níveis / amostras</Label>
-                <NumberInput className='h-9' step={1} min={2} value={levels} onChange={setLevels} aria-label='Níveis ou amostras' />
+                <NumberInput step={1} min={2} value={levels} onChange={setLevels} aria-label='Níveis ou amostras' />
               </div>
             </div>
-
-            <p className='text-muted-foreground text-xs' aria-live='polite'>
-              {factors.length
-                ? `${points} cenários, até ${sims} simulações do RuFaS (cerca de ${Math.max(1, Math.ceil((sims * SECONDS_PER_SIMULATION) / 60))} min).`
-                : 'Marque ao menos um fator.'}
-            </p>
-
-            <Button className='w-full' onClick={run} disabled={running || !factors.length || connection !== 'online' || Object.keys(selected).length < 3}>
-              <PlayIcon /> {running ? 'Rodando…' : 'Rodar sensibilidade'}
-            </Button>
-            {running && <JobProgress {...progress} />}
           </CardContent>
+          <CardFooter className='border-t pt-(--card-spacing) max-xl:hidden'>
+            <div className='w-full'>{runButton}</div>
+          </CardFooter>
         </Card>
 
-        {sens ? (
-          <SensResults result={sens} />
-        ) : (
-          <Card>
-            <CardContent className='text-muted-foreground flex flex-col items-center gap-3 py-16 text-center text-sm'>
-              <SlidersHorizontalIcon className='size-10 opacity-40' />
-              <p className='max-w-sm text-balance'>Defina os fatores e rode a análise.</p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    </>
-  )
-}
+        <div className='min-w-0 space-y-6'>
+          {state === 'error' && (
+            <Alert variant='destructive'>
+              <AlertTriangleIcon />
+              <AlertTitle>A análise não terminou</AlertTitle>
+              <AlertDescription>{error} Confira os alimentos, as faixas dos fatores e a conexão com o servidor.</AlertDescription>
+            </Alert>
+          )}
 
-export function SensResults({ result }: { result: SensResult }) {
-  const names = useMemo(() => Object.fromEntries(result.feeds.map(f => [String(f.id), shortName(f.label, 22)])), [result.feeds])
-  const valid = result.rows.map(r => r.Res).filter((v): v is number => v !== null)
-  const [min, max] = [Math.min(...valid), Math.max(...valid)]
-  const factorColumns = result.columns.filter(c => c !== 'Res')
-
-  const effects = result.effects
-    .filter(e => e.spearman !== null)
-    .map(e => ({ fator: shortName(e.fator, 26), spearman: e.spearman as number }))
-  const marginData = result.rows.filter(r => r.Res !== null).map(r => ({ cenario: r.cenario, margem: r.Res as number }))
-  const best = marginData.reduce<(typeof marginData)[number] | null>((a, b) => (a === null || b.margem > a.margem ? b : a), null)
-
-  return (
-    <div className='min-w-0 space-y-6'>
-      <ExportButtons screen='sensitivity' data={result} meta={{ standard: 'NRC 2001' }} />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Tabela de cenários</CardTitle>
-          <CardDescription>
-            Cada linha é um cenário S<sub>i</sub>; <strong>Res</strong> é a margem sobre o custo de alimentação.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead />
-                {factorColumns.map(c => (
-                  <TableHead key={c} className='text-right'>
-                    {shortName(c, 24)}
-                  </TableHead>
-                ))}
-                <TableHead className='text-right'>Res (US$)</TableHead>
-                <TableHead className='text-right'>US$/vaca/dia</TableHead>
-                <TableHead className='text-right'>Leite perdido</TableHead>
-                <TableHead>Ração (kg MS/vaca/dia)</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {result.rows.map(row => (
-                <TableRow key={row.cenario}>
-                  <TableCell className='font-medium'>{row.cenario}</TableCell>
-                  {factorColumns.map(c => (
-                    <TableCell key={c} className='text-right tabular-nums'>
-                      {nf(row[c] as number, 3)}
-                    </TableCell>
-                  ))}
-                  <TableCell
-                    className='text-right font-semibold tabular-nums'
-                    style={row.Res === null ? undefined : heat(row.Res, min, max)}
-                    title={row.erro}
-                  >
-                    {row.Res === null ? <span className='text-destructive'>falhou</span> : usd(row.Res)}
-                  </TableCell>
-                  <TableCell className='text-right tabular-nums'>{row.custo_vaca_dia !== undefined ? nf(row.custo_vaca_dia, 2) : '—'}</TableCell>
-                  <TableCell className='text-right tabular-nums'>
-                    {(row.reducao_leite ?? 0) > 0.005 ? <span className='text-warning-text'>−{nf(row.reducao_leite, 2)}</span> : '—'}
-                  </TableCell>
-                  <TableCell className='text-muted-foreground max-w-80 text-xs'>
-                    {row.ration
-                      ? Object.entries(row.ration)
-                          .sort((a, b) => b[1] - a[1])
-                          .slice(0, 4)
-                          .map(([id, kg]) => `${names[id] ?? id} ${nf(kg, 1)}`)
-                          .join(' · ')
-                      : row.erro}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <div className='grid gap-6 2xl:grid-cols-2'>
-        <Card>
-          <CardHeader>
-            <CardTitle>Efeito sobre a margem</CardTitle>
-            <CardDescription>Correlação de Spearman entre cada fator e a margem (−1 a +1).</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={effectsConfig} className='aspect-auto h-56 w-full'>
-              <BarChart data={effects} layout='vertical' margin={{ left: 8 }}>
-                <CartesianGrid horizontal={false} />
-                <XAxis type='number' domain={[-1, 1]} tickLine={false} axisLine={false} />
-                <YAxis type='category' dataKey='fator' tickLine={false} axisLine={false} width={150} fontSize={11} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey='spearman' radius={4}>
-                  {effects.map(e => (
-                    <Cell key={e.fator} fill={e.spearman >= 0 ? 'var(--chart-1)' : 'var(--chart-4)'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Margem por cenário</CardTitle>
-            <CardDescription>US$ sobre o custo de alimentação; o melhor cenário em verde vivo.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <HighlightBars
-              data={marginData.map(d => ({ name: d.cenario, value: d.margem }))}
-              highlight={best?.cenario}
-              format={value => usd(value, 0)}
-              height={240}
+          {sens ? (
+            <div id='resultados' className='scroll-mt-24'>
+              <SensResults result={sens} stale={stale} base={base} years={params.years} />
+            </div>
+          ) : running ? (
+            <ResultsSkeleton />
+          ) : (
+            <EmptyState
+              icon={SlidersHorizontalIcon}
+              title='Nenhuma análise ainda'
+              steps={[
+                'Marque os fatores que vão variar (preços dos alimentos e do leite) e informe a faixa de cada um.',
+                'Escolha o método e os níveis, e clique em Executar sensibilidade: cada simulação leva cerca de 17 segundos.',
+                'Veja o cenário ótimo, a distribuição das margens e o efeito de cada fator, e exporte o relatório.'
+              ]}
             />
-          </CardContent>
-        </Card>
+          )}
+        </div>
       </div>
-    </div>
+
+      <div className='bg-card/90 border-border fixed inset-x-3 bottom-3 z-30 rounded-2xl border p-2 backdrop-blur-xl xl:hidden'>{runButton}</div>
+    </>
   )
 }
