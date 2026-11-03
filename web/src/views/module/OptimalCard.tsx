@@ -1,7 +1,10 @@
 'use client'
 
-import { AlertTriangleIcon, CheckCircle2Icon, SparklesIcon, SquareIcon } from 'lucide-react'
+import { AlertTriangleIcon, CheckCircle2Icon, ScaleIcon, SparklesIcon, SquareIcon, TrophyIcon, WalletIcon, WheatIcon, ZapIcon } from 'lucide-react'
 
+import { DivergingBars, ScatterPlot, ShareBars } from '@/components/charts'
+import ChartCard from '@/components/ChartCard'
+import { ResultsSkeleton } from '@/components/EmptyState'
 import { feedTitle } from '@/components/FeedPicker'
 import { NumberInput, KpiCard } from '@/components/shared'
 import { Segmented } from '@/components/Segmented'
@@ -12,12 +15,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { nf, signedPct, usd } from '@/lib/format'
+import { nf, shortName, signedPct, usd } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { Feed, ModuleOptimization, OptimizationResolution } from '@/lib/types'
 
 import { MAX_SEEDS, RESOLUTIONS } from './model'
-import { ConstraintTable } from './ResultCard'
+import { ConstraintTable, SLACK_CLIP } from './ResultCard'
+
+/** Cores das faixas da composição (sem o vermelho, reservado ao que falha); o que passar das sete vira cinza. */
+const SHARE_COLORS = ['var(--chart-1)', 'var(--chart-3)', 'var(--chart-5)', 'var(--chart-2)', 'var(--chart-6)', 'var(--chart-7)', 'var(--chart-8)']
+const SHARE_OTHER = 'color-mix(in oklch, var(--muted-foreground) 55%, transparent)'
 
 const REGIME: Record<string, string> = {
   sem_desconto: 'TDN% abaixo de 60 (sem desconto de ingestão)',
@@ -71,19 +78,97 @@ export default function OptimalCard({
     return limit ? `Limite ${limit[1] === 'ge' ? 'mínimo' : 'máximo'} de ${name(limit[2])}` : item.label
   }
 
+  const color = (index: number) => SHARE_COLORS[index] ?? SHARE_OTHER
+  const parts = (pick: (row: (typeof rows)[number]) => number) =>
+    rows.map((row, index) => ({ name: name(row.id), value: pick(row), color: color(index) })).filter(part => part.value > 0)
+  const shareRows = diet
+    ? [
+        { label: 'Dieta ótima (LP)', parts: parts(row => row.lp) },
+        ...(bestRun ? [{ label: `Melhor do RuFaS (semente ${bestRun.seed})`, parts: parts(row => row.rufas) }] : [])
+      ]
+    : []
+  const scatter = (rufas?.runs ?? [])
+    .filter(run => run.success && run.feasible)
+    .map(run => ({ name: `Semente ${run.seed}`, x: run.seed, y: run.cost }))
+  const slack = (diet?.evaluation.constraints ?? [])
+    .filter(c => !c.id.startsWith('limit_') && c.slack != null && c.requirement)
+    .map(c => {
+      const pct = ((c.slack as number) / Math.abs(c.requirement as number)) * 100
+
+      return { name: shortName(c.label, 26), value: pct, bar: Math.min(Math.max(pct, -100), SLACK_CLIP) }
+    })
+
+  const feedTable = diet && (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Alimento</TableHead>
+          <TableHead className='text-right'>Dieta ótima (kg MS/dia)</TableHead>
+          <TableHead className='text-right'>% da dieta</TableHead>
+          {bestRun && <TableHead className='text-right'>Melhor do RuFaS (kg MS/dia)</TableHead>}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map(row => (
+          <TableRow key={row.id}>
+            <TableCell className='text-sm leading-snug'>{name(row.id)}</TableCell>
+            <TableCell className='text-right tabular-nums'>{nf(row.lp, 2)}</TableCell>
+            <TableCell className='text-right tabular-nums'>{nf((100 * row.lp) / diet.scalars.dmi, 1)}%</TableCell>
+            {bestRun && <TableCell className='text-right tabular-nums'>{nf(row.rufas, 2)}</TableCell>}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  )
+
+  const runsTable = rufas && (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Semente</TableHead>
+          <TableHead>Resultado</TableHead>
+          <TableHead className='text-right'>Custo (US$/dia)</TableHead>
+          <TableHead className='text-right'>Iterações</TableHead>
+          <TableHead className='text-right'>Tempo (s)</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rufas.runs.map(run => (
+          <TableRow key={run.seed}>
+            <TableCell className='tabular-nums'>{run.seed}</TableCell>
+            <TableCell>
+              {run.success && run.feasible ? (
+                <Badge variant='secondary'>
+                  <CheckCircle2Icon aria-hidden /> Viável
+                </Badge>
+              ) : (
+                <Badge variant='outline' className='bg-destructive/10 text-destructive'>
+                  <AlertTriangleIcon aria-hidden /> {run.success ? 'Viola restrições' : 'Não convergiu'}
+                </Badge>
+              )}
+            </TableCell>
+            <TableCell className='text-right tabular-nums'>{nf(run.cost, 4)}</TableCell>
+            <TableCell className='text-right tabular-nums'>{run.iterations}</TableCell>
+            <TableCell className='text-right tabular-nums'>{nf(run.seconds, 2)}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  )
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Dieta ótima</CardTitle>
-        <CardDescription>
-          A dieta de menor custo entre os alimentos da tabela que atende às mesmas restrições. Com o consumo, o TDN% e o %
-          de concentrado fixos o problema é linear; um programa linear é resolvido em uma grade desses valores e refinado
-          em torno do melhor ponto. A dieta é conferida com as funções originais do RuFaS e comparada com o otimizador do
-          RuFaS (SLSQP), que parte de um ponto aleatório.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className='space-y-6'>
-        <div className='space-y-3'>
+    <div className='space-y-6'>
+      <Card>
+        <CardHeader>
+          <CardTitle>Dieta ótima</CardTitle>
+          <CardDescription>
+            A dieta de menor custo entre os alimentos da tabela que atende às mesmas restrições. Com o consumo, o TDN% e o %
+            de concentrado fixos o problema é linear; um programa linear é resolvido em uma grade desses valores e refinado
+            em torno do melhor ponto. A dieta é conferida com as funções originais do RuFaS e comparada com o otimizador do
+            RuFaS (SLSQP), que parte de um ponto aleatório.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className='space-y-3'>
           <div className='flex flex-wrap items-end gap-4'>
             <div className='flex flex-col justify-end gap-1.5'>
               <Label>Resolução da busca</Label>
@@ -129,164 +214,163 @@ export default function OptimalCard({
               As entradas mudaram desde o último cálculo. Clique em Calcular dieta ótima para atualizar.
             </p>
           )}
-        </div>
+        </CardContent>
+      </Card>
 
-        {error && (
-          <Alert variant='destructive'>
-            <AlertTriangleIcon />
-            <AlertTitle>Não foi possível calcular</AlertTitle>
-            <AlertDescription>{error.split('\n')[0]}</AlertDescription>
-          </Alert>
-        )}
+      {error && (
+        <Alert variant='destructive'>
+          <AlertTriangleIcon />
+          <AlertTitle>Não foi possível calcular</AlertTitle>
+          <AlertDescription>{error.split('\n')[0]}</AlertDescription>
+        </Alert>
+      )}
 
-        {result?.status === 'infeasible' && (
-          <Alert>
-            <AlertTriangleIcon />
-            <AlertTitle>Sem dieta viável</AlertTitle>
-            <AlertDescription>{result.message}</AlertDescription>
-          </Alert>
-        )}
+      {result?.status === 'infeasible' && (
+        <Alert>
+          <AlertTriangleIcon />
+          <AlertTitle>Sem dieta viável</AlertTitle>
+          <AlertDescription>{result.message}</AlertDescription>
+        </Alert>
+      )}
 
-        {result && diet && (
-          <div className={cn('space-y-6 transition-opacity', (running || stale) && 'opacity-60')}>
-            {result.warnings.length > 0 && (
-              <Alert>
-                <AlertTriangleIcon />
-                <AlertTitle>Avisos</AlertTitle>
-                <AlertDescription>
-                  <ul className='list-disc space-y-1 pl-4'>
-                    {[...new Set(result.warnings)].map(warning => (
-                      <li key={warning}>{warning}</li>
-                    ))}
-                  </ul>
-                </AlertDescription>
-              </Alert>
-            )}
+      {running && !result && <ResultsSkeleton />}
 
-            <div className='grid grid-cols-2 gap-3 lg:grid-cols-4'>
-              <KpiCard label='Custo' value={usd(diet.cost, 2)} hint='por vaca e por dia' />
-              <KpiCard label='Custo por kg de MS' value={usd(diet.cost_per_kg, 3)} />
-              <KpiCard label='Consumo de MS' value={`${nf(diet.scalars.dmi, 2)} kg/dia`} />
-              <KpiCard
-                label='TDN · concentrado'
-                value={`${nf(diet.scalars.tdn_percentage, 1)}% · ${nf(diet.scalars.concentrate_percentage, 1)}%`}
-                hint={REGIME[diet.regime]}
-              />
-            </div>
-
-            <p className='flex flex-wrap items-center gap-2 text-sm'>
-              {diet.verified ? (
-                <Badge variant='secondary'>
-                  <CheckCircle2Icon aria-hidden /> Confere com o RuFaS
-                </Badge>
-              ) : (
-                <Badge variant='outline' className='bg-destructive/10 text-destructive'>
-                  <AlertTriangleIcon aria-hidden /> Viola restrições do RuFaS
-                </Badge>
-              )}
-              <span className='text-muted-foreground'>
-                {diet.verified
-                  ? 'Todas as restrições originais são atendidas.'
-                  : `Violadas: ${diet.evaluation.violated.join(', ')}.`}{' '}
-                Busca: {result.search.feasible_points} pontos viáveis de {result.search.points} testados, em{' '}
-                {nf(result.search.seconds, 1)} s.
-              </span>
-            </p>
-
-            <div className='space-y-2'>
-              <h3 className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>Ração</h3>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Alimento</TableHead>
-                    <TableHead className='text-right'>Dieta ótima (kg MS/dia)</TableHead>
-                    <TableHead className='text-right'>% da dieta</TableHead>
-                    {bestRun && <TableHead className='text-right'>Melhor do RuFaS (kg MS/dia)</TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.map(row => (
-                    <TableRow key={row.id}>
-                      <TableCell className='text-sm leading-snug'>{name(row.id)}</TableCell>
-                      <TableCell className='text-right tabular-nums'>{nf(row.lp, 2)}</TableCell>
-                      <TableCell className='text-right tabular-nums'>{nf((100 * row.lp) / diet.scalars.dmi, 1)}%</TableCell>
-                      {bestRun && <TableCell className='text-right tabular-nums'>{nf(row.rufas, 2)}</TableCell>}
-                    </TableRow>
+      {result && diet && (
+        <div className={cn('space-y-6 transition-opacity', (running || stale) && 'opacity-60')}>
+          {result.warnings.length > 0 && (
+            <Alert>
+              <AlertTriangleIcon />
+              <AlertTitle>Avisos</AlertTitle>
+              <AlertDescription>
+                <ul className='list-disc space-y-1 pl-4'>
+                  {[...new Set(result.warnings)].map(warning => (
+                    <li key={warning}>{warning}</li>
                   ))}
-                </TableBody>
-              </Table>
-            </div>
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
 
-            {rufas && (
-              <div className='space-y-3'>
-                <h3 className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
-                  Comparação com o otimizador do RuFaS
-                </h3>
-                {rufas.cost_min == null ? (
-                  <p className='text-muted-foreground text-sm'>
-                    Nenhuma das {rufas.n_runs} execuções do RuFaS convergiu para uma dieta viável.
-                  </p>
-                ) : (
-                  <div className='grid grid-cols-2 gap-3 lg:grid-cols-4'>
-                    <KpiCard
-                      label='Dieta ótima (LP) em relação ao RuFaS'
-                      value={signedPct(rufas.lp_gap_pct)}
-                      hint={(rufas.lp_gap_pct ?? 0) > 0 ? 'o RuFaS achou custo menor' : 'o LP é igual ou mais barato'}
-                    />
-                    <KpiCard label='Melhor custo do RuFaS' value={usd(rufas.cost_min, 4)} />
-                    <KpiCard label='Mediana do RuFaS' value={usd(rufas.cost_median, 4)} />
-                    <KpiCard
-                      label='Execuções viáveis'
-                      value={`${rufas.n_success} de ${rufas.n_runs}`}
-                      hint={`pior custo ${usd(rufas.cost_max, 4)}`}
-                    />
-                  </div>
-                )}
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Semente</TableHead>
-                      <TableHead>Resultado</TableHead>
-                      <TableHead className='text-right'>Custo (US$/dia)</TableHead>
-                      <TableHead className='text-right'>Iterações</TableHead>
-                      <TableHead className='text-right'>Tempo (s)</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rufas.runs.map(run => (
-                      <TableRow key={run.seed}>
-                        <TableCell className='tabular-nums'>{run.seed}</TableCell>
-                        <TableCell>
-                          {run.success && run.feasible ? (
-                            <Badge variant='secondary'>
-                              <CheckCircle2Icon aria-hidden /> Viável
-                            </Badge>
-                          ) : (
-                            <Badge variant='outline' className='bg-destructive/10 text-destructive'>
-                              <AlertTriangleIcon aria-hidden /> {run.success ? 'Viola restrições' : 'Não convergiu'}
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className='text-right tabular-nums'>{nf(run.cost, 4)}</TableCell>
-                        <TableCell className='text-right tabular-nums'>{run.iterations}</TableCell>
-                        <TableCell className='text-right tabular-nums'>{nf(run.seconds, 2)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+          <div className='grid gap-3 sm:grid-cols-2 2xl:grid-cols-4'>
+            <KpiCard tone='primary' icon={WalletIcon} label='Custo' value={usd(diet.cost, 2)} hint='por vaca e por dia' />
+            <KpiCard icon={ScaleIcon} color='info' label='Custo por kg de MS' value={usd(diet.cost_per_kg, 3)} />
+            <KpiCard icon={WheatIcon} color='violet' label='Consumo de MS' value={`${nf(diet.scalars.dmi, 2)} kg/dia`} />
+            <KpiCard
+              icon={ZapIcon}
+              color='warning'
+              label='TDN · concentrado'
+              value={`${nf(diet.scalars.tdn_percentage, 1)}% · ${nf(diet.scalars.concentrate_percentage, 1)}%`}
+              hint={REGIME[diet.regime]}
+            />
+          </div>
+
+          <p className='flex flex-wrap items-center gap-2 text-sm'>
+            {diet.verified ? (
+              <Badge variant='secondary'>
+                <CheckCircle2Icon aria-hidden /> Confere com o RuFaS
+              </Badge>
+            ) : (
+              <Badge variant='outline' className='bg-destructive/10 text-destructive'>
+                <AlertTriangleIcon aria-hidden /> Viola restrições do RuFaS
+              </Badge>
             )}
+            <span className='text-muted-foreground'>
+              {diet.verified
+                ? 'Todas as restrições originais são atendidas.'
+                : `Violadas: ${diet.evaluation.violated.join(', ')}.`}{' '}
+              Busca: {result.search.feasible_points} pontos viáveis de {result.search.points} testados, em{' '}
+              {nf(result.search.seconds, 1)} s.
+            </span>
+          </p>
 
-            <div className='space-y-3'>
-              <h3 className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
-                Restrições da dieta ótima
-              </h3>
-              <ConstraintTable diet={diet.evaluation} />
-            </div>
+          <ChartCard
+            title='Composição da ração'
+            description='Participação de cada alimento na matéria seca da dieta ótima e, quando há execuções do RuFaS, na melhor delas.'
+            chart={<ShareBars rows={shareRows} />}
+            table={feedTable}
+          />
 
-            {result.shadow_prices && result.shadow_prices.length > 0 && (
-              <div className='space-y-2'>
-                <h3 className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>Preços-sombra</h3>
+          {rufas && (
+            <>
+              {rufas.cost_min == null ? (
+                <Card>
+                  <CardContent>
+                    <p className='text-muted-foreground text-sm'>
+                      Nenhuma das {rufas.n_runs} execuções do RuFaS convergiu para uma dieta viável.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className='grid gap-3 sm:grid-cols-2 2xl:grid-cols-4'>
+                  <KpiCard
+                    icon={ScaleIcon}
+                    tone={(rufas.lp_gap_pct ?? 0) > 0 ? 'warning' : 'default'}
+                    label='Dieta ótima (LP) em relação ao RuFaS'
+                    value={signedPct(rufas.lp_gap_pct)}
+                    hint={(rufas.lp_gap_pct ?? 0) > 0 ? 'o RuFaS achou custo menor' : 'o LP é igual ou mais barato'}
+                  />
+                  <KpiCard icon={TrophyIcon} color='info' label='Melhor custo do RuFaS' value={usd(rufas.cost_min, 4)} />
+                  <KpiCard icon={WalletIcon} color='violet' label='Mediana do RuFaS' value={usd(rufas.cost_median, 4)} />
+                  <KpiCard
+                    icon={CheckCircle2Icon}
+                    color='warning'
+                    label='Execuções viáveis'
+                    value={`${rufas.n_success} de ${rufas.n_runs}`}
+                    hint={`pior custo ${usd(rufas.cost_max, 4)}`}
+                  />
+                </div>
+              )}
+
+              <ChartCard
+                title='Custo de cada execução do RuFaS'
+                description='Cada ponto é uma execução do SLSQP do RuFaS, de uma semente aleatória; a linha tracejada é o custo do LP. Pontos sobre ou acima da linha: o LP foi igual ou mais barato.'
+                chart={
+                  scatter.length > 0 ? (
+                    <ScatterPlot
+                      data={scatter}
+                      highlight={rufas.best_seed == null ? undefined : `Semente ${rufas.best_seed}`}
+                      xLabel='Semente'
+                      xInteger
+                      xFormat={value => nf(value, 0)}
+                      yFormat={value => usd(value, 4)}
+                      yAxisFormat={value => nf(value, 3)}
+                      referenceY={diet.cost}
+                      referenceLabel='LP'
+                      height={260}
+                    />
+                  ) : (
+                    <p className='text-muted-foreground py-8 text-center text-sm'>Nenhuma execução viável para mostrar.</p>
+                  )
+                }
+                table={runsTable}
+              />
+            </>
+          )}
+
+          <ChartCard
+            title='Folga da dieta ótima'
+            description='Folga de cada restrição nutricional em % da exigência: zero nas restrições ativas, que são as que definem o custo.'
+            chart={
+              slack.length > 0 ? (
+                <DivergingBars data={slack} format={value => signedPct(value, 0)} domain={[-100, SLACK_CLIP]} height={Math.max(220, slack.length * 40 + 30)} />
+              ) : (
+                <p className='text-muted-foreground py-8 text-center text-sm'>Sem restrições calculadas.</p>
+              )
+            }
+            table={<ConstraintTable diet={diet.evaluation} />}
+          />
+
+          {result.shadow_prices && result.shadow_prices.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Preços-sombra</CardTitle>
+                <CardDescription>
+                  Quanto o custo diário mudaria se a exigência (ou o limite) subisse uma unidade, na unidade da restrição.
+                  Valem perto da dieta ótima e com o consumo, o TDN% e o % de concentrado fixos. Positivo = exigir mais
+                  custa mais; negativo = afrouxar um teto economiza.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -303,16 +387,11 @@ export default function OptimalCard({
                     ))}
                   </TableBody>
                 </Table>
-                <p className='text-muted-foreground text-xs'>
-                  Quanto o custo diário mudaria se a exigência (ou o limite) subisse uma unidade, na unidade da restrição.
-                  Valem perto da dieta ótima e com o consumo, o TDN% e o % de concentrado fixos. Positivo = exigir mais
-                  custa mais; negativo = afrouxar um teto economiza.
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+    </div>
   )
 }

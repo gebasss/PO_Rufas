@@ -1,7 +1,7 @@
 # Sistema de design e roteiro da repaginação
 
-**Versão 0.4 (03/11/2026).** Define a linguagem visual do sistema (tokens, componentes, gráficos), registra as decisões de
-produto da repaginação e o roteiro por etapas. As etapas D1 (tokens, estrutura e componentes-base), D2 (tela Vaca leiteira), D3 (histórico de execuções) e D4 (Sensibilidade) estão implementadas; as demais
+**Versão 0.5 (03/11/2026).** Define a linguagem visual do sistema (tokens, componentes, gráficos), registra as decisões de
+produto da repaginação e o roteiro por etapas. As etapas D1 (tokens, estrutura e componentes-base), D2 (tela Vaca leiteira), D3 (histórico de execuções), D4 (Sensibilidade) e D5 (Avaliar dietas) estão implementadas; as demais
 estão descritas na seção 7. Código: `web/src/app/globals.css`, `web/src/components/`. Complementa o `DESIGN.md` (descrição detalhada do que existe).
 
 ## 1. Princípios
@@ -91,7 +91,7 @@ estão descritas na seção 7. Código: `web/src/app/globals.css`, `web/src/comp
 | D2 | Tela Vaca leiteira: painel de parâmetros fixo, botão Executar com quatro estados, gráficos de ração (barras horizontais), balanço (barras divergentes), verificações (bullet), série de custo e de leite | **Feita (03/11/2026)** |
 | D3 | Histórico de execuções no servidor (API, tabela com busca, filtro, status, ações e paginação), estrela do cenário-base, tela de detalhe e deltas dos KPIs | **Feita (03/11/2026)** |
 | D4 | Sensibilidade: histograma, tornado e comparação de cenários com o base; tabela de cenários com o padrão da D3 | **Feita (03/11/2026)** |
-| D5 | Avaliar dietas: ranking, erro de linearização, comparação com o RuFaS e dieta ótima em gráficos | Planejada |
+| D5 | Avaliar dietas: ranking, erro de linearização, comparação com o RuFaS e dieta ótima em gráficos | **Feita (03/11/2026)** |
 | D6 | Exercício do quadro e Curva de lactação, estados vazio, carregando e erro, "ver como tabela" em todos os gráficos | Planejada |
 
 ## 8. Tela Vaca leiteira (D2)
@@ -124,3 +124,14 @@ Especificação completa em `FSD.md`, seção A.12. Resumo do que a repaginaçã
 - **Referência do base:** a linha tracejada e o delta só aparecem quando há uma simulação-base **com o mesmo período** (a margem cresce com os anos); sem base, ou com período diferente, os gráficos não mostram a referência.
 - Gráficos com a alternância gráfico/tabela; eixos de valores em US$ mostrados em milhares ("450 mil") para não quebrar a linha, enquanto os rótulos e balões mostram o valor inteiro.
 - Componentes novos em `charts`: `ScatterPlot`; `HighlightBars` e `ScatterPlot` ganham o formato curto dos eixos (`axisFormat`, `yAxisFormat`).
+
+## 11. Tela Avaliar dietas (D5)
+
+- **Entradas em abas** (Vaca, Dietas, Preços e limites), cada uma com o cartão que já existia, e uma **barra de execução** com o `RunButton` **Avaliar dietas** (pronto, executando, concluído e erro), a lista do que falta preencher e o aviso de resultado desatualizado (a chave das entradas já existia, `resultKey`).
+- **Resultados em abas** (`views/ModuleView`), com o botão de exportar no cabeçalho; as abas aparecem mesmo antes da avaliação (estado vazio com os três passos, esqueleto enquanto roda):
+  - **Ranking:** KPIs (melhor dieta entre as informadas, dietas viáveis, menor custo com o desvio contra a dieta ótima, custo da dieta ótima); **custo por dieta** (`ToneBars`: melhor viável em verde vivo, outras viáveis em verde apagado, inviáveis em vermelho, linha tracejada da dieta ótima); detalhe da dieta escolhida (consumo, TDN%, concentrado, desconto de ingestão). A tabela do ranking é a alternativa "ver como tabela".
+  - **Restrições:** **mapa de restrições** (`StatusGrid`, dieta × restrição, com símbolo e texto para leitor de tela além da cor); **folga da dieta escolhida** em % da exigência (`DivergingBars`); tabela completa de restrições. Os limites por alimento ficam só na tabela.
+  - **Linearização:** KPIs da comparação, **erro por dieta** e **erro por restrição** (`ToneBars` com a linha da tolerância; restrições exatas em cinza) e as tabelas de antes.
+  - **Dieta ótima:** KPIs, **composição da ração** do LP contra a melhor execução do RuFaS (`ShareBars`, barras empilhadas a 100%), **custo de cada execução do RuFaS** (`ScatterPlot` com a linha do LP), **folga** da dieta ótima e os preços-sombra em tabela.
+- Componentes novos em `charts`: `ToneBars` (barras com tom por barra e linha de referência), `StatusGrid`, `ShareBars`; `ScatterPlot` ganha `referenceY`, `referenceLabel` e `xInteger`. As linhas de referência estendem o eixo, então a tolerância (1%) aparece mesmo quando todos os erros são menores.
+- Nada mudou no cálculo nem na API; o módulo continua guardando entradas e resultados no `AppProvider`.

@@ -2,8 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import { AlertTriangleIcon, Grid3x3Icon, ListOrderedIcon, MilkIcon, ScaleIcon, SparklesIcon, TagIcon, UtensilsIcon } from 'lucide-react'
+
+import { EmptyState, ResultsSkeleton } from '@/components/EmptyState'
 import ExportButtons from '@/components/ExportButtons'
+import RunButton, { type RunState } from '@/components/RunButton'
 import ScenarioFile from '@/components/ScenarioFile'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Card, CardContent } from '@/components/ui/card'
+import { Tabs, TabsList, TabsPanel, TabsTab } from '@/components/ui/tabs'
 import { JobCancelledError, api, cancelJob, runJob } from '@/lib/api'
 import type {
   ModuleCategory,
@@ -14,6 +21,7 @@ import type {
   NutrientStandard,
   OptimizationResolution
 } from '@/lib/types'
+import { cn } from '@/lib/utils'
 import { useApp } from '@/providers/AppProvider'
 
 import CompareCard from './module/CompareCard'
@@ -37,7 +45,7 @@ import {
   type ModuleState
 } from './module/model'
 import PricesCard from './module/PricesCard'
-import ResultCard from './module/ResultCard'
+import { ConstraintsView, RankingView } from './module/ResultCard'
 import { useFeedLibrary } from './module/useFeedLibrary'
 
 const REQUIREMENTS_DELAY_MS = 400
@@ -371,104 +379,218 @@ export default function ModuleView() {
     if (optimizeJob.current) cancelJob(optimizeJob.current).catch(() => undefined)
   }
 
+  const runState: RunState = evaluating ? 'running' : evaluateError ? 'error' : state.result && !stale ? 'done' : 'idle'
+  const showResults = () => document.getElementById('resultados')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const optimalCost = state.optimal?.diet && !optimalStale ? state.optimal.diet.cost : null
+
   return (
     <div className='space-y-6'>
       <ScenarioFile<ModuleScenario> kind='module' getData={scenarioData} onLoad={loadScenario} />
-      <CowCard
-        state={state}
-        defaults={defaults}
-        defaultsError={defaultsError}
-        requirements={requirements}
-        requirementsLoading={requirementsLoading}
-        requirementsError={requirementsError}
-        problems={cowProblemList}
-        onStandard={changeStandard}
-        onCategory={changeCategory}
-        onAnimalType={changeAnimalType}
-        onCow={setCow}
-        onOverride={setOverride}
-      />
-      <DietsCard
-        state={state}
-        library={library}
-        feeds={feeds}
-        libraryError={libraryError}
-        notice={notice}
-        estimatedIntake={requirements?.calculated.dry_matter ?? null}
-        onAddFeed={id => addFeeds([id])}
-        onRemoveFeed={removeFeed}
-        onAmount={setAmount}
-        onName={setName}
-        onAddDiet={addDiet}
-        onRemoveDiet={removeDiet}
-        onExamples={loadExamples}
-      />
-      <PricesCard
-        state={state}
-        library={library}
-        onPrices={prices =>
-          setState(s => ({
-            ...s,
-            feedSettings: Object.fromEntries(
-              Object.entries(s.feedSettings).map(([id, setting]) => [id, id in prices ? { ...setting, price: prices[Number(id)] } : setting])
-            )
-          }))
-        }
-        onSetting={(id, field, value) =>
-          setState(s => ({ ...s, feedSettings: { ...s.feedSettings, [id]: { ...s.feedSettings[id], [field]: value } } }))
-        }
-      />
-      <ResultCard
-        result={state.result}
-        stale={stale}
-        evaluating={evaluating}
-        error={evaluateError}
-        blockers={blockers}
-        selected={selected}
-        optimalCost={state.optimal?.diet && !optimalStale ? state.optimal.diet.cost : null}
-        onSelect={setSelected}
-        onEvaluate={evaluate}
-      />
-      {state.result && (
-        <ExportButtons
-          screen='module'
-          data={state.result}
-          meta={{
-            standard: standardName(state.standard),
-            optimal: state.optimal && !optimalStale ? state.optimal : null,
-            feed_names: Object.fromEntries(state.feedIds.map(id => [id, library[id]?.name ?? String(id)]))
-          }}
-        />
-      )}
-      <OptimalCard
-        library={library}
-        result={state.optimal}
-        stale={optimalStale}
-        running={optimizing}
-        progress={optimizeProgress}
-        error={optimizeError}
-        blockers={optimizeBlockers}
-        resolution={state.resolution}
-        seeds={state.seeds}
-        onResolution={(resolution: OptimizationResolution) => patch({ resolution })}
-        onSeeds={seeds => patch({ seeds })}
-        onRun={optimize}
-        onCancel={cancelOptimize}
-      />
-      {state.result && (
-        <CompareCard
-          report={state.comparison}
-          stale={compareStale}
-          running={comparing}
-          error={compareError}
-          blockers={blockers}
-          tolerance={state.tolerance}
-          selected={comparedDiet}
-          onTolerance={tolerance => patch({ tolerance })}
-          onSelect={setComparedDiet}
-          onCompare={compare}
-        />
-      )}
+
+      <Tabs defaultValue='cow'>
+        <TabsList>
+          <TabsTab value='cow'>
+            <MilkIcon /> Vaca
+          </TabsTab>
+          <TabsTab value='diets'>
+            <UtensilsIcon /> Dietas
+          </TabsTab>
+          <TabsTab value='prices'>
+            <TagIcon /> Preços e limites
+          </TabsTab>
+        </TabsList>
+        <TabsPanel value='cow'>
+          <CowCard
+            state={state}
+            defaults={defaults}
+            defaultsError={defaultsError}
+            requirements={requirements}
+            requirementsLoading={requirementsLoading}
+            requirementsError={requirementsError}
+            problems={cowProblemList}
+            onStandard={changeStandard}
+            onCategory={changeCategory}
+            onAnimalType={changeAnimalType}
+            onCow={setCow}
+            onOverride={setOverride}
+          />
+        </TabsPanel>
+        <TabsPanel value='diets'>
+          <DietsCard
+            state={state}
+            library={library}
+            feeds={feeds}
+            libraryError={libraryError}
+            notice={notice}
+            estimatedIntake={requirements?.calculated.dry_matter ?? null}
+            onAddFeed={id => addFeeds([id])}
+            onRemoveFeed={removeFeed}
+            onAmount={setAmount}
+            onName={setName}
+            onAddDiet={addDiet}
+            onRemoveDiet={removeDiet}
+            onExamples={loadExamples}
+          />
+        </TabsPanel>
+        <TabsPanel value='prices'>
+          <PricesCard
+            state={state}
+            library={library}
+            onPrices={prices =>
+              setState(s => ({
+                ...s,
+                feedSettings: Object.fromEntries(
+                  Object.entries(s.feedSettings).map(([id, setting]) => [id, id in prices ? { ...setting, price: prices[Number(id)] } : setting])
+                )
+              }))
+            }
+            onSetting={(id, field, value) =>
+              setState(s => ({ ...s, feedSettings: { ...s.feedSettings, [id]: { ...s.feedSettings[id], [field]: value } } }))
+            }
+          />
+        </TabsPanel>
+      </Tabs>
+
+      <Card>
+        <CardContent className='space-y-3'>
+          <div className='flex flex-wrap items-center gap-x-6 gap-y-3'>
+            <div className='min-w-0 flex-1 basis-64 space-y-1'>
+              <p className='text-sm font-semibold'>Avaliar as dietas informadas</p>
+              <p className='text-muted-foreground text-xs'>
+                Calcula o custo, as restrições e o ranking das {state.diets.length} dietas para a vaca acima.
+              </p>
+            </div>
+            <div className='w-full sm:w-72'>
+              <RunButton
+                state={runState}
+                label='Avaliar dietas'
+                error={evaluateError}
+                disabled={!body || blockers.length > 0}
+                onRun={evaluate}
+                onView={showResults}
+              />
+            </div>
+          </div>
+          {blockers.length > 0 && (
+            <ul className='text-muted-foreground list-disc space-y-0.5 pl-4 text-sm'>
+              {blockers.map(blocker => (
+                <li key={blocker}>{blocker}</li>
+              ))}
+            </ul>
+          )}
+          {state.result && stale && !evaluating && (
+            <p className='text-muted-foreground text-sm' role='status'>
+              As entradas mudaram desde a última avaliação. Clique em Avaliar dietas para atualizar.
+            </p>
+          )}
+          {evaluateError && (
+            <Alert variant='destructive'>
+              <AlertTriangleIcon />
+              <AlertTitle>Não foi possível avaliar</AlertTitle>
+              <AlertDescription>{evaluateError}</AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+
+      <div id='resultados' className='min-w-0 scroll-mt-24'>
+        <Tabs defaultValue='ranking'>
+          <div className='flex flex-wrap items-center justify-between gap-3'>
+            <TabsList>
+              <TabsTab value='ranking'>
+                <ListOrderedIcon /> Ranking
+              </TabsTab>
+              <TabsTab value='constraints'>
+                <Grid3x3Icon /> Restrições
+              </TabsTab>
+              <TabsTab value='linearization'>
+                <ScaleIcon /> Linearização
+              </TabsTab>
+              <TabsTab value='optimal'>
+                <SparklesIcon /> Dieta ótima
+              </TabsTab>
+            </TabsList>
+            {state.result && (
+              <ExportButtons
+                screen='module'
+                data={state.result}
+                meta={{
+                  standard: standardName(state.standard),
+                  optimal: state.optimal && !optimalStale ? state.optimal : null,
+                  feed_names: Object.fromEntries(state.feedIds.map(id => [id, library[id]?.name ?? String(id)]))
+                }}
+              />
+            )}
+          </div>
+
+          <TabsPanel value='ranking' className='space-y-6'>
+            {state.result ? (
+              <div className={cn('space-y-6 transition-opacity', (stale || evaluating) && 'opacity-60')}>
+                <RankingView result={state.result} selected={selected} onSelect={setSelected} optimalCost={optimalCost} />
+              </div>
+            ) : evaluating ? (
+              <ResultsSkeleton />
+            ) : (
+              <EmptyState
+                icon={ListOrderedIcon}
+                title='Nenhuma avaliação ainda'
+                steps={[
+                  'Informe a vaca, as dietas já montadas e os preços nas abas acima.',
+                  'Clique em Avaliar dietas para calcular o custo e as restrições de cada uma.',
+                  'Veja o ranking, o mapa de restrições, o erro da linearização e a dieta ótima sugerida.'
+                ]}
+              />
+            )}
+          </TabsPanel>
+
+          <TabsPanel value='constraints' className='space-y-6'>
+            {state.result ? (
+              <div className={cn('space-y-6 transition-opacity', (stale || evaluating) && 'opacity-60')}>
+                <ConstraintsView result={state.result} selected={selected} onSelect={setSelected} />
+              </div>
+            ) : (
+              <EmptyState
+                icon={Grid3x3Icon}
+                title='As restrições aparecem após a avaliação'
+                steps={['Avalie as dietas para ver, dieta por dieta, quais restrições são atendidas.']}
+              />
+            )}
+          </TabsPanel>
+
+          <TabsPanel value='linearization'>
+            <CompareCard
+              report={state.comparison}
+              stale={compareStale}
+              running={comparing}
+              error={compareError}
+              blockers={blockers}
+              tolerance={state.tolerance}
+              selected={comparedDiet}
+              onTolerance={tolerance => patch({ tolerance })}
+              onSelect={setComparedDiet}
+              onCompare={compare}
+            />
+          </TabsPanel>
+
+          <TabsPanel value='optimal'>
+            <OptimalCard
+              library={library}
+              result={state.optimal}
+              stale={optimalStale}
+              running={optimizing}
+              progress={optimizeProgress}
+              error={optimizeError}
+              blockers={optimizeBlockers}
+              resolution={state.resolution}
+              seeds={state.seeds}
+              onResolution={(resolution: OptimizationResolution) => patch({ resolution })}
+              onSeeds={seeds => patch({ seeds })}
+              onRun={optimize}
+              onCancel={cancelOptimize}
+            />
+          </TabsPanel>
+        </Tabs>
+      </div>
     </div>
   )
 }
