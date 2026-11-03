@@ -9,6 +9,10 @@ import type {
   ModuleRequirements,
   NutrientStandard,
   PriceImportResult,
+  RunFull,
+  RunKind,
+  RunMeta,
+  RunPage,
   ScenarioLoad,
   ToyResult,
   ToySens
@@ -43,6 +47,19 @@ export const api = {
   moduleCompare: (body: unknown) => request<ModuleComparison>('/api/module/compare', body),
   importPrices: (standard: NutrientStandard, csv: string, fx: number | null) =>
     request<PriceImportResult>('/api/prices/import', { standard, csv, fx }),
+  history: (filters: { kind?: RunKind | ''; status?: string; q?: string; page: number; perPage: number }) => {
+    const query = new URLSearchParams({ page: String(filters.page), per_page: String(filters.perPage) })
+
+    if (filters.kind) query.set('kind', filters.kind)
+    if (filters.status) query.set('status', filters.status)
+    if (filters.q) query.set('q', filters.q)
+
+    return request<RunPage>(`/api/history?${query}`)
+  },
+  historyRun: (id: string) => request<RunFull>(`/api/history/${id}`),
+  historyBase: (kind: RunKind) => request<RunMeta | null>(`/api/history/base?kind=${kind}`),
+  setHistoryBase: (id: string, value: boolean) => request<RunMeta>(`/api/history/${id}/base`, { value }),
+  deleteHistory: (id: string) => request<{ ok: true }>(`/api/history/${id}/delete`, {}),
   saveScenario: (kind: 'cow' | 'module', data: unknown) =>
     request<{ filename: string; mime: string; content: string }>('/api/scenario/save', { kind, data }),
   loadScenario: <T>(text: string) => request<ScenarioLoad<T>>('/api/scenario/load', { text }),

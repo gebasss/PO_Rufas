@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { AlertTriangleIcon, MilkIcon } from 'lucide-react'
 import { toast } from 'sonner'
@@ -14,8 +14,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { runJob } from '@/lib/api'
-import type { CowScenario, SimResult } from '@/lib/types'
+import { api, runJob } from '@/lib/api'
+import type { CowScenario, RunMeta, SimResult } from '@/lib/types'
 import { useApp } from '@/providers/AppProvider'
 import Results from '@/views/cow/Results'
 
@@ -55,6 +55,31 @@ export default function CowView() {
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState({ done: 0, total: 0, status: 'queued' })
   const [error, setError] = useState<string | null>(null)
+  const [base, setBase] = useState<RunMeta | null>(null)
+
+  // cenário-base das simulações (D3): referência dos deltas dos indicadores
+  const loadBase = useCallback(() => {
+    api
+      .historyBase('simulation')
+      .then(setBase)
+      .catch(() => setBase(null))
+  }, [])
+
+  useEffect(() => {
+    if (connection === 'online') loadBase()
+  }, [connection, loadBase])
+
+  const markBase = async () => {
+    if (!sim?.run_id) return
+
+    try {
+      await api.setHistoryBase(sim.run_id, true)
+      toast.success('Cenário-base definido.')
+      loadBase()
+    } catch (e) {
+      toast.error(messageOf(e))
+    }
+  }
 
   const bodyKey = useMemo(() => JSON.stringify(simulationBody(selected, params)), [selected, params])
   const stale = sim !== null && simKey !== null && simKey !== bodyKey
@@ -181,7 +206,7 @@ export default function CowView() {
           )}
 
           {sim ? (
-            <Results sim={sim} stale={stale} />
+            <Results sim={sim} stale={stale} base={base} onSetBase={markBase} />
           ) : running ? (
             <ResultsSkeleton />
           ) : (

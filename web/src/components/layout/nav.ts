@@ -1,4 +1,4 @@
-import { CalculatorIcon, InfoIcon, MilkIcon, SlidersHorizontalIcon, TrendingUpIcon, type LucideIcon } from 'lucide-react'
+import { CalculatorIcon, HistoryIcon, InfoIcon, MilkIcon, SlidersHorizontalIcon, TrendingUpIcon, type LucideIcon } from 'lucide-react'
 
 export interface NavLink {
   label: string
@@ -44,6 +44,13 @@ export const navGroups: NavGroup[] = [
         description: 'Cenários de preços de alimentos e do leite, com o efeito de cada fator.',
         href: '/sensibilidade',
         icon: SlidersHorizontalIcon
+      },
+      {
+        label: 'Execuções',
+        title: 'Execuções',
+        description: 'Histórico de simulações, análises e dietas, com detalhe, cenário-base e exportação.',
+        href: '/execucoes',
+        icon: HistoryIcon
       }
     ]
   },
