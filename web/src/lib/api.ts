@@ -1,4 +1,15 @@
-import type { Defaults, Feed, Job, LactationInfo, ToyResult, ToySens } from '@/lib/types'
+import type {
+  Defaults,
+  Feed,
+  Job,
+  LactationInfo,
+  ModuleDefaults,
+  ModuleEvaluation,
+  ModuleRequirements,
+  NutrientStandard,
+  ToyResult,
+  ToySens
+} from '@/lib/types'
 
 async function request<T>(path: string, body?: unknown): Promise<T> {
   const res = await fetch(
@@ -15,11 +26,17 @@ async function request<T>(path: string, body?: unknown): Promise<T> {
 }
 
 export const api = {
-  feeds: () => request<Feed[]>('/api/feeds'),
+  feeds: (standard: NutrientStandard = 'NRC') => request<Feed[]>(`/api/feeds?standard=${standard}`),
   defaults: () => request<Defaults>('/api/defaults'),
   lactation: () => request<LactationInfo>('/api/lactation'),
   toy: (body: unknown) => request<ToyResult>('/api/toy', body),
-  toySensitivity: (body: unknown) => request<ToySens>('/api/toy/sensitivity', body)
+  toySensitivity: (body: unknown) => request<ToySens>('/api/toy/sensitivity', body),
+  moduleDefaults: (standard: NutrientStandard, category: string, animalType: string) =>
+    request<ModuleDefaults>(
+      `/api/module/defaults?standard=${standard}&category=${category}&animal_type=${animalType}`
+    ),
+  moduleRequirements: (body: unknown) => request<ModuleRequirements>('/api/module/requirements', body),
+  moduleEvaluate: (body: unknown) => request<ModuleEvaluation>('/api/module/evaluate', body)
 }
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))

@@ -1,5 +1,5 @@
-import ToyView from '@/views/ToyView'
+import ExerciseView from '@/views/ExerciseView'
 
 export default function Page() {
-  return <ToyView />
+  return <ExerciseView />
 }

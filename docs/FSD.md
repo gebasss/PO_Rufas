@@ -1497,9 +1497,11 @@ padrão é "melhor": as exigências diferem por construção (mantença de 0,08 
 
 ---
 
-## Anexo B. Especificação do Módulo Ampliado do Exercício do Quadro (RF-28 a RF-30; NÃO implementado)
+## Anexo B. Especificação do Módulo Ampliado do Exercício do Quadro (RF-28 a RF-30; fase 1 implementada, fase 2 não)
 
-> **Status:** este anexo especifica funcionalidades que **ainda não existem**. A base técnica (equações do RuFaS,
+> **Status (03/11/2026):** a **fase 1** (RF-28, RF-29: avaliação e ordenação de dietas, com a interface da seção B.2) está
+> implementada; a comparação formal com o RuFaS (B.8, fase 1) e a **fase 2** (RF-30, dieta ótima) **ainda não existem**.
+> A base técnica (equações do RuFaS,
 > linearização, verificação do erro) está em [LINEARIZACAO.md](LINEARIZACAO.md); este anexo especifica o
 > **comportamento funcional**, a interface e a API. Onde um fato não foi verificado, o texto diz **"a verificar"**; onde a
 > decisão é da equipe ou do professor, diz **"(a confirmar)"**.
@@ -1541,6 +1543,34 @@ O módulo amplia a **tela 1 (Exercício do quadro)**, sem remover o exercício a
 - Estados: antes de avaliar, texto "Informe a vaca, monte as dietas e clique em Avaliar dietas."; durante o cálculo, botão
   desabilitado ("Avaliando…"); erro, aviso com a primeira linha da mensagem (padrão da seção 16).
 - O cálculo não executa o RuFaS completo (seção B.6): é **síncrono** e rápido, sem tarefa em segundo plano.
+
+**Implementada em 03/11/2026 (etapa E5)**, em `web/src/views/ExerciseView.tsx`, `ModuleView.tsx` e `web/src/views/module/`.
+Onde a tela difere ou completa o texto acima:
+
+- O seletor "Exercício simples" × "Avaliar dietas (vaca real)" fica no cabeçalho da tela 1; o exercício simples continua o
+  padrão. A escolha e todos os dados do modo ampliado ficam na memória da página (some ao recarregar).
+- **Vaca:** o padrão (NASEM, principal, ou NRC), a categoria e o tipo de animal (vaca seca ou novilha pré-parto; novilha I ou
+  II) ficam neste cartão. Os campos vêm de `GET /api/module/defaults` (obrigatórios com `*`, faixas validadas) e abrem com uma
+  vaca de **exemplo** da categoria; trocar de categoria ou de tipo volta ao exemplo do novo tipo. Os campos do lote (metano e N
+  urinário, só NASEM) e da ração anterior (opcionais; vazio = vem da dieta) têm blocos próprios. As exigências vêm de
+  `POST /api/module/requirements` (com atraso de 0,4 s após a digitação), com a coluna **Sobrescrever** por exigência.
+- **Dietas:** tabela com uma linha por alimento e uma coluna por dieta (nome editável, até 10), total por dieta e o consumo
+  estimado; busca para adicionar alimentos da biblioteca do padrão; botão **Dietas de exemplo** (três dietas cujo total é o
+  consumo estimado). Ao trocar o padrão, os alimentos que não existem na nova biblioteca saem da tabela, com o aviso
+  "Removidos por não existirem no padrão <X>: <lista>." (o mesmo texto de A.3.1).
+- **Preços e limites** (no lugar de "Preços"): US$/kg MS e limites mínimo e máximo por alimento (kg MS/dia), com os padrões da
+  seção 14.3. A conversão de reais, de matéria natural e do CEPEA continua para depois (B.5).
+- **Resultado:** o botão fica desabilitado com a lista do que falta (campos obrigatórios ou fora da faixa, dieta sem
+  quantidades, nome repetido, preço ausente, mínimo maior que o máximo). O ranking mostra a **posição 1 como a mais
+  recomendada** (a API devolve a lista da menos para a mais recomendada); a dieta viável de menor custo leva o selo "Melhor
+  entre as informadas". Estados em texto e ícone: **Viável**, **Inviável** e **Viável, incompleta** (alguma restrição sem
+  dados, como a energia do NASEM sem metano e N urinário); por restrição: **Atende**, **No limite**, **Violada** e
+  **Indisponível** (com a nota do que falta). O detalhe de uma dieta (clique no nome) traz consumo, TDN%, % de concentrado,
+  desconto de ingestão e a tabela de restrições com exigência, oferta linear, oferta do RuFaS, erro de linearização
+  (destacado acima de 1%), folga e estado. Se as entradas mudarem depois de avaliar, o resultado fica esmaecido com o aviso
+  "As entradas mudaram desde a última avaliação".
+- **Não feito nesta etapa:** persistência em `localStorage`, seletor de padrão da simulação (A.3.1, tela Vaca leiteira) e
+  o selo do cabeçalho com o padrão.
 - A cor nunca é o único canal: estados "viável", "inviável" e "no limite" também aparecem em texto.
 - Os dados do modo ampliado ficam na **memória da página** (como o exercício simples); persistência em `localStorage` fica
   como melhoria **(a confirmar)**.

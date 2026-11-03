@@ -14,7 +14,10 @@ export interface Feed {
   calcium: number
   phosphorus: number
   default_price: number | null
-  nel: number
+  /** Só no padrão NRC (Eq. 2-3); no NASEM a energia depende da dieta e vão `starch` e `de_base`. */
+  nel?: number
+  starch?: number
+  de_base?: number
   default_max: number
 }
 
@@ -67,6 +70,88 @@ export interface ToySensRow {
 export interface ToySens {
   columns: string[]
   rows: ToySensRow[]
+}
+
+// ---- Avaliar dietas (vaca real): contratos de /api/module/* (FSD, Anexo B.7)
+export type NutrientStandard = 'NASEM' | 'NRC'
+export type ModuleCategory = 'LAC_COW' | 'CLOSE_UP' | 'GROWING'
+
+export interface ModuleField {
+  key: string
+  label: string
+  unit: string
+  required: boolean
+  min: number | null
+  max: number | null
+  integer: boolean
+  choices: string[]
+  /** "vaca"; "dieta" (na avaliação vem da própria dieta); "lote" (metano e N urinário, só no NASEM). */
+  group: 'vaca' | 'dieta' | 'lote'
+}
+export interface ModuleRequirementField {
+  key: string
+  label: string
+  unit: string
+}
+export interface ModuleDefaults {
+  standard: NutrientStandard
+  category: ModuleCategory
+  label: string
+  animal_type: string
+  animal_types: string[]
+  fields: ModuleField[]
+  diet_defaults: Record<string, number>
+  requirement_fields: ModuleRequirementField[]
+  constraints: { id: string; label: string; rufas_name: string; kind: string }[]
+}
+export interface ModuleRequirements {
+  requirements: Record<string, number | null>
+  calculated: Record<string, number | null>
+  overridden: string[]
+  warnings: string[]
+}
+
+export type ConstraintStatus = 'ok' | 'no_limite' | 'violada' | 'indisponivel'
+export interface ModuleConstraint {
+  id: string
+  label: string
+  unit: string
+  /** Classe de linearização: L (exata), E (razão, exata) ou A (aproximada, escalares congelados). */
+  kind: 'L' | 'E' | 'A'
+  sense: 'ge' | 'le'
+  requirement: number | null
+  /** Ausentes (junto com `error_pct` e `slack`) quando o estado é `indisponivel`; `note` diz o que falta. */
+  supply_linear?: number | null
+  supply_nonlinear?: number | null
+  error_pct?: number | null
+  slack?: number | null
+  status: ConstraintStatus
+  note?: string
+}
+export interface ModuleDietResult {
+  name: string
+  cost: number
+  cost_per_kg: number | null
+  feasible: boolean
+  violation: number
+  violated: string[]
+  incomplete: boolean
+  intake: Record<string, number | null>
+  requirements: Record<string, number | null>
+  constraints: ModuleConstraint[]
+  warnings: string[]
+}
+export interface ModuleEvaluation {
+  standard: NutrientStandard
+  category: ModuleCategory
+  animal_type: string
+  requirements: Record<string, number | null>
+  requirement_warnings: string[]
+  diets: ModuleDietResult[]
+  /** Nomes das dietas, da menos para a mais recomendada. */
+  ranking: string[]
+  best: string | null
+  warnings: string[]
 }
 
 // ---- Curva de lactação

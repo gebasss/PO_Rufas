@@ -1,6 +1,6 @@
 # Plano de implementação: módulo "Exercício do quadro" ampliado e complementos
 
-**Versão 0.3 (02/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
+**Versão 0.4 (03/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
 comportamento do sistema; as regras estão nos documentos citados e este arquivo só as sequencia.
 
 | Documento | O que fornece ao plano |
@@ -21,8 +21,15 @@ comportamento do sistema; as regras estão nos documentos citados e este arquivo
 | E1 | **Feita no back-end (02/11/2026)** | `standards.py`, `paths.py`; `Scenario.nutrient_standard` grava a biblioteca do padrão (com limites) e o `metadata`; preços restritos à biblioteca; `GET /api/feeds?standard=`; falta o seletor na interface (FSD A.3.1) |
 | E2 | **Feita (02/11/2026)** | `module/` (`categories`, `fields`, `requirements`, `api`); `GET /api/module/defaults`, `POST /api/module/requirements`; padrão do módulo é NASEM |
 | E3 | **Feita (02/11/2026)** | `module/linear.py` (classes L, E e A, em NRC e NASEM, todas as categorias), `module/evaluate.py` (oferta linear × `RationOptimizer`, erro fora do ponto, estados, violação, ordenação), `module/library.py`, `module/rufas.py`; `POST /api/module/evaluate`; 71 testes passando, e a sabotagem de coeficientes confirmou que os testes falham quando algo está errado |
-| E4 | Rota feita junto com a E3 | Falta só conferir os formatos finais com a interface (E5) |
-| E5 a E8 | Não iniciadas | |
+| E4 | **Feita (03/11/2026)** | Rota feita junto com a E3; formatos conferidos com a interface (E5) |
+| E5 | **Feita (03/11/2026)** | Tela 1 com o seletor "Exercício simples" × "Avaliar dietas (vaca real)" e os cartões Vaca, Dietas, Preços e limites e Resultado (`ExerciseView`, `ModuleView`, `views/module/`); build em `frontend/` por `scripts\build-web.ps1`; conferida no navegador (NASEM e NRC, categoria de crescimento, painel de ≈ 800 px e tela de 375 px, sem rolagem horizontal da página). **Fica de fora:** o seletor de padrão da simulação (FSD A.3.1) e a persistência em `localStorage` |
+| E6 a E8 | Não iniciadas | |
+
+Achados do E5: (i) a resposta de `POST /api/module/evaluate` omite `supply_linear`, `supply_nonlinear`, `error_pct` e `slack` nas
+restrições `indisponivel` e traz um campo `note` com o que falta; a interface trata isso (tipos opcionais); (ii) o exemplo
+do NASEM só mostra a energia depois que o metano e o N urinário são preenchidos (com 400 g/dia e 0,2 kg/dia, a oferta de
+46,73 Mcal/dia coincide com a do RuFaS e o erro a ±5% é 0,27%); (iii) no NRC, o erro de energia da dieta "Mais concentrado"
+(TDN 69,9%) chega a 1,74% e é destacado.
 
 Achados do E3: (i) a oferta linear coincide com a do RuFaS no ponto em todas as restrições, nas seis combinações de padrão e
 categoria; (ii) a energia do NASEM exige metano e nitrogênio urinário do lote (L-Q2), que viraram campos opcionais, com

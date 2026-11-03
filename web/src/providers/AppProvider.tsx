@@ -1,6 +1,16 @@
 'use client'
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction
+} from 'react'
 
 import { api } from '@/lib/api'
 import type {
@@ -15,6 +25,7 @@ import type {
   ToyResult,
   ToySens
 } from '@/lib/types'
+import { initialModuleState, type ModuleState } from '@/views/module/model'
 
 /** Conjunto validado de alimentos: volumosos, concentrados e minerais da biblioteca NRC. */
 export const PRESET_BASE = [50, 110, 44, 167, 138, 230, 23]
@@ -52,7 +63,16 @@ interface AppContextValue {
   setToyResult: (value: ToyResult | null) => void
   toySens: ToySens | null
   setToySens: (value: ToySens | null) => void
+
+  /** Tela 1: exercício simples ou avaliação de dietas de uma vaca real. */
+  exerciseMode: ExerciseMode
+  setExerciseMode: (value: ExerciseMode) => void
+  /** Estado da avaliação de dietas; fica aqui para sobreviver à navegação entre telas (memória da página). */
+  moduleState: ModuleState
+  setModuleState: Dispatch<SetStateAction<ModuleState>>
 }
+
+export type ExerciseMode = 'simple' | 'module'
 
 const AppContext = createContext<AppContextValue | null>(null)
 
@@ -83,6 +103,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [toyBounds, setToyBounds] = useState<ToyBound[]>(INITIAL_TOY_BOUNDS)
   const [toyResult, setToyResult] = useState<ToyResult | null>(null)
   const [toySens, setToySens] = useState<ToySens | null>(null)
+  const [exerciseMode, setExerciseMode] = useState<ExerciseMode>('simple')
+  const [moduleState, setModuleState] = useState<ModuleState>(initialModuleState)
 
   const feedById = useMemo(() => Object.fromEntries(feeds.map(f => [f.id, f])) as Record<number, Feed>, [feeds])
 
@@ -196,7 +218,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toyResult,
     setToyResult,
     toySens,
-    setToySens
+    setToySens,
+    exerciseMode,
+    setExerciseMode,
+    moduleState,
+    setModuleState
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

@@ -81,6 +81,8 @@ export function NumberInput({
   className?: string
   'aria-label'?: string
   title?: string
+  placeholder?: string
+  id?: string
 }) {
   return (
     <Input
