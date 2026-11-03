@@ -6,6 +6,7 @@ import { api } from '@/lib/api'
 import type { ModuleCategory, ModuleDefaults, ModuleRequirements, NutrientStandard } from '@/lib/types'
 import { useApp } from '@/providers/AppProvider'
 
+import CompareCard from './module/CompareCard'
 import CowCard from './module/CowCard'
 import DietsCard from './module/DietsCard'
 import {
@@ -44,6 +45,9 @@ export default function ModuleView() {
   const [evaluating, setEvaluating] = useState(false)
   const [evaluateError, setEvaluateError] = useState<string | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
+  const [comparing, setComparing] = useState(false)
+  const [compareError, setCompareError] = useState<string | null>(null)
+  const [comparedDiet, setComparedDiet] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   // Nomes dos alimentos já vistos em qualquer biblioteca, para citá-los no aviso de remoção ao trocar de padrão.
   const names = useRef<Record<number, string>>({})
@@ -147,6 +151,9 @@ export default function ModuleView() {
   )
   const bodyKey = body ? JSON.stringify(body) : null
   const stale = state.result !== null && state.resultKey !== bodyKey
+  const compareBody = useMemo(() => (body ? { ...body, tolerance_pct: state.tolerance } : null), [body, state.tolerance])
+  const compareKey = compareBody ? JSON.stringify(compareBody) : null
+  const compareStale = state.comparison !== null && state.comparisonKey !== compareKey
 
   const blockers = useMemo(() => {
     if (!online) return ['O servidor local não está respondendo.']
@@ -259,6 +266,24 @@ export default function ModuleView() {
     }
   }
 
+  const compare = async () => {
+    if (!compareBody || blockers.length > 0) return
+
+    setComparing(true)
+    setCompareError(null)
+
+    try {
+      const comparison = await api.moduleCompare(compareBody)
+
+      patch({ comparison, comparisonKey: compareKey })
+      setComparedDiet(comparison.summary.worst?.diet ?? comparison.diets[0]?.name ?? null)
+    } catch (e) {
+      setCompareError(messageOf(e, 'Falha ao comparar com o RuFaS'))
+    } finally {
+      setComparing(false)
+    }
+  }
+
   return (
     <div className='space-y-6'>
       <CowCard
@@ -307,6 +332,20 @@ export default function ModuleView() {
         onSelect={setSelected}
         onEvaluate={evaluate}
       />
+      {state.result && (
+        <CompareCard
+          report={state.comparison}
+          stale={compareStale}
+          running={comparing}
+          error={compareError}
+          blockers={blockers}
+          tolerance={state.tolerance}
+          selected={comparedDiet}
+          onTolerance={tolerance => patch({ tolerance })}
+          onSelect={setComparedDiet}
+          onCompare={compare}
+        />
+      )}
     </div>
   )
 }

@@ -3,6 +3,7 @@ import type {
   Feed,
   Job,
   LactationInfo,
+  ModuleComparison,
   ModuleDefaults,
   ModuleEvaluation,
   ModuleRequirements,
@@ -36,7 +37,8 @@ export const api = {
       `/api/module/defaults?standard=${standard}&category=${category}&animal_type=${animalType}`
     ),
   moduleRequirements: (body: unknown) => request<ModuleRequirements>('/api/module/requirements', body),
-  moduleEvaluate: (body: unknown) => request<ModuleEvaluation>('/api/module/evaluate', body)
+  moduleEvaluate: (body: unknown) => request<ModuleEvaluation>('/api/module/evaluate', body),
+  moduleCompare: (body: unknown) => request<ModuleComparison>('/api/module/compare', body)
 }
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))

@@ -1,6 +1,6 @@
 # Plano de implementação: módulo "Exercício do quadro" ampliado e complementos
 
-**Versão 0.4 (03/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
+**Versão 0.5 (03/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
 comportamento do sistema; as regras estão nos documentos citados e este arquivo só as sequencia.
 
 | Documento | O que fornece ao plano |
@@ -23,7 +23,14 @@ comportamento do sistema; as regras estão nos documentos citados e este arquivo
 | E3 | **Feita (02/11/2026)** | `module/linear.py` (classes L, E e A, em NRC e NASEM, todas as categorias), `module/evaluate.py` (oferta linear × `RationOptimizer`, erro fora do ponto, estados, violação, ordenação), `module/library.py`, `module/rufas.py`; `POST /api/module/evaluate`; 71 testes passando, e a sabotagem de coeficientes confirmou que os testes falham quando algo está errado |
 | E4 | **Feita (03/11/2026)** | Rota feita junto com a E3; formatos conferidos com a interface (E5) |
 | E5 | **Feita (03/11/2026)** | Tela 1 com o seletor "Exercício simples" × "Avaliar dietas (vaca real)" e os cartões Vaca, Dietas, Preços e limites e Resultado (`ExerciseView`, `ModuleView`, `views/module/`); build em `frontend/` por `scripts\build-web.ps1`; conferida no navegador (NASEM e NRC, categoria de crescimento, painel de ≈ 800 px e tela de 375 px, sem rolagem horizontal da página). **Fica de fora:** o seletor de padrão da simulação (FSD A.3.1) e a persistência em `localStorage` |
-| E6 a E8 | Não iniciadas | |
+| E6 | **Feita (03/11/2026)** | `module/compare.py` (relatório sobre o resultado de `evaluate`, CSV), `POST /api/module/compare`, cartão "Comparação com o RuFaS" na tela (`CompareCard`) com tolerância editável e botão de CSV; 13 testes novos (84 no total) |
+| E7 e E8 | Não iniciadas | |
+
+Achados do E6: (i) nas dietas de exemplo do NRC, o maior erro a ±5% é 0,30% ("Silagem e concentrado") e 0,60% ("Só volumoso"); a
+dieta "Mais concentrado" (TDN 69,9%) chega a 1,86% (energia de crescimento) e 4 das 14 restrições passam de 1%; no NASEM (metano 400 g/dia e N urinário
+0,2 kg/dia) o maior erro é 0,31% (PM) e nenhuma das 33 passa de 1%; (ii) a igualdade no ponto e o mesmo estado (viável ou
+violada) nas sondagens conferem nos casos conferidos (NRC e NASEM, três dietas de exemplo); (iii) o erro de uma restrição de razão (classe E) não é sondado
+escalando as quantidades, porque a razão não muda com a escala: a exatidão dela é verificada em dietas aleatórias (B.9-3).
 
 Achados do E5: (i) a resposta de `POST /api/module/evaluate` omite `supply_linear`, `supply_nonlinear`, `error_pct` e `slack` nas
 restrições `indisponivel` e traz um campo `note` com o que falta; a interface trata isso (tipos opcionais); (ii) o exemplo

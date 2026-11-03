@@ -154,6 +154,76 @@ export interface ModuleEvaluation {
   warnings: string[]
 }
 
+// ---- Comparação do modelo linear com o RuFaS (FSD, Anexo B.8; POST /api/module/compare)
+export interface ComparisonProbe {
+  /** Fator aplicado às quantidades da dieta (0,95 = −5%). */
+  scale: number
+  supply_linear: number
+  supply_original: number
+  slack_linear: number
+  slack_original: number
+  /** Com sinal, em % da oferta original. */
+  error_pct: number
+  same_state: boolean
+}
+/** Restrição sem cálculo (`status_linear: 'indisponivel'`) traz só `note`; as demais, todos os números. */
+export interface ComparisonRow {
+  id: string
+  label: string
+  unit: string
+  kind: 'L' | 'E' | 'A'
+  sense: 'ge' | 'le'
+  requirement: number | null
+  status_linear: ConstraintStatus
+  note?: string
+  supply_linear?: number
+  supply_original?: number
+  slack_linear?: number
+  slack_original?: number
+  point_error_pct?: number
+  probes?: ComparisonProbe[]
+  max_error_pct?: number
+  within_tolerance?: boolean
+  identity_ok?: boolean
+  status_original?: ConstraintStatus
+  same_state_in_probes?: boolean
+}
+export interface ComparisonDiet {
+  name: string
+  feasible: boolean
+  incomplete: boolean
+  n_compared: number
+  n_unavailable: number
+  max_error_pct: number
+  worst_constraint: { id: string; label: string } | null
+  n_above_tolerance: number
+  within_tolerance: boolean
+  identity_ok: boolean
+  same_state_in_probes: boolean
+  constraints: ComparisonRow[]
+}
+export interface ModuleComparison {
+  standard: NutrientStandard
+  category: ModuleCategory
+  animal_type: string
+  tolerance_pct: number
+  scales: number[]
+  diets: ComparisonDiet[]
+  summary: {
+    n_diets: number
+    n_compared: number
+    max_error_pct: number
+    worst: { diet: string; id: string; label: string } | null
+    n_above_tolerance: number
+    n_diets_above_tolerance: number
+    identity_ok: boolean
+    same_state_in_probes: boolean
+  }
+  warnings: string[]
+  /** Mesma tabela em CSV (uma linha por dieta e restrição). */
+  csv: string
+}
+
 // ---- Curva de lactação
 export interface Wood {
   l: number

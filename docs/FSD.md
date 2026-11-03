@@ -1500,7 +1500,8 @@ padrão é "melhor": as exigências diferem por construção (mantença de 0,08 
 ## Anexo B. Especificação do Módulo Ampliado do Exercício do Quadro (RF-28 a RF-30; fase 1 implementada, fase 2 não)
 
 > **Status (03/11/2026):** a **fase 1** (RF-28, RF-29: avaliação e ordenação de dietas, com a interface da seção B.2) está
-> implementada; a comparação formal com o RuFaS (B.8, fase 1) e a **fase 2** (RF-30, dieta ótima) **ainda não existem**.
+> implementada, com a comparação com o RuFaS da B.8 (fase 1, etapa E6, 03/11/2026); a **fase 2** (RF-30, dieta ótima, e a
+> comparação com o `RationOptimizer`) **ainda não existe**.
 > A base técnica (equações do RuFaS,
 > linearização, verificação do erro) está em [LINEARIZACAO.md](LINEARIZACAO.md); este anexo especifica o
 > **comportamento funcional**, a interface e a API. Onde um fato não foi verificado, o texto diz **"a verificar"**; onde a
@@ -1681,11 +1682,23 @@ Detalhes da implementação de `POST /api/module/evaluate`:
 
 Erros no formato da seção 11.3. A rota é síncrona. O `id` dos alimentos é o `rufas_id` da biblioteca do padrão.
 
+Rota da comparação (E6): `POST /api/module/compare`, com o mesmo corpo de `evaluate` e `tolerance_pct?` (padrão 1; a tolerância
+ainda é uma decisão em aberto, L-Q1). Cada restrição de `evaluate` traz também `probes`: as ofertas linear e original com as
+quantidades escaladas por 0,95 e 1,05 (só a classe A; vazio nas classes L e E).
+
 ### B.8 Comparação com o RuFaS (RF-29)
 
-- **Fase 1:** para a mesma vaca, o mesmo lote e a mesma dieta, comparar a oferta e a folga de cada restrição **linearizada**
+- **Fase 1 (implementada em 03/11/2026, etapa E6; `module/compare.py`):** para a mesma vaca, o mesmo lote e a mesma dieta, comparar a oferta e a folga de cada restrição **linearizada**
   com a **original do RuFaS** (as funções `NutritionSupplyCalculator.*`, chamadas diretamente; **verificado** em 01/11/2026: o estudo numérico de `LINEARIZACAO.md`, seção 10, já as chamou assim).
   Relatório: erro por restrição e por dieta, com as tolerâncias de `LINEARIZACAO.md`, seção 6.
+  Como ficou: para cada dieta e restrição, a oferta e a folga lineares e originais, o erro **com sinal** (em % da oferta original)
+  no ponto e a −5% e +5%, o maior erro em módulo, se está dentro da tolerância, a igualdade no ponto (1e-6), o estado (viável ou
+  violada) nos dois modelos e se ele coincide nas sondagens; por dieta, o maior erro, a restrição de maior erro e quantas passam
+  da tolerância; e um resumo geral. Os limites por alimento não entram (não têm função equivalente no RuFaS). Restrições sem
+  dados (energia do NASEM sem metano e N urinário) ficam de fora das contagens, com a nota. O relatório sai na tela (cartão
+  "Comparação com o RuFaS", depois do resultado) e em CSV (uma linha por dieta e restrição; botão "Baixar CSV"). A disjunção
+  de `LINEARIZACAO.md`, seção 6 ("o ramo escolhido continua o de maior oferta?"), não tem coluna própria: o `min` e o `max` ficam
+  dentro da forma linear e uma troca de ramo aparece no erro de oferta.
 - **Fase 2:** comparar o LP (ótimo global do problema linearizado) com o otimizador do RuFaS (`RationOptimizer`, ótimo
   local, ponto inicial aleatório quando não há ração anterior): custo, ração e folgas (`LINEARIZACAO.md`, 5.4).
 

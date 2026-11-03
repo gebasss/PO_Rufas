@@ -101,7 +101,7 @@ def _derived_inputs(standard: str, feeds: Sequence[Any], x: np.ndarray, body_wei
     return out
 
 
-def _status(slack: float, requirement: float) -> str:
+def classify_slack(slack: float, requirement: float) -> str:
     scale = max(abs(requirement), 1e-9)
     if slack < -VIOLATION_TOLERANCE * max(scale, 1.0):
         return "violada"
@@ -156,14 +156,19 @@ def _evaluate_diet(
             continue
         supply_linear = constraint.supply(x)
         supply_nonlinear = _nonlinear_supply(specs[constraint.id].rufas_name, constraint, x, config)
-        error = 0.0
+        probes = []
         if constraint.kind == "A":  # erro fora do ponto: coeficientes congelados em x, quantidades escaladas
             for scale in PERTURBATION:
                 moved = x * scale
-                lin = constraint.supply(moved)
-                non = _nonlinear_supply(specs[constraint.id].rufas_name, constraint, moved, config)
-                error = max(error, abs(lin - non) / max(abs(non), 1e-9) * 100)
-        rows.append(_report(constraint, supply_linear, supply_nonlinear, error))
+                probes.append(
+                    {
+                        "scale": scale,
+                        "supply_linear": float(constraint.supply(moved)),
+                        "supply_nonlinear": float(_nonlinear_supply(specs[constraint.id].rufas_name, constraint, moved, config)),
+                    }
+                )
+        error = max((abs(p["supply_linear"] - p["supply_nonlinear"]) / max(abs(p["supply_nonlinear"]), 1e-9) * 100 for p in probes), default=0.0)
+        rows.append(_report(constraint, supply_linear, supply_nonlinear, error, probes))
         violation += _shortfall(constraint, supply_linear)
 
     for feed_id, amount in zip(ids, x):
@@ -222,7 +227,13 @@ def _base_row(constraint: linear.LinearConstraint) -> dict[str, Any]:
     }
 
 
-def _report(constraint: linear.LinearConstraint, supply_linear: float, supply_nonlinear: float, error_pct: float) -> dict[str, Any]:
+def _report(
+    constraint: linear.LinearConstraint,
+    supply_linear: float,
+    supply_nonlinear: float,
+    error_pct: float,
+    probes: Sequence[Mapping[str, float]] = (),
+) -> dict[str, Any]:
     slack = supply_linear - constraint.requirement if constraint.sense == "ge" else constraint.requirement - supply_linear
     return {
         **_base_row(constraint),
@@ -230,7 +241,8 @@ def _report(constraint: linear.LinearConstraint, supply_linear: float, supply_no
         "supply_nonlinear": float(supply_nonlinear),
         "error_pct": float(error_pct),
         "slack": float(slack),
-        "status": _status(slack, constraint.requirement),
+        "status": classify_slack(slack, constraint.requirement),
+        "probes": [dict(p) for p in probes],  # ofertas com as quantidades escaladas (só classe A), para a comparação com o RuFaS
     }
 
 
