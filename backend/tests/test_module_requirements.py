@@ -9,6 +9,7 @@ from dietopt.module.api import defaults_payload, requirements_payload
 from dietopt.module.categories import constraints_for
 from dietopt.module.fields import fields_for
 from dietopt.module.requirements import compute_requirements
+from dietopt.module.rufas import rufas as _rufas
 
 LACTACAO = dict(
     body_weight=650, mature_body_weight=700, parity=2, days_in_milk=100, calving_interval=400,
@@ -46,16 +47,24 @@ def test_vaca_em_lactacao_nrc_reproduz_a_calculadora_do_rufas():
 def test_vaca_em_lactacao_nasem_com_fdn_da_racao_anterior():
     r = compute_requirements("NASEM", "LAC_COW", {**LACTACAO, "ndf_percentage": 33})
     assert values(r, "maintenance_energy", "metabolizable_protein", "calcium", "phosphorus", "dry_matter") == close({
-        "maintenance_energy": 12.862, "metabolizable_protein": 2448.852, "calcium": 63.845, "phosphorus": 61.64, "dry_matter": 24.735,
+        "maintenance_energy": 12.862, "metabolizable_protein": 2334.29, "calcium": 63.845, "phosphorus": 61.64, "dry_matter": 24.735,
     })  # fmt: skip
 
 
-def test_fdn_padrao_do_rufas_e_replicada_com_aviso():
-    padrao = compute_requirements("NASEM", "LAC_COW", LACTACAO)
-    informada = compute_requirements("NASEM", "LAC_COW", {**LACTACAO, "ndf_percentage": 33})
-    assert padrao.inputs["ndf_percentage"] == pytest.approx(0.3)
-    assert padrao.requirements["metabolizable_protein"] != pytest.approx(informada.requirements["metabolizable_protein"])
-    assert any("0,3" in aviso for aviso in padrao.warnings) and not any("0,3" in a for a in informada.warnings)
+def test_fdn_da_racao_anterior_vai_a_calculadora_como_fracao_como_faz_o_rufas():
+    padrao = compute_requirements("NASEM", "CLOSE_UP", SECA)
+    informada = compute_requirements("NASEM", "CLOSE_UP", {**SECA, "ndf_percentage": 45})
+    assert padrao.inputs["ndf_percentage"] == pytest.approx(30)  # padrão do RuFaS (0,3), exibido em % da MS
+    assert any("fração" in aviso for aviso in padrao.warnings)
+    # O módulo envia 0,45 e não 45: com 45 a calculadora daria outro consumo estimado (a equação espera porcentagem).
+    direto = _rufas().calculators["NASEM"].calculate_requirements(
+        body_weight=740.0, mature_body_weight=740.0, day_of_pregnancy=250, body_condition_score_5=3.0, days_in_milk=None,
+        average_daily_gain_heifer=None, animal_type=_rufas().animal_type.DRY_COW, parity=2, calving_interval=400,
+        milk_fat=3.7, milk_true_protein=3.1, milk_lactose=4.85, milk_production=0.0, housing="Barn", distance=100.0,
+        lactating=False, ndf_percentage=0.45, process_based_phosphorus_requirement=0.0,
+    )  # fmt: skip
+    assert informada.requirements["dry_matter"] == pytest.approx(direto.dry_matter)
+    assert informada.requirements["dry_matter"] != pytest.approx(padrao.requirements["dry_matter"], abs=1e-6)
 
 
 def test_vaca_seca_nrc_e_nasem():
@@ -66,7 +75,7 @@ def test_vaca_seca_nrc_e_nasem():
     })  # fmt: skip
     nasem = compute_requirements("NASEM", "CLOSE_UP", {**SECA, "ndf_percentage": 33})
     assert values(nasem, "maintenance_energy", "pregnancy_energy", "phosphorus") == close({
-        "maintenance_energy": 13.32, "pregnancy_energy": 3.713, "phosphorus": 17.226,
+        "maintenance_energy": 13.32, "pregnancy_energy": 3.713, "phosphorus": 19.369,
     })  # fmt: skip
 
 
@@ -78,7 +87,7 @@ def test_novilha_usa_ganho_diario_em_kg_e_nrc_pede_idade():
     assert nrc.requirements["metabolizable_protein"] == pytest.approx(577, abs=1)
     nasem = compute_requirements("NASEM", "GROWING", {**NOVILHA_II, "ndf_percentage": 33})
     assert nasem.requirements["growth_energy"] == pytest.approx(4.15, abs=0.01)
-    assert nasem.requirements["metabolizable_protein"] == pytest.approx(355, abs=1)
+    assert nasem.requirements["metabolizable_protein"] == pytest.approx(337.8, abs=0.1)
 
 
 def test_ganho_diario_em_gramas_e_recusado():

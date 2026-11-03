@@ -7,16 +7,13 @@ são constantes do problema linear (LINEARIZACAO.md, seção 3.2): dependem só 
 from __future__ import annotations
 
 import math
-import sys
-from dataclasses import dataclass, field
-from functools import cache
-from types import SimpleNamespace
+from dataclasses import asdict, dataclass, field, replace
 from typing import Any, Mapping
 
-from ..paths import RUFAS_DIR
 from ..standards import get_standard
 from .categories import parse_animal_type, parse_category
 from .fields import DIET_FIELDS, FIELD_BY_KEY, FIELDS, usage
+from .rufas import rufas
 
 # Exigências que o usuário pode sobrescrever (nome do atributo de ``NutritionRequirements`` -> rótulo e unidade).
 REQUIREMENT_FIELDS: Mapping[str, tuple[str, str]] = {
@@ -59,38 +56,27 @@ class RequirementsResult:
     overridden: list[str]
     inputs: dict[str, Any]  # valores efetivamente enviados à calculadora (inclui os padrões do RuFaS)
     warnings: list[str] = field(default_factory=list)
+    nutrition_requirements: Any = field(default=None, repr=False, compare=False)  # objeto do RuFaS, já com as sobrescritas
 
-
-@cache
-def _rufas() -> SimpleNamespace:
-    """Importa as peças do RuFaS sob demanda (``vendor/RuFaS`` vai ao fim do ``sys.path`` para não sombrear módulos nossos)."""
-    if str(RUFAS_DIR) not in sys.path:
-        sys.path.append(str(RUFAS_DIR))
-    from RUFAS.biophysical.animal.animal_module_constants import AnimalModuleConstants
-    from RUFAS.biophysical.animal.data_types.animal_types import AnimalType
-    from RUFAS.biophysical.animal.nutrients.nasem_requirements_calculator import NASEMRequirementsCalculator
-    from RUFAS.biophysical.animal.nutrients.nrc_requirements_calculator import NRCRequirementsCalculator
-
-    return SimpleNamespace(
-        constants=AnimalModuleConstants,
-        animal_type=AnimalType,
-        calculators={"NRC": NRCRequirementsCalculator, "NASEM": NASEMRequirementsCalculator},
-    )
+    def to_dict(self) -> dict[str, Any]:
+        """Corpo JSON (sem o objeto do RuFaS)."""
+        return {key: value for key, value in asdict(self).items() if key != "nutrition_requirements"}
 
 
 # Valor do RuFaS para a ração anterior quando o animal ainda não tem uma (``Animal.calculate_requirements``).
-# A temperatura vem de ``AnimalRequirements`` (15 °C). O RuFaS guarda a FDN padrão como 0,3 e a passa à calculadora, que a
-# trata como porcentagem: o módulo replica isso (LINEARIZACAO.md, 4.7) e avisa.
+# A temperatura vem de ``AnimalRequirements`` (15 °C). O RuFaS calcula a FDN da ração anterior como fração (kg de FDN
+# por kg de MS) e a passa à calculadora NASEM, que a trata como porcentagem: o módulo replica isso (LINEARIZACAO.md,
+# 4.7) e avisa. A interface recebe a FDN em % da MS (como o usuário pensa) e converte.
 _PREVIOUS_TEMPERATURE = 15.0
 
 
 def rufas_diet_defaults() -> dict[str, float]:
     """Padrões do RuFaS para os campos da ração anterior, nas unidades da interface (% da MS, Mcal/kg, °C)."""
-    constants = _rufas().constants
+    constants = rufas().constants
     return {
         "tdn_percentage": constants.DEFAULT_TDN_PERCENTAGE * 100,
         "net_energy_diet_concentration": constants.DEFAULT_NET_ENERGY_DIET_CONCENTRATION,
-        "ndf_percentage": constants.DEFAULT_NDF_PERCENTAGE,
+        "ndf_percentage": constants.DEFAULT_NDF_PERCENTAGE * 100,
         "previous_temperature": _PREVIOUS_TEMPERATURE,
     }
 
@@ -147,9 +133,8 @@ def validate_cow(standard: str, animal_type: str, cow: Mapping[str, Any]) -> tup
 
 def _arguments(standard: str, animal_type: str, values: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, float], list[str]]:
     """Argumentos da calculadora do RuFaS (fração no TDN, padrões do RuFaS na ração anterior) e os padrões usados."""
-    rufas = _rufas()
     args: dict[str, Any] = {
-        "animal_type": getattr(rufas.animal_type, animal_type),
+        "animal_type": getattr(rufas().animal_type, animal_type),
         **{key: values.get(key, neutral) for key, neutral in _NEUTRAL.items()},
         **{key: values[key] for key in ("body_weight", "mature_body_weight", "housing", "distance")},
     }
@@ -175,10 +160,15 @@ def _arguments(standard: str, animal_type: str, values: Mapping[str, Any]) -> tu
             )
         if key == "tdn_percentage":
             args["TDN_percentage"] = diet_value / 100  # a calculadora espera fração
+        elif key == "ndf_percentage":
+            args[key] = diet_value / 100  # fração, como o RuFaS a envia (ver acima)
         else:
             args[key] = diet_value
-    if standard == "NASEM" and "ndf_percentage" in used_defaults:
-        warnings.append("O RuFaS guarda a FDN padrão como 0,3 e a calculadora a trata como porcentagem; replicado.")
+    if standard == "NASEM":
+        warnings.append(
+            "O RuFaS passa a FDN da ração anterior como fração (0,33) a uma calculadora que espera porcentagem (33); "
+            "replicado, e isso reduz a proteína exigida em cerca de 5%."
+        )
     return args, used_defaults, warnings
 
 
@@ -200,7 +190,7 @@ def compute_requirements(
         raise ValueError(f"Exigências desconhecidas para sobrescrever: {', '.join(bad)}")
 
     args, used_defaults, default_warnings = _arguments(nutrient_standard, animal, values)
-    calculator = _rufas().calculators[nutrient_standard]
+    calculator = rufas().calculators[nutrient_standard]
     result = calculator.calculate_requirements(**args)
     calculated = {name: float(getattr(result, name)) for name in REQUIREMENT_FIELDS}
     if not all(math.isfinite(v) for v in calculated.values()):
@@ -222,4 +212,5 @@ def compute_requirements(
         overridden=sorted(overrides),
         inputs=inputs,
         warnings=warnings + default_warnings,
+        nutrition_requirements=replace(result, **{name: final[name] for name in overrides}),
     )
