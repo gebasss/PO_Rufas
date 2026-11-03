@@ -6,6 +6,7 @@ import { PlayIcon, WheatIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 
+import ExportButtons from '@/components/ExportButtons'
 import FeedPicker from '@/components/FeedPicker'
 import { finite, JobProgress, KpiCard, NumberInput, PageHeader } from '@/components/shared'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -228,6 +229,8 @@ function Results({ sim }: { sim: SimResult }) {
 
   return (
     <div className='min-w-0 space-y-6'>
+      <ExportButtons screen='simulation' data={sim} meta={{ standard: 'NRC 2001' }} />
+
       <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'>
         <KpiCard tone='primary' label='Margem sobre custo de alimentação' value={usd(s.margem)} />
         <KpiCard label='Receita do leite' value={usd(s.receita)} />

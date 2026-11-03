@@ -18,6 +18,7 @@ from urllib.parse import parse_qs, urlparse
 
 from . import lactation
 from .diet_lp import Food, NutrientBounds, solve_diet
+from .exports import export_file
 from .feeds import FeedInfo, feed_library
 from .jobs import Job, JobManager
 from .module.api import compare_payload, defaults_payload, evaluate_payload, optimize_payload, requirements_payload
@@ -198,6 +199,7 @@ def simulation_payload(scenario: Scenario, economics: Economics) -> dict[str, An
             "milestones": lactation.milestones(),
         },
         "average_ration": evaluation.ration,
+        "limits": {str(feed_id): list(bounds) for feed_id, bounds in scenario.feed_limits.items()},
         "checks": checks,
         "checks_summary": summarize(checks),
         "balance": build_balance(result.evaluations, result.requirements, _observed(evaluation.ration, library)),
@@ -316,6 +318,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(evaluate_payload(body))
             if path == "/api/module/compare":
                 return self._json(compare_payload(body))
+            if path.startswith("/api/export/"):
+                fmt, screen = (path.split("/") + ["", ""])[3:5]
+                return self._json(export_file(fmt, screen, body.get("data") or {}, body.get("meta")))
             if path == "/api/prices/import":
                 fx = body.get("fx")
                 return self._json(import_prices(body.get("standard"), str(body.get("csv") or ""), None if fx in (None, "") else float(fx)))
