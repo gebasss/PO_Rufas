@@ -87,7 +87,7 @@ O repositório contém também a implementação de referência que este FSD des
 | Ferramentas de build da interface | Node 20.9 ou superior e npm (observado: Node 24.18, npm 11.16); só para quem altera a interface |
 | Dados de referência | Tabelas CSV e JSON do RuFaS (`NRC_comp.csv`, `user_feeds.csv`, exemplo `freestall`) e constantes do código |
 | Instalação e execução | `scripts/setup.ps1` (PowerShell), `scripts/fetch_wheels.py`, `scripts/build-web.ps1`, `iniciar.bat` |
-| Testes automatizados | `pytest`, 10 testes em `backend/tests/` |
+| Testes automatizados | `pytest`, 33 testes em `backend/tests/` |
 | Banco de dados, ORM, framework web de backend, autenticação | Nenhum |
 
 **Padrão arquitetural:** ponte local em três camadas. O navegador (site estático) comunica-se por HTTP/JSON com um servidor Python em loopback, que delega a simulação a um processo filho do RuFaS e a leitura de seus arquivos de saída.
@@ -181,7 +181,7 @@ aplicacao RuFaS/
       sensitivity.py          Sensibilidade e Spearman
       lactation.py            Curva de Wood e marcos
       feeds.py                Biblioteca NRC e tetos padrão
-    tests/                    10 testes (pytest)
+    tests/                    33 testes (pytest)
   web/                        Fontes da interface (Next.js)
     src/app, src/views, src/components, src/providers, src/hooks, src/lib
     package.json, package-lock.json, next.config.ts, LICENSE-TEMPLATE.md
@@ -290,7 +290,7 @@ aplicacao RuFaS/
 | Modificar o código do RuFaS | O RuFaS é usado como está. |
 | Hospedagem em nuvem, vários usuários, várias fazendas | O sistema é local e individual. |
 | CI/CD, ambiente de homologação, fluxo de revisão do repositório Git | Não existem (seção 27). |
-| Testes automatizados de integração e de interface | Não existem; só os 10 testes do back-end. |
+| Testes automatizados de integração e de interface | Não existem; só os 33 testes do back-end. |
 
 ---
 
@@ -1125,8 +1125,10 @@ O sistema é considerado implementado quando:
 | `test_diet_lp.py` | Ótimo do quadro, preço-sombra positivo, inviabilidade |
 | `test_sensitivity.py` | Produto cartesiano da grade com extremos, hipercubo latino, sinal dos efeitos de Spearman |
 | `test_adapter.py` | Troca de ids NASEM → NRC, tetos padrão, resumo de falha do RuFaS, chave de cache |
+| `test_standards.py` | Padrão nutricional (NRC e NASEM): bibliotecas, preços restritos à biblioteca, montagem do cenário NASEM com limites |
+| `test_module_requirements.py` | Exigências da vaca pelas calculadoras do RuFaS, validação dos campos, sobrescritas, restrições por categoria, rotas do módulo |
 
-Total: 10 testes passando. Integração real com o RuFaS e interface foram verificadas manualmente, **sem teste automatizado**.
+Total: 33 testes passando. Integração real com o RuFaS e interface foram verificadas manualmente, **sem teste automatizado**.
 
 ---
 
@@ -1257,7 +1259,7 @@ Não foram identificadas pendências que impeçam a manutenção da versão atua
 
 ## Anexo A. Especificação dos Requisitos Planejados RF-24, RF-26 e RF-27 (NÃO implementados)
 
-> **Status:** este anexo especifica funcionalidades que **ainda não existem** no sistema. Nada aqui descreve o comportamento atual. Foi escrito a partir de uma leitura do NASEM 2021 (notas em `docs/nasem2021_notas/`), do código do RuFaS v1.0.6 e dos resultados de simulação já guardados em `runs/_cache/`. Onde um fato do RuFaS ainda não foi verificado, o texto diz **"a verificar"**. Os limiares e as decisões marcados **(a confirmar)** dependem do professor ou da equipe (seção A.6).
+> **Status:** este anexo especifica funcionalidades que **ainda não existem** na interface. Nada aqui descreve o comportamento da interface atual. **Já implementados no back-end em 02/11/2026** (etapas E1 e E2 de `PLANO_IMPLEMENTACAO.md`): o padrão NASEM nos cenários e na biblioteca (A.3.2 e A.3.3), e as rotas `/api/module/defaults` e `/api/module/requirements` (B.3 e B.7). Foi escrito a partir de uma leitura do NASEM 2021 (notas em `docs/nasem2021_notas/`), do código do RuFaS v1.0.6 e dos resultados de simulação já guardados em `runs/_cache/`. Onde um fato do RuFaS ainda não foi verificado, o texto diz **"a verificar"**. Os limiares e as decisões marcados **(a confirmar)** dependem do professor ou da equipe (seção A.6).
 
 ### A.1 Visão geral
 
@@ -1560,7 +1562,8 @@ campo nas calculadoras NRC e NASEM; "NASEM" e "NRC" indicam que só aquele padr�
 | Produção de leite (`milk_production`) | kg/dia | sim | não | não |
 | Gordura, proteína verdadeira e lactose do leite | % | sim | não | não |
 | Ganho médio diário da novilha (`average_daily_gain_heifer`) | **kg/dia** (o texto do RuFaS diz g, mas o código usa kg; 0,8 e não 800) | não | não | sim |
-| Intervalo entre partos (`calving_interval`) | dias | opcional | opcional | opcional |
+| Intervalo entre partos (`calving_interval`) | dias | opcional (vazio vale 0 e desliga o ganho de peso da vaca de 1ª ou 2ª paridade; há aviso) | opcional (idem) | não |
+| Idade (`days_born`; só o NRC, e só para novilhas) | dias de vida | não | não | NRC: sim |
 | Alojamento (`housing`: `Barn` ou `Grazing`) e distância percorrida | m | sim | sim | sim |
 | FDN da ração anterior (`ndf_percentage`) | % da MS | opcional | opcional | opcional |
 | Fósforo do processo (`process_based_phosphorus_requirement`) | g/dia | opcional | opcional | opcional |

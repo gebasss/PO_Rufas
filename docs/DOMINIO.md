@@ -318,7 +318,7 @@ não a recalcula nem a altera.
 | Regras de seleção e padrões da tela (5.12) | `web/src/views/CowView.tsx`, `web/src/providers/AppProvider.tsx` | `run`, `simulationBody`, `priceOf`, `PRESET_BASE`, `PRESET_WIDE`, `STORAGE_KEY` | — |
 | Instalação e execução (3.1) | `scripts/`, `iniciar.bat` | `setup.ps1`, `fetch_wheels.py`, `build-web.ps1` | — |
 
-Os 10 testes automatizados ficam em `backend/tests/` e cobrem a coluna da direita; as demais regras foram verificadas
+Os 33 testes automatizados ficam em `backend/tests/` e cobrem a coluna da direita; as demais regras foram verificadas
 manualmente (execução real do RuFaS e uso das telas), sem teste automatizado.
 
 ## 8. Fontes científicas e rastreabilidade das referências

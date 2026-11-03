@@ -14,19 +14,29 @@ import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 from . import lactation
 from .diet_lp import Food, NutrientBounds, solve_diet
-from .feeds import load_feed_library
+from .feeds import FeedInfo, feed_library
 from .jobs import Job, JobManager
+from .module.api import defaults_payload, requirements_payload
 from .rufas_adapter import PROJECT_ROOT, Scenario
 from .scenarios import DEFAULT_MILK_PRICE, DEFAULT_PRICES, Economics, evaluate
 from .sensitivity import Factor, run_sensitivity
+from .standards import get_standard
 
 FRONTEND = PROJECT_ROOT / "frontend"
 JOBS = JobManager()
-FEEDS = {feed.id: feed for feed in load_feed_library()}
+
+
+def feed_payload(feed: FeedInfo, standard: str) -> dict[str, Any]:
+    """Alimento para a interface. A NEL pela Eq. 2-3 do NRC só vale no NRC; no NASEM vão amido e ED base."""
+    data = {**feed.__dict__, "default_max": feed.default_max}
+    if standard == "NASEM":
+        return data
+    data.pop("starch"), data.pop("de_base")
+    return {**data, "nel": round(feed.nel_mcal_per_kg, 3)}
 
 
 def clean(value: Any) -> Any:
@@ -89,12 +99,13 @@ def toy_sensitivity(payload: dict[str, Any]) -> dict[str, Any]:
 # ----------------------------------------------------------------------------------------------------------------
 # Simulações do RuFaS
 # ----------------------------------------------------------------------------------------------------------------
-def feed_limits_from(params: dict[str, Any]) -> dict[int, tuple[float, float]]:
+def feed_limits_from(params: dict[str, Any], standard: str = "NRC") -> dict[int, tuple[float, float]]:
     """Limites de inclusão: os informados pelo usuário, ou os tetos padrão do tipo de alimento."""
     given = {int(k): (float(v[0]), float(v[1])) for k, v in (params.get("limits") or {}).items()}
     limits = {}
+    feeds = feed_library(standard)
     for feed_id in params["feeds"]:
-        feed = FEEDS.get(int(feed_id))
+        feed = feeds.get(int(feed_id))
         default = (0.0, feed.default_max if feed else 100.0)
         limits[int(feed_id)] = given.get(int(feed_id), default)
     return limits
@@ -104,14 +115,18 @@ def scenario_from(params: dict[str, Any], name: str) -> tuple[Scenario, Economic
     prices = {int(k): float(v) for k, v in (params.get("prices") or {}).items()}
     milk_price = float(params.get("milk_price", DEFAULT_MILK_PRICE))
     years = max(1, min(int(params.get("years", 1)), 3))
+    standard = get_standard(params.get("standard")).code
+    missing = sorted(int(i) for i in params["feeds"] if int(i) not in feed_library(standard))
+    if missing:
+        raise ValueError(f"Alimentos fora da biblioteca {standard}: {missing}")
     scenario = Scenario(
         name=name,
         end_date=f"{2012 + years}:365",
         random_seed=int(params.get("seed", 42)),
-        nutrient_standard="NRC",
+        nutrient_standard=standard,
         cow_num=params.get("cow_num"),
         lac_cow_feeds=[int(i) for i in params["feeds"]],
-        feed_limits=feed_limits_from(params),
+        feed_limits=feed_limits_from(params, standard),
         feed_prices=prices,
         # Quando a ração não atende às exigências, o RuFaS reduz o leite (0,25 kg por tentativa) até este limite e,
         # passando dele, aborta. Um limite maior deixa a simulação degradar e a margem refletir o leite perdido.
@@ -121,8 +136,8 @@ def scenario_from(params: dict[str, Any], name: str) -> tuple[Scenario, Economic
     return scenario, economics
 
 
-def feed_label(feed_id: int | str) -> str:
-    feed = FEEDS.get(int(feed_id))
+def feed_label(feed_id: int | str, standard: str = "NRC") -> str:
+    feed = feed_library(standard).get(int(feed_id))
     return f"{feed.name} — {feed.description}" if feed else str(feed_id)
 
 
@@ -136,7 +151,7 @@ def simulation_payload(scenario: Scenario, economics: Economics) -> dict[str, An
     curves = lactation.lactation_curve(result.wood or None)
     return {
         "summary": evaluation.as_row() | {"milk_price": economics.milk_price, "reducao_leite": evaluation.reduction, "max_reducao": scenario.milk_reduction_maximum},
-        "feeds": [{"id": int(i), "label": feed_label(i), "price": prices.get(int(i))} for i in feed_ids],
+        "feeds": [{"id": int(i), "label": feed_label(i, scenario.nutrient_standard), "price": prices.get(int(i))} for i in feed_ids],
         "daily": {"day": result.days, "milk_kg": result.milk_kg, "milking_cows": result.milking_cows, "avg_dim": result.avg_dim},
         "intervals": {
             "day": result.interval_days,
@@ -184,7 +199,7 @@ def sensitivity_work(job: Job) -> dict[str, Any]:
         n=int(job.params.get("n", 2)),
         workers=int(job.params.get("workers", 2)),
         on_progress=progress,
-    ) | {"feeds": [{"id": int(i), "label": feed_label(i)} for i in job.params["feeds"]]}
+    ) | {"feeds": [{"id": int(i), "label": feed_label(i, scenario.nutrient_standard)} for i in job.params["feeds"]]}
 
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -219,14 +234,21 @@ class Handler(BaseHTTPRequestHandler):
         return json.loads(self.rfile.read(length) or b"{}")
 
     def do_GET(self) -> None:  # noqa: N802
-        path = urlparse(self.path).path
+        url = urlparse(self.path)
+        path = url.path
         try:
             if path == "/api/feeds":
+                standard = get_standard(parse_qs(url.query).get("standard", [None])[0]).code
+                feeds = sorted(feed_library(standard).values(), key=lambda f: (f.kind, f.name))
+                return self._json([feed_payload(feed, standard) for feed in feeds])
+            if path == "/api/module/defaults":
+                query = parse_qs(url.query)
                 return self._json(
-                    [
-                        {**feed.__dict__, "nel": round(feed.nel_mcal_per_kg, 3), "default_max": feed.default_max}
-                        for feed in sorted(FEEDS.values(), key=lambda f: (f.kind, f.name))
-                    ]
+                    defaults_payload(
+                        query.get("standard", [None])[0],
+                        query.get("category", [None])[0],
+                        query.get("animal_type", [None])[0],
+                    )
                 )
             if path == "/api/defaults":
                 return self._json({"milk_price": DEFAULT_MILK_PRICE, "prices": DEFAULT_PRICES})
@@ -255,6 +277,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(toy_problem(body))
             if path == "/api/toy/sensitivity":
                 return self._json(toy_sensitivity(body))
+            if path == "/api/module/requirements":
+                return self._json(requirements_payload(body))
             if path == "/api/jobs/simulate":
                 return self._json(JOBS.submit("simulate", body, simulate_work).public(include_result=False), 202)
             if path == "/api/jobs/sensitivity":
