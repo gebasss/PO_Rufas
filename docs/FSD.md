@@ -280,7 +280,7 @@ aplicacao RuFaS/
 | Mais nutrientes no exercício do quadro | RF-23, pendente. Os nutrientes são fixos (carboidrato e proteína). |
 | Padrão NASEM 2021 | RF-24, pendente; especificado no Anexo A.3. O sistema usa só a NRC 2001. |
 | Módulo ampliado do Exercício do quadro (avaliação de dietas montadas, modelo linear das equações do RuFaS) | RF-28 e RF-29, pendentes; especificados no Anexo B. |
-| Sugestão e previsão da dieta ótima de uma vaca e fase (RF-30) | Fase 2; esboço em `LINEARIZACAO.md`, 7.6. |
+| Sugestão e previsão da dieta ótima de uma vaca e fase (RF-30) | Fase 2, implementada em 03/11/2026 (Anexo B, B.8 e B.11; `LINEARIZACAO.md`, 7.6); falta o laço de redução de leite. |
 | Ajuste do tamanho do rebanho pela interface | RF-13, pendente. O servidor aceita `cow_num`; a interface não o expõe. |
 | Dieta otimizada por fase da lactação | Depende da questão Q2 do PRD. A ração é formulada por grupo, pelo RuFaS. |
 | Modelo próprio de resposta do leite à dieta | Depende da questão Q3 do PRD. O leite é o simulado pelo RuFaS. |
@@ -1497,11 +1497,11 @@ padrão é "melhor": as exigências diferem por construção (mantença de 0,08 
 
 ---
 
-## Anexo B. Especificação do Módulo Ampliado do Exercício do Quadro (RF-28 a RF-30; fase 1 implementada, fase 2 não)
+## Anexo B. Especificação do Módulo Ampliado do Exercício do Quadro (RF-28 a RF-30; fases 1 e 2 implementadas)
 
 > **Status (03/11/2026):** a **fase 1** (RF-28, RF-29: avaliação e ordenação de dietas, com a interface da seção B.2) está
-> implementada, com a comparação com o RuFaS da B.8 (fase 1, etapa E6, 03/11/2026); a **fase 2** (RF-30, dieta ótima, e a
-> comparação com o `RationOptimizer`) **ainda não existe**.
+> implementada, com a comparação com o RuFaS da B.8 (fase 1, etapa E6, 03/11/2026); a **fase 2** (RF-30: dieta ótima e
+> comparação com o `RationOptimizer`, etapa E7, 03/11/2026) também está implementada, como descrito na seção B.11.
 > A base técnica (equações do RuFaS,
 > linearização, verificação do erro) está em [LINEARIZACAO.md](LINEARIZACAO.md); este anexo especifica o
 > **comportamento funcional**, a interface e a API. Onde um fato não foi verificado, o texto diz **"a verificar"**; onde a
@@ -1643,7 +1643,7 @@ Para cada dieta `d`, com os coeficientes avaliados **na própria dieta** (ponto 
 6. **Custo** `= Σ p_i·x_i`, em US$/dia.
 
 Na fase 1 **não há otimização** (implementada em 02/11/2026, etapa E3); logo, **não há preços-sombra** (eles existem só quando um LP com `x` livre é resolvido,
-RF-30). Na disjunção de energia do NRC, a oferta usada é a do ramo que cobre a exigência total, ou a maior, se nenhum cobre.
+RF-30; na fase 2 saem do LP da dieta ótima, seção B.11). Na disjunção de energia do NRC, a oferta usada é a do ramo que cobre a exigência total, ou a maior, se nenhum cobre.
 O RuFaS é replicado onde diverge do livro (amido em kg; oferta de proteína do NRC no modo NASEM), com aviso no resultado.
 
 **Ordenação (RF-28), da menos para a mais recomendada (a confirmar):**
@@ -1699,8 +1699,10 @@ quantidades escaladas por 0,95 e 1,05 (só a classe A; vazio nas classes L e E).
   "Comparação com o RuFaS", depois do resultado) e em CSV (uma linha por dieta e restrição; botão "Baixar CSV"). A disjunção
   de `LINEARIZACAO.md`, seção 6 ("o ramo escolhido continua o de maior oferta?"), não tem coluna própria: o `min` e o `max` ficam
   dentro da forma linear e uma troca de ramo aparece no erro de oferta.
-- **Fase 2:** comparar o LP (ótimo global do problema linearizado) com o otimizador do RuFaS (`RationOptimizer`, ótimo
-  local, ponto inicial aleatório quando não há ração anterior): custo, ração e folgas (`LINEARIZACAO.md`, 5.4).
+- **Fase 2 (implementada em 03/11/2026, etapa E7; `module/optimize.py`):** comparar o LP (ótimo global do problema linearizado) com
+  o otimizador do RuFaS (`RationOptimizer`, ótimo local, ponto inicial aleatório quando não há ração anterior): custo, ração e
+  folgas (`LINEARIZACAO.md`, 5.4). O RuFaS roda com as sementes 0 a N−1; entram na estatística as execuções que convergem e
+  ficam viáveis nas restrições originais, com a tolerância relativa de 1e-5 do SLSQP. Resultado e detalhes na seção B.11.
 
 ### B.9 Critérios de aceite
 
@@ -1722,6 +1724,36 @@ quantidades escaladas por 0,95 e 1,05 (só a classe A; vazio nas classes L e E).
    referência gravadas a partir do próprio RuFaS.
 8. **Replicação do RuFaS:** o amido total em kg é usado na digestibilidade da FDN do NASEM, e o resultado traz o aviso.
 9. **Testes automatizados** (`pytest`) para os itens 1 a 8, em `backend/tests/test_module_evaluate.py`; o RuFaS **não** é modificado.
+
+### B.11 Dieta ótima (RF-30, fase 2; implementada em 03/11/2026, etapa E7)
+
+Sugere a dieta de **menor custo** entre os alimentos da tabela de dietas, para a mesma vaca, com as mesmas restrições, e a compara
+com o otimizador do RuFaS. O método está em `LINEARIZACAO.md`, 5.1b e 7.6 (LP por ponto de uma grade de escalares globais).
+
+- **Tela:** cartão "Dieta ótima" depois do Resultado: resolução da busca (rápida ≈ 5 s, normal ≈ 15 s, fina ≈ 1 min), número de
+  execuções do RuFaS (0 a 30; padrão 5), botão **Calcular dieta ótima** e **Cancelar**, com barra de progresso. Mostra o custo, o
+  consumo, o TDN% e o % de concentrado, o regime (TDN% abaixo ou a partir de 60), a ração (kg MS/dia e % da dieta), a conferência com
+  as restrições originais do RuFaS, a comparação com o RuFaS (custo do LP em relação ao melhor do RuFaS, melhor, mediana e
+  quantas execuções ficaram viáveis; tabela por semente; ração do melhor do RuFaS), a tabela de restrições da dieta ótima e os
+  **preços-sombra**. No cartão Resultado, a dieta ótima vira a **referência final** do ranking, com a coluna "Desvio do ótimo"
+  `(custo_d − custo_ótimo)/custo_ótimo`; um desvio negativo é de dieta inviável mais barata que a ótima.
+- **Entradas:** a vaca e as sobrescritas como na avaliação; os alimentos são **todos** os da tabela de dietas (não só os usados nas
+  dietas), com preço e limites. No NASEM, metano e N urinário do lote são obrigatórios (sem eles a energia não existe).
+- **API:** tarefa em segundo plano `POST /api/jobs/optimize`, com o corpo de `evaluate` sem `diets` e com `feed_ids`, `resolution`
+  (`rapida`, `normal` ou `fina`) e `seeds` (0 a 30); progresso em `done` e `total`; `POST /api/jobs/<id>/cancel` pede o cancelamento
+  (estado `cancelled`; um job ainda na fila nem começa). O resultado traz `status` (`ok` ou `infeasible`, com `message`), `diet`
+  (`amounts`, `cost`, `scalars`, `regime`, `energy_branch`, `verified`, `evaluation` no formato de uma dieta de `evaluate`),
+  `shadow_prices`, `rufas` (`runs`, `cost_min`, `cost_median`, `cost_max`, `n_success`, `lp_gap_pct`), `search` e `warnings`.
+- **Exigências:** as da vaca sem ração anterior (padrões do RuFaS), como na primeira formulação do RuFaS; por isso elas diferem um
+  pouco das exigências de cada dieta na avaliação, que usa a própria dieta como ração anterior. A tela avisa.
+- **Preços-sombra:** variação do custo por unidade da exigência (ou do limite do alimento), com o consumo, o TDN% e o % de
+  concentrado fixos no ponto ótimo; valem perto da dieta ótima.
+- **Sem dieta viável:** o resultado é `infeasible` com a mensagem "Nenhuma dieta com os alimentos escolhidos atende às restrições…".
+- **Não feito:** o laço de redução de leite do RuFaS (`LINEARIZACAO.md`, 7.6), a otimização por fase da lactação e a persistência
+  do resultado entre recargas da página.
+- **Critérios de aceite (E7):** a dieta ótima atende às restrições originais do RuFaS nas seis combinações de padrão e categoria;
+  no caso-base do NRC o custo do LP fica a menos de 0,1% do melhor do RuFaS; nos escalares do melhor SLSQP o LP reproduz o custo do
+  SLSQP (erro relativo abaixo de 1e-6); cancelamento, progresso e entradas inválidas têm testes (`test_module_optimize.py`, `test_jobs.py`).
 
 ### B.10 Riscos e itens a verificar antes de implementar
 

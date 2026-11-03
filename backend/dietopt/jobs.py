@@ -13,12 +13,17 @@ from typing import Any, Callable
 _RUN_LOCK = threading.Lock()
 
 
+class Cancelled(Exception):
+    """O trabalho foi cancelado a pedido do usuário (o job termina com o estado ``cancelled``)."""
+
+
 @dataclass
 class Job:
     id: str
     kind: str
     params: dict[str, Any]
-    status: str = "queued"  # queued | running | done | error
+    status: str = "queued"  # queued | running | done | error | cancelled
+    cancel_requested: bool = False
     done: int = 0
     total: int = 0
     result: Any = None
@@ -54,10 +59,15 @@ class JobManager:
 
     def _run(self, job: Job, work: Callable[[Job], Any]) -> None:
         with _RUN_LOCK:
+            if job.cancel_requested:  # cancelado ainda na fila
+                job.status, job.finished = "cancelled", time.time()
+                return
             job.status = "running"
             try:
                 job.result = work(job)
                 job.status = "done"
+            except Cancelled:
+                job.status = "cancelled"
             except Exception as exc:  # noqa: BLE001 - qualquer falha vai para a interface
                 job.status = "error"
                 job.error = f"{type(exc).__name__}: {exc}\n{traceback.format_exc(limit=4)}"
@@ -66,6 +76,13 @@ class JobManager:
 
     def get(self, job_id: str) -> Job | None:
         return self._jobs.get(job_id)
+
+    def cancel(self, job_id: str) -> Job | None:
+        """Pede o cancelamento: o trabalho para na próxima verificação (``cancel_requested``); um job na fila nem começa."""
+        job = self._jobs.get(job_id)
+        if job and job.status in ("queued", "running"):
+            job.cancel_requested = True
+        return job
 
     def list(self) -> list[dict[str, Any]]:
         return [j.public(include_result=False) for j in sorted(self._jobs.values(), key=lambda j: -j.created)]

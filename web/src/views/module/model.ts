@@ -7,7 +7,9 @@ import type {
   ModuleComparison,
   ModuleEvaluation,
   ModuleField,
+  ModuleOptimization,
   NutrientStandard,
+  OptimizationResolution,
   Selected
 } from '@/lib/types'
 
@@ -103,7 +105,21 @@ export interface ModuleState {
   tolerance: number
   comparison: ModuleComparison | null
   comparisonKey: string | null
+  /** Dieta ótima (LP) e a comparação com o RuFaS: resolução da busca, sementes do RuFaS e o último resultado. */
+  resolution: OptimizationResolution
+  seeds: number
+  optimal: ModuleOptimization | null
+  optimalKey: string | null
 }
+
+/** Máximo de sementes do RuFaS (o mesmo limite do back-end, `MAX_SEEDS`). */
+export const MAX_SEEDS = 30
+
+export const RESOLUTIONS: { value: OptimizationResolution; label: string; hint: string }[] = [
+  { value: 'rapida', label: 'Rápida', hint: '~5 s' },
+  { value: 'normal', label: 'Normal', hint: '~15 s' },
+  { value: 'fina', label: 'Fina', hint: '~1 min' }
+]
 
 export function initialModuleState(): ModuleState {
   return {
@@ -120,7 +136,11 @@ export function initialModuleState(): ModuleState {
     resultKey: null,
     tolerance: 1,
     comparison: null,
-    comparisonKey: null
+    comparisonKey: null,
+    resolution: 'normal',
+    seeds: 5,
+    optimal: null,
+    optimalKey: null
   }
 }
 
@@ -212,13 +232,33 @@ export function dietProblems(state: ModuleState, library: Record<number, Feed>) 
   return problems
 }
 
-/** Corpo de `POST /api/module/evaluate` (FSD, B.7). */
-export function evaluateBody(state: ModuleState, fields: ModuleField[], library: Record<number, Feed>) {
-  const used = usedFeedIds(state)
+/** Problemas para calcular a dieta ótima: preços e limites de todos os alimentos da tabela (B.5). */
+export function optimizeProblems(state: ModuleState, library: Record<number, Feed>) {
+  const problems: string[] = []
+
+  if (state.feedIds.length < 2) problems.push('Escolha ao menos dois alimentos na tabela de dietas.')
+
+  for (const id of state.feedIds) {
+    const setting = state.feedSettings[id]
+    const label = library[id]?.name ?? String(id)
+
+    if (!setting || !Number.isFinite(setting.price) || setting.price < 0) problems.push(`${label}: informe o preço.`)
+    else if (Number.isFinite(setting.min) && Number.isFinite(setting.max) && setting.min > setting.max)
+      problems.push(`${label}: o mínimo é maior que o máximo.`)
+  }
+
+  if (!Number.isInteger(state.seeds) || state.seeds < 0 || state.seeds > MAX_SEEDS)
+    problems.push(`Sementes do RuFaS: use um inteiro de 0 a ${MAX_SEEDS}.`)
+
+  return problems
+}
+
+/** Preço (US$/kg MS) e limites (kg MS/dia) de cada alimento, como vão ao back-end. */
+function pricesAndLimits(state: ModuleState, ids: number[], library: Record<number, Feed>) {
   const prices: Record<string, number> = {}
   const limits: Record<string, [number, number]> = {}
 
-  for (const id of used) {
+  for (const id of ids) {
     const setting = state.feedSettings[id]
 
     prices[id] = setting.price
@@ -228,20 +268,44 @@ export function evaluateBody(state: ModuleState, fields: ModuleField[], library:
     ]
   }
 
+  return { prices, limits }
+}
+
+/** Vaca, padrão e exigências sobrescritas: a parte do corpo que a avaliação e a otimização compartilham. */
+function cowBody(state: ModuleState, fields: ModuleField[]) {
   return {
     standard: state.standard,
     category: state.category,
     animal_type: state.animalType,
     cow: cowPayload(fields, state.cow),
-    requirements_override: state.override,
+    requirements_override: state.override
+  }
+}
+
+/** Corpo de `POST /api/module/evaluate` (FSD, B.7). */
+export function evaluateBody(state: ModuleState, fields: ModuleField[], library: Record<number, Feed>) {
+  const used = usedFeedIds(state)
+
+  return {
+    ...cowBody(state, fields),
     diets: state.diets.map(diet => ({
       name: diet.name.trim(),
       amounts: Object.fromEntries(
         used.filter(id => (diet.amounts[id] ?? 0) > 0).map(id => [id, diet.amounts[id]])
       )
     })),
-    prices,
-    limits
+    ...pricesAndLimits(state, used, library)
+  }
+}
+
+/** Corpo do job `optimize`: a vaca, os preços e os limites de todos os alimentos da tabela (sem as dietas). */
+export function optimizeBody(state: ModuleState, fields: ModuleField[], library: Record<number, Feed>) {
+  return {
+    ...cowBody(state, fields),
+    ...pricesAndLimits(state, state.feedIds, library),
+    feed_ids: state.feedIds,
+    resolution: state.resolution,
+    seeds: state.seeds
   }
 }
 

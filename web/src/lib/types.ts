@@ -224,6 +224,58 @@ export interface ModuleComparison {
   csv: string
 }
 
+// ---- Dieta ótima e comparação com o SLSQP do RuFaS (FSD, Anexo B.8, fase 2; job `optimize`)
+export type OptimizationResolution = 'rapida' | 'normal' | 'fina'
+export interface RufasRun {
+  seed: number
+  success: boolean
+  cost: number
+  amounts: Record<string, number>
+  iterations: number
+  seconds: number
+  /** Viável nas restrições originais, com as exigências da otimização. */
+  feasible: boolean
+  violated: string[]
+}
+export interface RufasComparison {
+  runs: RufasRun[]
+  n_runs: number
+  n_success: number
+  cost_min: number | null
+  cost_median: number | null
+  cost_max: number | null
+  best_seed: number | null
+  /** Variação do custo do LP em relação ao melhor do RuFaS, em %; negativa = o LP é mais barato. */
+  lp_gap_pct: number | null
+}
+export interface OptimalDiet {
+  amounts: Record<string, number>
+  cost: number
+  cost_per_kg: number
+  scalars: { dmi: number; tdn_percentage: number; concentrate_percentage: number; total_starch_kg?: number }
+  regime: 'sem_desconto' | 'com_desconto'
+  energy_branch: string | null
+  /** A dieta atende a todas as restrições originais do RuFaS. */
+  verified: boolean
+  evaluation: ModuleDietResult
+}
+export interface ModuleOptimization {
+  standard: NutrientStandard
+  category: ModuleCategory
+  animal_type: string
+  status: 'ok' | 'infeasible'
+  message?: string
+  requirements: Record<string, number | null>
+  feed_ids: number[]
+  resolution: OptimizationResolution
+  search: { points: number; feasible_points: number; seconds: number }
+  warnings: string[]
+  diet?: OptimalDiet
+  /** Variação do custo por unidade da exigência (ou do limite), com os escalares globais fixos. */
+  shadow_prices?: { id: string; label: string; value: number }[]
+  rufas?: RufasComparison
+}
+
 // ---- Curva de lactação
 export interface Wood {
   l: number
@@ -304,7 +356,7 @@ export interface SensFactor {
 export interface Job<T> {
   id: string
   kind: string
-  status: 'queued' | 'running' | 'done' | 'error'
+  status: 'queued' | 'running' | 'done' | 'error' | 'cancelled'
   done: number
   total: number
   error: string

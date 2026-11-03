@@ -2,13 +2,21 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { api } from '@/lib/api'
-import type { ModuleCategory, ModuleDefaults, ModuleRequirements, NutrientStandard } from '@/lib/types'
+import { JobCancelledError, api, cancelJob, runJob } from '@/lib/api'
+import type {
+  ModuleCategory,
+  ModuleDefaults,
+  ModuleOptimization,
+  ModuleRequirements,
+  NutrientStandard,
+  OptimizationResolution
+} from '@/lib/types'
 import { useApp } from '@/providers/AppProvider'
 
 import CompareCard from './module/CompareCard'
 import CowCard from './module/CowCard'
 import DietsCard from './module/DietsCard'
+import OptimalCard from './module/OptimalCard'
 import {
   ANIMAL_TYPES,
   MAX_DIETS,
@@ -19,6 +27,8 @@ import {
   evaluateBody,
   exampleDiets,
   initialSetting,
+  optimizeBody,
+  optimizeProblems,
   standardName,
   type ModuleState
 } from './module/model'
@@ -48,6 +58,10 @@ export default function ModuleView() {
   const [comparing, setComparing] = useState(false)
   const [compareError, setCompareError] = useState<string | null>(null)
   const [comparedDiet, setComparedDiet] = useState<string | null>(null)
+  const [optimizing, setOptimizing] = useState(false)
+  const [optimizeProgress, setOptimizeProgress] = useState<{ done: number; total: number } | null>(null)
+  const [optimizeError, setOptimizeError] = useState<string | null>(null)
+  const optimizeJob = useRef<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   // Nomes dos alimentos já vistos em qualquer biblioteca, para citá-los no aviso de remoção ao trocar de padrão.
   const names = useRef<Record<number, string>>({})
@@ -154,12 +168,25 @@ export default function ModuleView() {
   const compareBody = useMemo(() => (body ? { ...body, tolerance_pct: state.tolerance } : null), [body, state.tolerance])
   const compareKey = compareBody ? JSON.stringify(compareBody) : null
   const compareStale = state.comparison !== null && state.comparisonKey !== compareKey
+  const optimizePayload = useMemo(
+    () => (defaults ? optimizeBody(state, defaults.fields, library) : null),
+    [state, defaults, library]
+  )
+  const optimizeKey = optimizePayload ? JSON.stringify(optimizePayload) : null
+  const optimalStale = state.optimal !== null && state.optimalKey !== optimizeKey
 
   const blockers = useMemo(() => {
     if (!online) return ['O servidor local não está respondendo.']
     if (!defaults || !feeds) return ['Carregando os dados do padrão…']
 
     return [...cowProblemList, ...dietProblems(state, library)]
+  }, [online, defaults, feeds, cowProblemList, state, library])
+
+  const optimizeBlockers = useMemo(() => {
+    if (!online) return ['O servidor local não está respondendo.']
+    if (!defaults || !feeds) return ['Carregando os dados do padrão…']
+
+    return [...cowProblemList, ...optimizeProblems(state, library)]
   }, [online, defaults, feeds, cowProblemList, state, library])
 
   // ---- ações
@@ -284,6 +311,34 @@ export default function ModuleView() {
     }
   }
 
+  const optimize = async () => {
+    if (!optimizePayload || optimizeBlockers.length > 0) return
+
+    setOptimizing(true)
+    setOptimizeError(null)
+    setOptimizeProgress(null)
+
+    try {
+      const optimal = await runJob<ModuleOptimization>(
+        'optimize',
+        optimizePayload,
+        (done, total) => setOptimizeProgress({ done, total }),
+        { onStart: id => (optimizeJob.current = id), intervalMs: 700 }
+      )
+
+      patch({ optimal, optimalKey: optimizeKey })
+    } catch (e) {
+      if (!(e instanceof JobCancelledError)) setOptimizeError(messageOf(e, 'Falha ao calcular a dieta ótima'))
+    } finally {
+      optimizeJob.current = null
+      setOptimizing(false)
+    }
+  }
+
+  const cancelOptimize = () => {
+    if (optimizeJob.current) cancelJob(optimizeJob.current).catch(() => undefined)
+  }
+
   return (
     <div className='space-y-6'>
       <CowCard
@@ -329,8 +384,24 @@ export default function ModuleView() {
         error={evaluateError}
         blockers={blockers}
         selected={selected}
+        optimalCost={state.optimal?.diet && !optimalStale ? state.optimal.diet.cost : null}
         onSelect={setSelected}
         onEvaluate={evaluate}
+      />
+      <OptimalCard
+        library={library}
+        result={state.optimal}
+        stale={optimalStale}
+        running={optimizing}
+        progress={optimizeProgress}
+        error={optimizeError}
+        blockers={optimizeBlockers}
+        resolution={state.resolution}
+        seeds={state.seeds}
+        onResolution={(resolution: OptimizationResolution) => patch({ resolution })}
+        onSeeds={seeds => patch({ seeds })}
+        onRun={optimize}
+        onCancel={cancelOptimize}
       />
       {state.result && (
         <CompareCard
