@@ -1,6 +1,6 @@
 # Plano de implementação: módulo "Exercício do quadro" ampliado e complementos
 
-**Versão 0.12 (03/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
+**Versão 0.13 (03/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
 comportamento do sistema; as regras estão nos documentos citados e este arquivo só as sequencia.
 
 | Documento | O que fornece ao plano |
@@ -30,6 +30,7 @@ comportamento do sistema; as regras estão nos documentos citados e este arquivo
 | E8e | **Feita (03/11/2026)** | RF-20: `exports.py` (CSV e relatório HTML), `POST /api/export/<csv\|report>/<tela>`, `ExportButtons` nas quatro telas; 8 testes novos (159 no total) |
 | E8f | **Feita (03/11/2026)** | RF-21: `scenario_files.py`, `POST /api/scenario/save` e `/load`, `ScenarioFile` nas telas Vaca leiteira e Avaliar dietas; 29 testes novos (188 no total) |
 | E8c, E8g, E8h | Não iniciadas | |
+| D3 | **Feita (03/11/2026)** | Histórico de execuções: `history.py` (arquivos em `runs/_history`, base por tipo, retenção), rotas `/api/history`, tarefas e avaliação de dietas gravam a execução (`run_id`), tela Execuções com detalhe, duplicar e exportar, deltas dos KPIs da Vaca leiteira; 9 testes novos; ver `FSD.md`, A.12 |
 | D2 | **Feita (03/11/2026)** | Repaginação da tela Vaca leiteira: painel fixo, `RunButton` com quatro estados, resultados em abas (visão geral, ração, nutrição), gráficos de ração, balanço, leite e custo, verificações com faixa e a alternância gráfico/tabela; ver `DESIGN_REPAGINACAO.md`, seção 8 |
 | D1 | **Feita (03/11/2026)** | Repaginação, etapa 1 (tokens, barra superior em pílula, sidebar flutuante, paleta de comandos, menu Tarefas, KPIs com tendência e barras com destaque). O roteiro D2 a D6 (telas, histórico de execuções e gráficos) está em `DESIGN_REPAGINACAO.md`; a E8g fica depois |
 

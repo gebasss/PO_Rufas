@@ -29,8 +29,8 @@ import {
   dietProblems,
   evaluateBody,
   exampleDiets,
-  initialModuleState,
   initialSetting,
+  moduleStateFromScenario,
   optimizeBody,
   optimizeProblems,
   standardName,
@@ -334,25 +334,7 @@ export default function ModuleView() {
 
   const loadScenario = (data: ModuleScenario) => {
     setNotice(null)
-    setState({
-      ...initialModuleState(),
-      standard: data.standard,
-      category: data.category,
-      animalType: data.animalType,
-      cow: data.cow,
-      override: data.override,
-      feedIds: data.feeds.map(feed => feed.id),
-      feedSettings: Object.fromEntries(data.feeds.map(({ id, ...feed }) => [id, feed])),
-      diets: data.diets.map((diet, index) => ({
-        uid: index + 1,
-        name: diet.name,
-        amounts: Object.fromEntries(Object.entries(diet.amounts).map(([id, kg]) => [Number(id), kg]))
-      })),
-      nextUid: data.diets.length + 1,
-      tolerance: data.tolerance,
-      resolution: data.resolution,
-      seeds: data.seeds
-    })
+    setState(moduleStateFromScenario(data))
   }
 
   const optimize = async () => {

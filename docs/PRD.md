@@ -343,7 +343,7 @@ registrada na seção 15.
 ### 8.2 O que o sistema não guarda
 
 - Dados pessoais, credenciais ou qualquer identificação do usuário.
-- Histórico de cenários e de recomendações (o RF-21 salva um arquivo por vez, sem histórico).
+- Histórico de recomendações com versões e comentários (o histórico de execuções existe desde 03/11/2026, FSD A.12; o RF-21 salva um arquivo por vez).
 - Preços de mercado obtidos de fontes externas (RF-22, pendente).
 
 ### 8.3 Cuidados com a integridade dos dados

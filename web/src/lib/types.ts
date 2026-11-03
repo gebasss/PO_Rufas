@@ -300,6 +300,33 @@ export interface PriceImportResult {
   warnings: string[]
 }
 
+// ---- Histórico de execuções (D3; /api/history)
+export type RunKind = 'simulation' | 'sensitivity' | 'evaluation' | 'optimization'
+export interface RunMeta {
+  id: string
+  kind: RunKind
+  /** ISO local, sem fuso (`2026-11-03T17:14:59`). */
+  created: string
+  title: string
+  status: 'done' | 'error'
+  error: string | null
+  /** Resumo pequeno para a tabela (margem, melhor custo, ...). */
+  summary: Record<string, number | string | null>
+  is_base: boolean
+}
+export interface RunPage {
+  items: RunMeta[]
+  total: number
+  page: number
+  per_page: number
+  pages: number
+}
+export interface RunFull extends RunMeta {
+  params: Record<string, unknown>
+  /** `null` quando a execução falhou. */
+  result: unknown
+}
+
 // ---- Cenários salvos em arquivo (RF-21; POST /api/scenario/*)
 export type ScenarioKind = 'cow' | 'module'
 export interface ScenarioFeed {
@@ -409,6 +436,8 @@ export interface BalanceRow {
   note: string
 }
 export interface SimResult {
+  /** Identificador da execução no histórico. */
+  run_id?: string
   summary: SimSummary
   feeds: { id: number; label: string; price: number | null }[]
   daily: { day: number[]; milk_kg: number[]; milking_cows: number[]; avg_dim: number[] }

@@ -7,6 +7,7 @@ import type {
   ModuleComparison,
   ModuleEvaluation,
   ModuleField,
+  ModuleScenario,
   ModuleOptimization,
   NutrientStandard,
   OptimizationResolution,
@@ -141,6 +142,29 @@ export function initialModuleState(): ModuleState {
     seeds: 5,
     optimal: null,
     optimalKey: null
+  }
+}
+
+/** Estado da tela Avaliar dietas a partir de um cenário (arquivo aberto ou execução duplicada); os resultados começam vazios. */
+export function moduleStateFromScenario(data: ModuleScenario): ModuleState {
+  return {
+    ...initialModuleState(),
+    standard: data.standard,
+    category: data.category,
+    animalType: data.animalType,
+    cow: data.cow,
+    override: data.override,
+    feedIds: data.feeds.map(feed => feed.id),
+    feedSettings: Object.fromEntries(data.feeds.map(({ id, ...feed }) => [id, feed])),
+    diets: data.diets.map((diet, index) => ({
+      uid: index + 1,
+      name: diet.name,
+      amounts: Object.fromEntries(Object.entries(diet.amounts).map(([id, kg]) => [Number(id), kg]))
+    })),
+    nextUid: data.diets.length + 1,
+    tolerance: data.tolerance,
+    resolution: data.resolution,
+    seeds: data.seeds
   }
 }
 

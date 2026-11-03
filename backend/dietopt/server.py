@@ -20,6 +20,7 @@ from . import lactation
 from .diet_lp import Food, NutrientBounds, solve_diet
 from .exports import export_file
 from .feeds import FeedInfo, feed_library
+from .history import base_run, delete_run, get_run, list_runs, record, set_base, with_history
 from .jobs import Job, JobManager
 from .module.api import compare_payload, defaults_payload, evaluate_payload, optimize_payload, requirements_payload
 from .prices import import_prices
@@ -298,6 +299,19 @@ class Handler(BaseHTTPRequestHandler):
                         "milestones": lactation.milestones(),
                     }
                 )
+            if path == "/api/history":
+                query = parse_qs(url.query)
+
+                def one(name: str, default: str = "") -> str:
+                    return query.get(name, [default])[0]
+
+                return self._json(
+                    list_runs(one("kind") or None, one("status") or None, one("q"), int(one("page", "1")), int(one("per_page", "10")))
+                )
+            if path == "/api/history/base":
+                return self._json(base_run(parse_qs(url.query).get("kind", [""])[0]))
+            if path.startswith("/api/history/"):
+                return self._json(get_run(path.rsplit("/", 1)[-1]))
             if path == "/api/jobs":
                 return self._json(JOBS.list())
             if path.startswith("/api/jobs/"):
@@ -316,7 +330,8 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/toy/sensitivity":
                 return self._json(toy_sensitivity(body))
             if path == "/api/module/evaluate":
-                return self._json(evaluate_payload(body))
+                evaluation = evaluate_payload(body)
+                return self._json({**evaluation, "run_id": record("evaluation", body, evaluation)["id"]})
             if path == "/api/module/compare":
                 return self._json(compare_payload(body))
             if path.startswith("/api/export/"):
@@ -332,11 +347,16 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/module/requirements":
                 return self._json(requirements_payload(body))
             if path == "/api/jobs/simulate":
-                return self._json(JOBS.submit("simulate", body, simulate_work).public(include_result=False), 202)
+                return self._json(JOBS.submit("simulate", body, with_history("simulation", simulate_work)).public(include_result=False), 202)
             if path == "/api/jobs/sensitivity":
-                return self._json(JOBS.submit("sensitivity", body, sensitivity_work).public(include_result=False), 202)
+                return self._json(JOBS.submit("sensitivity", body, with_history("sensitivity", sensitivity_work)).public(include_result=False), 202)
             if path == "/api/jobs/optimize":
-                return self._json(JOBS.submit("optimize", body, optimize_work).public(include_result=False), 202)
+                return self._json(JOBS.submit("optimize", body, with_history("optimization", optimize_work)).public(include_result=False), 202)
+            if path.startswith("/api/history/") and path.endswith("/delete"):
+                delete_run(path.split("/")[-2])
+                return self._json({"ok": True})
+            if path.startswith("/api/history/") and path.endswith("/base"):
+                return self._json(set_base(path.split("/")[-2], bool(body.get("value", True))))
             if path.startswith("/api/jobs/") and path.endswith("/cancel"):
                 job = JOBS.cancel(path.split("/")[-2])
                 return self._json(job.public(include_result=False)) if job else self._json({"error": "job não encontrado"}, 404)

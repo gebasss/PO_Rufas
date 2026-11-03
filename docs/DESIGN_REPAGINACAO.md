@@ -1,7 +1,7 @@
 # Sistema de design e roteiro da repaginação
 
-**Versão 0.2 (03/11/2026).** Define a linguagem visual do sistema (tokens, componentes, gráficos), registra as decisões de
-produto da repaginação e o roteiro por etapas. As etapas D1 (tokens, estrutura e componentes-base) e D2 (tela Vaca leiteira) estão implementadas; as demais
+**Versão 0.3 (03/11/2026).** Define a linguagem visual do sistema (tokens, componentes, gráficos), registra as decisões de
+produto da repaginação e o roteiro por etapas. As etapas D1 (tokens, estrutura e componentes-base), D2 (tela Vaca leiteira) e D3 (histórico de execuções) estão implementadas; as demais
 estão descritas na seção 7. Código: `web/src/app/globals.css`, `web/src/components/`. Complementa o `DESIGN.md` (descrição detalhada do que existe).
 
 ## 1. Princípios
@@ -89,7 +89,7 @@ estão descritas na seção 7. Código: `web/src/app/globals.css`, `web/src/comp
 |---|---|---|
 | D1 | Tokens, barra superior em pílula, sidebar flutuante, paleta de comandos, menu Tarefas, `KpiCard` com ícone e tendência, `HighlightBars`, cartões, botões, campos, pills e tabelas | **Feita (03/11/2026)** |
 | D2 | Tela Vaca leiteira: painel de parâmetros fixo, botão Executar com quatro estados, gráficos de ração (barras horizontais), balanço (barras divergentes), verificações (bullet), série de custo e de leite | **Feita (03/11/2026)** |
-| D3 | Histórico de execuções no servidor (API, tabela com busca, filtro, status, ações e paginação), estrela do cenário-base, tela de detalhe e deltas dos KPIs | Planejada |
+| D3 | Histórico de execuções no servidor (API, tabela com busca, filtro, status, ações e paginação), estrela do cenário-base, tela de detalhe e deltas dos KPIs | **Feita (03/11/2026)** |
 | D4 | Sensibilidade: histograma, tornado e comparação de cenários com o base; tabela de cenários com o padrão da D3 | Planejada |
 | D5 | Avaliar dietas: ranking, erro de linearização, comparação com o RuFaS e dieta ótima em gráficos | Planejada |
 | D6 | Exercício do quadro e Curva de lactação, estados vazio, carregando e erro, "ver como tabela" em todos os gráficos | Planejada |
@@ -104,3 +104,12 @@ estão descritas na seção 7. Código: `web/src/app/globals.css`, `web/src/comp
   - **Nutrição:** verificações V1 a V5 com a faixa (bullet) abaixo do nome, balanço em tabela e exigências.
 - Cada gráfico novo tem a alternância **gráfico / tabela**. Sem simulação, a tela mostra o estado vazio com os três passos do fluxo; enquanto a primeira roda, o esqueleto dos resultados.
 - Não feito nesta etapa: o delta dos KPIs (depende do cenário-base da D3) e o botão Cancelar da simulação (o RuFaS roda em outro processo e o servidor só cancela tarefas na fila).
+
+## 9. Histórico de execuções (D3)
+
+Especificação completa em `FSD.md`, seção A.12. Resumo do que a repaginação ganhou:
+
+- **Tela Execuções** (`/execucoes`): tabela com busca, filtros de tipo e estado, linhas por página, **estrela do cenário-base**, pills de tipo e estado, resultado principal, data, ações (ver, duplicar, exportar, excluir) e paginação.
+- **Detalhe da execução** (`?id=`): parâmetros usados à esquerda e resultados à direita; a simulação e a sensibilidade reaproveitam as telas de resultados já feitas.
+- **Deltas dos KPIs** na tela Vaca leiteira: pills verdes (melhora) e vermelhas (piora) em relação à simulação marcada como base, com a explicação do que é o base logo abaixo das abas.
+- Cada tarefa e a avaliação de dietas gravam a execução no servidor (`runs/_history`); o resultado traz `run_id`.

@@ -192,7 +192,7 @@ export default function SensitivityView() {
   )
 }
 
-function SensResults({ result }: { result: SensResult }) {
+export function SensResults({ result }: { result: SensResult }) {
   const names = useMemo(() => Object.fromEntries(result.feeds.map(f => [String(f.id), shortName(f.label, 22)])), [result.feeds])
   const valid = result.rows.map(r => r.Res).filter((v): v is number => v !== null)
   const [min, max] = [Math.min(...valid), Math.max(...valid)]

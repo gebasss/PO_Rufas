@@ -2,13 +2,14 @@
 
 import { useMemo } from 'react'
 
-import { CoinsIcon, DropletsIcon, GaugeIcon, MilkIcon, TrendingUpIcon, WalletIcon, WheatIcon } from 'lucide-react'
+import { CoinsIcon, DropletsIcon, GaugeIcon, MilkIcon, StarIcon, TrendingUpIcon, WalletIcon, WheatIcon } from 'lucide-react'
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 
 import { DivergingBars, HighlightBars, SeriesLegend, TimeSeries } from '@/components/charts'
 import ChartCard from '@/components/ChartCard'
 import ExportButtons from '@/components/ExportButtons'
 import { KpiCard } from '@/components/shared'
+import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -22,7 +23,8 @@ import {
 import { Tabs, TabsList, TabsPanel, TabsTab } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { nf, shortName, signedPct, usd } from '@/lib/format'
-import type { SimResult } from '@/lib/types'
+import { shortDate } from '@/lib/history'
+import type { RunMeta, SimResult } from '@/lib/types'
 import BalanceCard, { BalanceTable } from '@/views/cow/BalanceCard'
 import ChecksCard, { ChecksAlert } from '@/views/cow/ChecksCard'
 
@@ -31,8 +33,24 @@ const seriesColor = (index: number) => `var(--chart-${(index % 8) + 1})`
 /** Acima disso o eixo do balanço corta a barra (o rótulo continua mostrando o valor real). */
 const BALANCE_CLIP = 150
 
-export default function Results({ sim, stale = false }: { sim: SimResult; stale?: boolean }) {
+interface Props {
+  sim: SimResult
+  stale?: boolean
+  /** Cenário-base das simulações (D3): os indicadores mostram a variação em relação a ele. */
+  base?: RunMeta | null
+  /** Marca a execução desta tela como o cenário-base. */
+  onSetBase?: () => void
+}
+
+export default function Results({ sim, stale = false, base = null, onSetBase }: Props) {
   const s = sim.summary
+  const isBase = base !== null && base.id === sim.run_id
+  /** Variação percentual em relação ao cenário-base (nada se não há base, se esta é a base ou se o valor não existe). */
+  const delta = (key: string, current: number) => {
+    const reference = base && !isBase ? base.summary[key] : null
+
+    return typeof reference === 'number' && reference !== 0 ? ((current - reference) / Math.abs(reference)) * 100 : undefined
+  }
   const labelById = useMemo(() => Object.fromEntries(sim.feeds.map(f => [f.id, f.label])), [sim])
   const priceById = useMemo(() => Object.fromEntries(sim.feeds.map(f => [f.id, f.price ?? 0])), [sim])
   const feedIds = useMemo(
@@ -201,6 +219,23 @@ export default function Results({ sim, stale = false }: { sim: SimResult; stale?
           <ExportButtons screen='simulation' data={sim} meta={{ standard: 'NRC 2001' }} />
         </div>
 
+        {sim.run_id && (
+          <div className='text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-2 text-sm'>
+            {onSetBase && !isBase && (
+              <Button variant='outline' size='sm' onClick={onSetBase}>
+                <StarIcon /> Definir como cenário-base
+              </Button>
+            )}
+            <span>
+              {isBase
+                ? 'Esta simulação é o cenário-base.'
+                : base
+                  ? `Variações em relação ao cenário-base: ${base.title} (${shortDate(base.created)}).`
+                  : 'Sem cenário-base: marque uma simulação com a estrela para ver as variações dos indicadores.'}
+            </span>
+          </div>
+        )}
+
         <div className={stale ? 'space-y-6 opacity-60 transition-opacity' : 'space-y-6 transition-opacity'}>
           {stale && (
             <p className='text-muted-foreground text-sm' role='status'>
@@ -210,12 +245,12 @@ export default function Results({ sim, stale = false }: { sim: SimResult; stale?
 
           <TabsPanel value='overview'>
             <div className='grid gap-3 sm:grid-cols-2 2xl:grid-cols-3'>
-              <KpiCard tone='primary' icon={TrendingUpIcon} label='Margem sobre custo de alimentação' value={usd(s.margem)} />
-              <KpiCard icon={WalletIcon} color='info' label='Receita do leite' value={usd(s.receita)} trend={trends.revenue} />
-              <KpiCard icon={WheatIcon} color='violet' label='Custo de alimentação (rebanho)' value={usd(s.custo_alimentacao)} trend={trends.herdCost} />
-              <KpiCard icon={CoinsIcon} color='warning' label='Custo da ração, vaca em lactação' value={`${usd(s.custo_vaca_dia, 2)}/dia`} trend={trends.cowCost} />
+              <KpiCard tone='primary' icon={TrendingUpIcon} label='Margem sobre custo de alimentação' value={usd(s.margem)} delta={delta('margem', s.margem)} />
+              <KpiCard icon={WalletIcon} color='info' label='Receita do leite' value={usd(s.receita)} delta={delta('receita', s.receita)} trend={trends.revenue} />
+              <KpiCard icon={WheatIcon} color='violet' label='Custo de alimentação (rebanho)' value={usd(s.custo_alimentacao)} delta={delta('custo_alimentacao', s.custo_alimentacao)} better='down' trend={trends.herdCost} />
+              <KpiCard icon={CoinsIcon} color='warning' label='Custo da ração, vaca em lactação' value={`${usd(s.custo_vaca_dia, 2)}/dia`} delta={delta('custo_vaca_dia', s.custo_vaca_dia)} better='down' trend={trends.cowCost} />
               <KpiCard icon={MilkIcon} color='info' label='Leite por vaca' value={`${nf(milkPerCow, 1)} kg/dia`} trend={trends.milkPerCow} />
-              <KpiCard icon={DropletsIcon} label='Leite total' value={`${nf(s.leite_kg / 1000, 0)} t`} trend={trends.milk} />
+              <KpiCard icon={DropletsIcon} label='Leite total' value={`${nf(s.leite_kg / 1000, 0)} t`} delta={delta('leite_kg', s.leite_kg)} trend={trends.milk} />
               {s.reducao_leite > 0.005 && (
                 <KpiCard
                   tone='warning'

@@ -1616,6 +1616,55 @@ tela e se perdiam ao trocar de página); continuam sem ir para o navegador (`die
 **Aceite.** `tests/test_scenario_files.py`: ida e volta (idempotente), avisos de alimento removido, os dados inválidos de cada campo,
 arquivo inválido ou de versão mais nova, BOM e migração.
 
+### A.12 Histórico de execuções (implementado em 03/11/2026, etapa D3 da repaginação)
+
+**Objetivo.** Guardar cada execução com seus parâmetros e resultado, para consultar, comparar com um cenário-base, reabrir os
+parâmetros e exportar, sem depender de captura de tela.
+
+**O que é uma execução.** Qualquer uma destas, num histórico único (a tabela traz o tipo numa coluna): **simulação** do RuFaS,
+**sensibilidade**, **avaliação de dietas** e **dieta ótima**. As tarefas que falham também entram (estado "Falhou", com o
+motivo); cancelar não é execução. Uma simulação que vem do cache do RuFaS também é gravada.
+
+**Armazenamento** (`backend/dietopt/history.py`). Arquivos em `runs/_history` (pasta local, fora do git): `<id>.json` (parâmetros
+e resultado completos) e `<id>.meta.json` (título, tipo, estado e um resumo pequeno), para listar sem abrir os resultados grandes.
+O identificador é `AAAAMMDD-HHMMSS-nnnn` e cresce com a ordem de gravação; a escrita é atômica (arquivo temporário e troca).
+O histórico guarda no máximo 200 execuções e apaga as mais antigas que não sejam o cenário-base.
+
+**Cenário-base.** Uma execução **concluída** por tipo pode ser marcada com a estrela; marcar outra do mesmo tipo troca a base.
+Na tela Vaca leiteira, cada indicador mostra a variação em % em relação à simulação-base (receita e margem: subir é bom; custos:
+descer é bom); sem base, a tela explica como defini-la, e na própria base não há variação.
+
+**API.**
+
+| Rota | Corpo | Resposta |
+|---|---|---|
+| `GET /api/history?kind=&status=&q=&page=&per_page=` | | `{ items, total, page, per_page, pages }`; `items` são metadados (sem o resultado), da mais recente para a mais antiga; a busca `q` olha título, tipo, nome das dietas e código |
+| `GET /api/history/<id>` | | execução completa: metadados, `params` e `result` |
+| `GET /api/history/base?kind=` | | metadados da base do tipo, ou `null` |
+| `POST /api/history/<id>/base` | `{ value }` | metadados atualizados |
+| `POST /api/history/<id>/delete` | `{}` | `{ ok: true }` |
+
+`kind`: `simulation`, `sensitivity`, `evaluation` ou `optimization`; `status`: `done` ou `error`; `per_page` de 1 a 100. O resultado
+das tarefas e da avaliação de dietas passa a trazer `run_id`. Identificador inválido ou execução inexistente voltam como erro no
+formato da seção 11.3.
+
+**Tela Execuções** (`/execucoes`, item no grupo Análise). Tabela com busca, filtro por tipo e por estado, linhas por página (10, 25
+ou 50), estrela do cenário-base, tipo e estado em pills (ícone e texto), resultado principal em uma linha, data e as ações: **ver**,
+**duplicar** (abre os parâmetros na tela de origem, para editar e executar de novo), **exportar** (JSON com parâmetros e resultado)
+e **excluir** (com confirmação), mais a paginação. Sem execuções, mostra o estado vazio com os passos.
+
+**Detalhe** (`/execucoes/?id=<id>`). Parâmetros usados à esquerda (valores gerais, fatores, exigências, vaca, alimentos com preço e
+limites, dietas) e os resultados à direita: a simulação reaproveita os resultados da tela Vaca leiteira (abas, gráficos e
+exportação), a sensibilidade reaproveita a tabela e os gráficos de cenários, e a avaliação de dietas e a dieta ótima mostram o
+ranking ou a ração. Uma execução que falhou mostra o motivo.
+
+**Não feito.** Renomear ou comentar execuções, comparar duas execuções lado a lado, limpar o histórico de uma vez e o delta dos
+indicadores das demais telas (Sensibilidade, Avaliar dietas), que seguem nas etapas D4 e D5.
+
+**Aceite.** `tests/test_history.py`: gravação e resumo de cada tipo, listagem com filtros, busca e paginação, base única por tipo e só
+para execução concluída, exclusão, identificador inválido, retenção que preserva a base, falha gravada com o motivo, cancelamento
+ignorado e arquivo corrompido fora da lista.
+
 ### A.8 Alterações previstas em outras partes deste documento (quando implementado)
 
 | Seção | Alteração |
