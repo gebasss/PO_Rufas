@@ -1,49 +1,59 @@
 ---
 name: Dieta Ótima com RuFaS
 colors:
-  background:         '#ffffff'
-  foreground:         '#0a0a0a'
+  background:         '#f5f6f4'
+  foreground:         '#12161a'
   card:               '#ffffff'
-  secondary:          '#f5f5f5'
-  border:             '#e5e5e5'
-  ring:               '#a1a1a1'
-  muted-foreground:   '#737373'
-  primary:            '#0c6944'
-  primary-foreground: '#fafafa'
-  destructive:        '#e7000b'
-  success:            '#007d50'
-  warning:            '#df911a'
-  warning-text:       '#915200'
-  chart-1:            '#007d50'
-  chart-2:            '#df911a'
-  chart-3:            '#1f74bf'
-  chart-4:            '#da404e'
-  chart-5:            '#8254c4'
-  chart-6:            '#0f9293'
-  chart-7:            '#8b8c27'
-  chart-8:            '#d14e95'
+  surface:            '#f0f2ef'
+  secondary:          '#eef0ee'
+  border:             '#e3e6e2'
+  ring:               '#059669'
+  muted-foreground:   '#5f6b76'
+  primary:            '#12161a'
+  primary-foreground: '#f3f5f6'
+  brand:              '#059669'
+  brand-dim:          '#a7d9c6'
+  destructive:        '#dc2626'
+  success:            '#059669'
+  warning:            '#d97706'
+  warning-text:       '#b45309'
+  info:               '#2563eb'
+  violet:             '#7c3aed'
+  chart-1:            '#059669'
+  chart-2:            '#d97706'
+  chart-3:            '#2563eb'
+  chart-4:            '#dc2626'
+  chart-5:            '#7c3aed'
+  chart-6:            '#0891b2'
+  chart-7:            '#65a30d'
+  chart-8:            '#db2777'
 colors-dark:
-  background:         '#0a0a0a'
-  foreground:         '#fafafa'
-  card:               '#171717'
-  secondary:          '#262626'
-  border:             'branco a 10%'
-  ring:               '#737373'
-  muted-foreground:   '#a1a1a1'
-  primary:            '#2fc183'
-  primary-foreground: '#010f07'
-  destructive:        '#ff6467'
-  success:            '#2fc183'
-  warning:            '#f5ae39'
-  warning-text:       '#f0ba59'
-  chart-1:            '#2fc183'
-  chart-2:            '#f5ae39'
-  chart-3:            '#53a3f2'
-  chart-4:            '#f66b71'
-  chart-5:            '#ae84f2'
-  chart-6:            '#53c2c1'
-  chart-7:            '#afbb52'
-  chart-8:            '#f47db9'
+  background:         '#0a0b0d'
+  foreground:         '#f3f5f6'
+  card:               '#111417'
+  surface:            '#171b1f'
+  secondary:          '#1a1f24'
+  border:             'branco a 7%'
+  ring:               '#10b981'
+  muted-foreground:   '#8b949e'
+  primary:            '#f3f5f6'
+  primary-foreground: '#0a0b0d'
+  brand:              '#10b981'
+  brand-dim:          '#14513f'
+  destructive:        '#ef4444'
+  success:            '#10b981'
+  warning:            '#f59e0b'
+  warning-text:       '#fbbf24'
+  info:               '#3b82f6'
+  violet:             '#8b5cf6'
+  chart-1:            '#10b981'
+  chart-2:            '#f59e0b'
+  chart-3:            '#3b82f6'
+  chart-4:            '#ef4444'
+  chart-5:            '#8b5cf6'
+  chart-6:            '#06b6d4'
+  chart-7:            '#84cc16'
+  chart-8:            '#ec4899'
 typography:
   font-principal: Geist Sans (variável)
   font-mono: Geist Mono (variável, reservada; sem uso atual)
@@ -69,11 +79,13 @@ typography:
   campo-compacto:
     fontSize: 11px
 rounded:
-  DEFAULT: 10px
-  sm: 6px
-  md: 8px
-  lg: 10px
-  xl: 14px
+  DEFAULT: 12px
+  sm: 7px
+  md: 10px
+  lg: 12px
+  xl: 17px
+  card: 20px
+  pill: 999px
 spacing:
   margem-pagina: 16px (24px a partir de 640px)
   espaco-vertical-pagina: 24px
@@ -82,7 +94,8 @@ spacing:
   padding-card: 24px
   padding-card-sm: 16px
   altura-campo-numerico: 32px
-  altura-botao: 36px (sm 32px, xs 24px)
+  altura-campo: 40px
+  altura-botao: 40px (sm 36px, xs 24px)
 largura-conteudo-max: 1440px
 largura-barra-lateral: 256px (aberta), 48px (ícones), 288px (gaveta no celular)
 largura-painel-lateral: 368px
@@ -97,6 +110,13 @@ componentes usam classes do Tailwind e variantes do shadcn/ui, e não há CSS es
 
 Este arquivo reflete o que existe hoje no código. Não contém propostas de redesign. As lacunas conhecidas estão na
 seção _Limitações_.
+
+> **Atualização de 03/11/2026 (repaginação, etapa D1).** Os tokens do cabeçalho deste arquivo (cores, raios, alturas) já
+> refletem a nova linguagem visual: tema escuro por padrão, cartões de 20 px sem sombra, acento esmeralda (`brand`), botão
+> primário claro, barra superior em pílula e sidebar flutuante. Os textos das seções _Cores_, _Elevação_, _Formas_, _Cabeçalho_,
+> _Barra lateral_ e _Componentes_ abaixo ainda descrevem em detalhe a versão anterior e serão reescritos ao final do roteiro.
+> A fonte de verdade da nova linguagem, das decisões de produto e das próximas etapas é
+> [DESIGN_REPAGINACAO.md](DESIGN_REPAGINACAO.md).
 
 **Versão do documento:** 0.2 (reescrito sobre a estrutura do modelo de DESIGN.md anexado) · **Data:** 12/10/2026 ·
 **Autor(es):** _[a preencher]_ · **Relacionado:** [PRD](PRD.md)

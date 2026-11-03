@@ -25,7 +25,7 @@ const AppSidebar = () => {
   const { isMobile, setOpenMobile } = useSidebar()
 
   return (
-    <Sidebar collapsible='icon' variant='sidebar'>
+    <Sidebar collapsible='icon' variant='floating'>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -35,7 +35,7 @@ const AppSidebar = () => {
               render={<Link href='/' />}
               onClick={() => isMobile && setOpenMobile(false)}
             >
-              <span className='bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-lg'>
+              <span className='bg-brand/12 text-brand flex size-9 shrink-0 items-center justify-center rounded-xl'>
                 <WheatIcon className='size-5' />
               </span>
               <div className='flex flex-col items-start leading-tight'>
@@ -60,7 +60,7 @@ const AppSidebar = () => {
                     <SidebarMenuButton
                       tooltip={item.label}
                       isActive={pathname === item.href}
-                      className='data-active:bg-primary/10!'
+                      className='data-active:bg-brand/12! data-active:text-brand! rounded-xl'
                       render={<Link href={item.href} />}
                       onClick={() => isMobile && setOpenMobile(false)}
                     >

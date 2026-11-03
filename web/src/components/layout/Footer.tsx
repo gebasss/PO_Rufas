@@ -8,7 +8,7 @@ const Footer = () => {
             href='https://github.com/RuminantFarmSystems/RuFaS'
             target='_blank'
             rel='noopener noreferrer'
-            className='text-primary hover:underline'
+            className='text-brand hover:underline'
           >
             RuFaS
           </a>{' '}

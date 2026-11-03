@@ -75,6 +75,9 @@ interface AppContextValue {
   toySens: ToySens | null
   setToySens: (value: ToySens | null) => void
 
+  tasks: AppTask[]
+  trackTask: (label: string) => TaskHandle
+
   /** Tela 1: exercício simples ou avaliação de dietas de uma vaca real. */
   exerciseMode: ExerciseMode
   setExerciseMode: (value: ExerciseMode) => void
@@ -84,6 +87,20 @@ interface AppContextValue {
 }
 
 export type ExerciseMode = 'simple' | 'module'
+
+/** Tarefa em andamento (simulação, sensibilidade, dieta ótima), mostrada no menu Tarefas do cabeçalho. */
+export interface AppTask {
+  id: number
+  label: string
+  done: number
+  total: number
+}
+
+/** Controle de uma tarefa registrada: atualize o progresso e encerre no `finally`. */
+export interface TaskHandle {
+  update: (done: number, total: number) => void
+  end: () => void
+}
 
 const AppContext = createContext<AppContextValue | null>(null)
 
@@ -118,6 +135,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [toySens, setToySens] = useState<ToySens | null>(null)
   const [exerciseMode, setExerciseMode] = useState<ExerciseMode>('simple')
   const [moduleState, setModuleState] = useState<ModuleState>(initialModuleState)
+  const [tasks, setTasks] = useState<AppTask[]>([])
 
   const feedById = useMemo(() => Object.fromEntries(feeds.map(f => [f.id, f])) as Record<number, Feed>, [feeds])
 
@@ -239,6 +257,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSens(null)
   }, [])
 
+  const trackTask = useCallback((label: string): TaskHandle => {
+    const id = Date.now() + Math.random()
+
+    setTasks(prev => [...prev, { id, label, done: 0, total: 0 }])
+
+    return {
+      update: (done, total) => setTasks(prev => prev.map(t => (t.id === id ? { ...t, done, total } : t))),
+      end: () => setTasks(prev => prev.filter(t => t.id !== id))
+    }
+  }, [])
+
   const setParams = useCallback((patch: Partial<SimParams>) => setParamsState(p => ({ ...p, ...patch })), [])
 
   const value: AppContextValue = {
@@ -269,6 +298,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setToyResult,
     toySens,
     setToySens,
+    tasks,
+    trackTask,
     exerciseMode,
     setExerciseMode,
     moduleState,

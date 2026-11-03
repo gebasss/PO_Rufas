@@ -6,6 +6,7 @@ import { PlayIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 import { toast } from 'sonner'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 
+import { HighlightBars } from '@/components/charts'
 import ExportButtons from '@/components/ExportButtons'
 import { finite, heat, KpiCard, NumberInput } from '@/components/shared'
 import { Badge } from '@/components/ui/badge'
@@ -313,15 +314,13 @@ export default function ToyView() {
                   Preço-sombra: quanto o custo ótimo aumenta se o mínimo do nutriente subir 1 kg.
                 </p>
 
-                <ChartContainer config={chartConfig} className='aspect-auto h-52 w-full'>
-                  <BarChart data={toyFoods.map(f => ({ name: f.name, kg: toyResult.amounts[f.name] ?? 0 }))}>
-                    <CartesianGrid vertical={false} />
-                    <XAxis dataKey='name' tickLine={false} axisLine={false} />
-                    <YAxis tickLine={false} axisLine={false} width={36} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey='kg' fill='var(--color-kg)' radius={4} />
-                  </BarChart>
-                </ChartContainer>
+                <HighlightBars
+                  data={toyFoods.map(f => ({ name: f.name, value: toyResult.amounts[f.name] ?? 0 }))}
+                  highlight={toyFoods.reduce((a, f) => ((toyResult.amounts[f.name] ?? 0) > (toyResult.amounts[a] ?? 0) ? f.name : a), toyFoods[0]?.name ?? '')}
+                  format={value => `${nf(value, 2)} kg`}
+                  axisFormat={value => nf(value, 0)}
+                  height={220}
+                />
               </>
             )}
           </CardContent>

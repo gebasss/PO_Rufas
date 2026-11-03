@@ -14,7 +14,7 @@ const AppShell = ({ children }: { children: ReactNode }) => {
       <AppSidebar />
       <SidebarInset className='flex flex-1 flex-col'>
         <Header />
-        <main className='mx-auto size-full max-w-360 flex-1 px-4 py-6 sm:px-6'>{children}</main>
+        <main className='mx-auto size-full max-w-360 flex-1 px-3 pt-6 pb-8 sm:px-6'>{children}</main>
         <Toaster />
         <Footer />
       </SidebarInset>
