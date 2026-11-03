@@ -405,6 +405,9 @@ export function ScatterPlot({
   yFormat = value => String(value),
   yAxisFormat,
   xLabel,
+  xInteger,
+  referenceY,
+  referenceLabel,
   height = 260,
   className
 }: {
@@ -415,6 +418,11 @@ export function ScatterPlot({
   /** Formato mais curto para os números do eixo vertical; padrão: o de `yFormat`. */
   yAxisFormat?: (value: number) => string
   xLabel?: string
+  /** O eixo horizontal só tem números inteiros (sementes, índices). */
+  xInteger?: boolean
+  /** Linha tracejada horizontal (por exemplo, o custo do LP contra os pontos do RuFaS). */
+  referenceY?: number
+  referenceLabel?: string
   height?: number
   className?: string
 }) {
@@ -427,6 +435,7 @@ export function ScatterPlot({
             type='number'
             dataKey='x'
             domain={['auto', 'auto']}
+            allowDecimals={!xInteger}
             {...AXIS}
             tickFormatter={value => xFormat(Number(value))}
             label={xLabel ? { value: xLabel, position: 'insideBottom', offset: -10, fill: CHART.tick, fontSize: 11 } : undefined}
@@ -450,6 +459,9 @@ export function ScatterPlot({
               )
             }}
           />
+          {referenceY !== undefined && (
+            <ReferenceLine y={referenceY} ifOverflow='extendDomain' stroke={CHART.vivid} strokeDasharray='5 4' label={referenceLabel ? { value: referenceLabel, fill: CHART.vivid, fontSize: 11, position: 'insideTopRight' } : undefined} />
+          )}
           <Scatter
             data={data}
             isAnimationActive={false}
@@ -466,6 +478,196 @@ export function ScatterPlot({
           />
         </ScatterChart>
       </ResponsiveContainer>
+    </div>
+  )
+}
+
+export type Tone = 'best' | 'ok' | 'bad' | 'muted'
+
+export interface ToneDatum {
+  name: string
+  value: number | null
+  tone: Tone
+}
+
+const TONE_FILL: Record<Tone, string> = {
+  best: CHART.vivid,
+  ok: CHART.dim,
+  bad: 'var(--chart-4)',
+  muted: 'color-mix(in oklch, var(--muted-foreground) 35%, transparent)'
+}
+
+/**
+ * Barras em que cada uma tem o seu tom: `best` (verde vivo, o destaque), `ok` (verde apagado), `bad` (vermelho, o que
+ * falha) e `muted` (cinza). `reference` desenha uma linha tracejada no eixo do valor (a dieta ótima, a tolerância).
+ */
+export function ToneBars({
+  data,
+  format = value => String(value),
+  layout = 'vertical',
+  height = 260,
+  reference,
+  referenceLabel,
+  className
+}: {
+  data: ToneDatum[]
+  format?: (value: number) => string
+  /** `vertical`: barras deitadas (nomes no eixo Y, o padrão); `horizontal`: barras em pé. */
+  layout?: 'horizontal' | 'vertical'
+  height?: number
+  reference?: number
+  referenceLabel?: string
+  className?: string
+}) {
+  const vertical = layout === 'vertical'
+
+  return (
+    <div className={cn('w-full', className)} style={{ height }}>
+      <ResponsiveContainer width='100%' height='100%'>
+        <BarChart data={data} layout={vertical ? 'vertical' : 'horizontal'} margin={{ top: 22, right: vertical ? 64 : 8, bottom: 4, left: vertical ? 8 : 0 }}>
+          <CartesianGrid stroke={CHART.grid} vertical={vertical} horizontal={!vertical} />
+          {vertical ? (
+            <>
+              <XAxis type='number' domain={[0, 'auto']} {...AXIS} hide />
+              <YAxis type='category' dataKey='name' width={150} {...AXIS} />
+            </>
+          ) : (
+            <>
+              <XAxis dataKey='name' {...AXIS} />
+              <YAxis {...AXIS} width={52} tickFormatter={value => format(Number(value))} />
+            </>
+          )}
+          <Tooltip cursor={{ fill: CHART.grid }} content={<ChartTip format={format} />} />
+          {reference !== undefined && (
+            <ReferenceLine
+              {...(vertical ? { x: reference } : { y: reference })}
+              ifOverflow='extendDomain'
+              stroke={CHART.tick}
+              strokeDasharray='5 4'
+              label={referenceLabel ? { value: referenceLabel, fill: CHART.tick, fontSize: 11, position: vertical ? 'top' : 'insideTopRight' } : undefined}
+            />
+          )}
+          <Bar dataKey='value' radius={vertical ? [0, 8, 8, 0] : [8, 8, 0, 0]} maxBarSize={36} isAnimationActive={false}>
+            {data.map(datum => (
+              <Cell key={datum.name} fill={TONE_FILL[datum.tone]} />
+            ))}
+            <LabelList
+              dataKey='value'
+              position={vertical ? 'right' : 'top'}
+              fontSize={12}
+              fill='var(--foreground)'
+              formatter={(value: unknown) => (typeof value === 'number' ? format(value) : '')}
+            />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+export type CellStatus = 'ok' | 'no_limite' | 'violada' | 'indisponivel'
+
+const CELL_STYLE: Record<CellStatus, { className: string; mark: string; label: string }> = {
+  ok: { className: 'bg-brand/20 text-brand', mark: '✓', label: 'atende' },
+  no_limite: { className: 'bg-warning/25 text-warning-text', mark: '!', label: 'no limite' },
+  violada: { className: 'bg-destructive/25 text-destructive', mark: '✕', label: 'violada' },
+  indisponivel: { className: 'bg-muted text-muted-foreground', mark: '–', label: 'indisponível' }
+}
+
+/** Mapa de estados (linhas × colunas): cada célula tem cor, símbolo e rótulo para leitores de tela, nunca só a cor. */
+export function StatusGrid({
+  columns,
+  rows,
+  className
+}: {
+  columns: { id: string; label: string }[]
+  rows: { label: string; cells: CellStatus[] }[]
+  className?: string
+}) {
+  return (
+    <div className={cn('overflow-x-auto', className)}>
+      <table className='border-separate border-spacing-1 text-xs'>
+        <thead>
+          <tr>
+            <th className='sticky left-0 z-10 min-w-36 bg-[var(--card)]' />
+            {columns.map(column => (
+              <th key={column.id} className='h-44 align-bottom' title={column.label}>
+                <span className='text-muted-foreground inline-block max-h-44 overflow-hidden text-left font-medium whitespace-nowrap [writing-mode:vertical-rl] rotate-180'>
+                  {column.label}
+                </span>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(row => (
+            <tr key={row.label}>
+              <th className='sticky left-0 z-10 max-w-44 truncate bg-[var(--card)] pr-3 text-left text-sm font-medium'>{row.label}</th>
+              {row.cells.map((status, index) => (
+                <td key={columns[index].id} className='p-0'>
+                  <span
+                    className={cn('flex size-8 items-center justify-center rounded-lg text-sm font-semibold', CELL_STYLE[status].className)}
+                    title={`${row.label}: ${columns[index].label}, ${CELL_STYLE[status].label}`}
+                  >
+                    <span aria-hidden>{CELL_STYLE[status].mark}</span>
+                    <span className='sr-only'>{CELL_STYLE[status].label}</span>
+                  </span>
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+export interface SharePart {
+  name: string
+  value: number
+  color: string
+}
+
+/** Barras empilhadas a 100% (composição de uma ração por linha), com legenda; o percentual vai na faixa quando ela cabe. */
+export function ShareBars({
+  rows,
+  className
+}: {
+  rows: { label: string; parts: SharePart[] }[]
+  className?: string
+}) {
+  const legend = new Map<string, string>()
+
+  for (const row of rows) for (const part of row.parts) legend.set(part.name, part.color)
+
+  return (
+    <div className={cn('space-y-4', className)}>
+      {rows.map(row => {
+        const total = row.parts.reduce((sum, part) => sum + part.value, 0) || 1
+
+        return (
+          <div key={row.label} className='space-y-1.5'>
+            <p className='text-sm font-medium'>{row.label}</p>
+            <div className='flex h-9 w-full overflow-hidden rounded-xl' role='img' aria-label={`Composição de ${row.label}: ${row.parts.map(p => `${p.name} ${((100 * p.value) / total).toFixed(0)}%`).join(', ')}`}>
+              {row.parts.map(part => {
+                const share = (100 * part.value) / total
+
+                return (
+                  <span
+                    key={part.name}
+                    className='flex items-center justify-center overflow-hidden text-[11px] font-semibold text-black/80'
+                    style={{ width: `${share}%`, backgroundColor: part.color }}
+                    title={`${part.name}: ${share.toFixed(1)}%`}
+                  >
+                    {share >= 7 ? `${share.toFixed(0)}%` : ''}
+                  </span>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
+      <SeriesLegend series={[...legend].map(([label, color]) => ({ label, color }))} />
     </div>
   )
 }
