@@ -89,7 +89,8 @@ export function KpiCard({
 
   return (
     <Card size='sm' className={cn(tone === 'primary' && 'border-brand/40 bg-brand/5', tone === 'warning' && 'border-warning/40 bg-warning/10')}>
-      <CardContent className='flex items-start gap-3'>
+      <CardContent className='space-y-3'>
+        <div className='flex items-start gap-3'>
         {icon ? <IconTile icon={icon} color={accent} /> : null}
         <div className='min-w-0 flex-1 space-y-1'>
           <p className='text-muted-foreground text-xs'>{label}</p>
@@ -101,7 +102,8 @@ export function KpiCard({
             </div>
           ) : null}
         </div>
-        {trend && trend.length > 1 ? <Sparkline values={trend} color={ACCENT[accent].stroke} className='self-end' /> : null}
+        </div>
+        {trend && trend.length > 1 ? <Sparkline values={trend} color={ACCENT[accent].stroke} className='h-9 w-full' /> : null}
       </CardContent>
     </Card>
   )

@@ -32,6 +32,55 @@ const DIFFERENCE_HINT: Record<BalanceRow['kind'], string> = {
   ceiling: 'máximo − % da ração'
 }
 
+/** Tabela do balanço (e nota de leitura); o gráfico de diferenças em % é montado no cartão que a usa. */
+export function BalanceTable({ rows }: { rows: BalanceRow[] }) {
+  return (
+    <div className='space-y-3'>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className='min-w-56'>Nutriente</TableHead>
+            <TableHead className='text-right'>Exigência</TableHead>
+            <TableHead className='text-right'>Oferta</TableHead>
+            <TableHead className='text-right'>Diferença (média)</TableHead>
+            <TableHead className='text-right'>Pior intervalo</TableHead>
+            <TableHead>Estado</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map(row => (
+            <TableRow key={row.id}>
+              <TableCell>
+                <span className='block text-sm leading-snug'>{row.label}</span>
+                <span className='text-muted-foreground block text-xs'>
+                  {row.unit} · {DIFFERENCE_HINT[row.kind]}
+                </span>
+                {row.note && <span className='text-muted-foreground block text-xs'>{row.note}</span>}
+              </TableCell>
+              <TableCell className='text-right tabular-nums'>{fmt(row.requirement)}</TableCell>
+              <TableCell className='text-right tabular-nums'>{fmt(row.supply)}</TableCell>
+              <TableCell className='text-right tabular-nums'>
+                {signed(row.difference)}
+                {row.margin_pct != null && (
+                  <span className='text-muted-foreground block text-xs'>{signedPct(row.margin_pct, 1)}</span>
+                )}
+              </TableCell>
+              <TableCell className='text-right tabular-nums'>{signed(row.worst_difference)}</TableCell>
+              <TableCell>
+                <Status status={row.status} />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      <p className='text-muted-foreground text-xs'>
+        Na proteína metabolizável e no consumo, o RuFaS só informa se a ração está na faixa aceita (a oferta exata não
+        aparece). A exigência de fósforo é a maior entre a da vaca e a do processo.
+      </p>
+    </div>
+  )
+}
+
 export default function BalanceCard({ rows }: { rows: BalanceRow[] }) {
   return (
     <Card>
@@ -42,48 +91,8 @@ export default function BalanceCard({ rows }: { rows: BalanceRow[] }) {
           resumido pela média e pelo pior intervalo. Positivo = sobra; negativo = falta.
         </CardDescription>
       </CardHeader>
-      <CardContent className='space-y-3'>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className='min-w-56'>Nutriente</TableHead>
-              <TableHead className='text-right'>Exigência</TableHead>
-              <TableHead className='text-right'>Oferta</TableHead>
-              <TableHead className='text-right'>Diferença (média)</TableHead>
-              <TableHead className='text-right'>Pior intervalo</TableHead>
-              <TableHead>Estado</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map(row => (
-              <TableRow key={row.id}>
-                <TableCell>
-                  <span className='block text-sm leading-snug'>{row.label}</span>
-                  <span className='text-muted-foreground block text-xs'>
-                    {row.unit} · {DIFFERENCE_HINT[row.kind]}
-                  </span>
-                  {row.note && <span className='text-muted-foreground block text-xs'>{row.note}</span>}
-                </TableCell>
-                <TableCell className='text-right tabular-nums'>{fmt(row.requirement)}</TableCell>
-                <TableCell className='text-right tabular-nums'>{fmt(row.supply)}</TableCell>
-                <TableCell className='text-right tabular-nums'>
-                  {signed(row.difference)}
-                  {row.margin_pct != null && (
-                    <span className='text-muted-foreground block text-xs'>{signedPct(row.margin_pct, 1)}</span>
-                  )}
-                </TableCell>
-                <TableCell className='text-right tabular-nums'>{signed(row.worst_difference)}</TableCell>
-                <TableCell>
-                  <Status status={row.status} />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <p className='text-muted-foreground text-xs'>
-          Na proteína metabolizável e no consumo, o RuFaS só informa se a ração está na faixa aceita (a oferta exata não
-          aparece). A exigência de fósforo é a maior entre a da vaca e a do processo.
-        </p>
+      <CardContent>
+        <BalanceTable rows={rows} />
       </CardContent>
     </Card>
   )

@@ -56,6 +56,9 @@ interface AppContextValue {
 
   sim: SimResult | null
   setSim: (value: SimResult | null) => void
+  /** Parâmetros (serializados) com que `sim` foi calculada; diferente dos atuais = resultado desatualizado. */
+  simKey: string | null
+  setSimKey: (value: string | null) => void
   sens: SensResult | null
   setSens: (value: SensResult | null) => void
   /** Fatores, método e níveis da sensibilidade; ficam aqui para sobreviver à navegação e irem no cenário salvo. */
@@ -127,6 +130,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [selected, setSelected] = useState<Selected>({})
   const [params, setParamsState] = useState<SimParams>(INITIAL_PARAMS)
   const [sim, setSim] = useState<SimResult | null>(null)
+  const [simKey, setSimKey] = useState<string | null>(null)
   const [sens, setSens] = useState<SensResult | null>(null)
   const [sensSetup, setSensSetup] = useState<SensSetup>(INITIAL_SENS)
   const [toyFoods, setToyFoods] = useState<ToyFood[]>(INITIAL_TOY_FOODS)
@@ -254,6 +258,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         : INITIAL_SENS
     )
     setSim(null)
+    setSimKey(null)
     setSens(null)
   }, [])
 
@@ -284,6 +289,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setParams,
     sim,
     setSim,
+    simKey,
+    setSimKey,
     sens,
     setSens,
     sensSetup,

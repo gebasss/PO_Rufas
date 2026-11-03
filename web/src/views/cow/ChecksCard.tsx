@@ -1,5 +1,6 @@
 import { AlertTriangleIcon, CheckCircle2Icon, XCircleIcon } from 'lucide-react'
 
+import { Bullet, type BulletBand } from '@/components/charts'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -22,6 +23,19 @@ function StatusBadge({ status }: { status: CheckStatus }) {
       <Icon aria-hidden /> {label}
     </Badge>
   )
+}
+
+/** Escala e faixas (ok, atenção, alerta) de cada verificação que tem um número só; V5 e as demais ficam sem barra. */
+const BULLETS: Record<string, { min: number; max: number; bands: BulletBand[]; pick: (metrics: Record<string, number>) => number | undefined }> = {
+  V1: { min: -10, max: 40, bands: [{ to: 12, tone: 'ok' }, { to: 24, tone: 'warn' }, { to: 40, tone: 'alert' }], pick: m => m.mean_excess_pct },
+  V2: {
+    min: 20,
+    max: 50,
+    bands: [{ to: 25, tone: 'alert' }, { to: 25.5, tone: 'warn' }, { to: 44.5, tone: 'ok' }, { to: 45, tone: 'warn' }, { to: 50, tone: 'alert' }],
+    pick: m => m.ndf
+  },
+  V3: { min: 10, max: 30, bands: [{ to: 15, tone: 'alert' }, { to: 19, tone: 'warn' }, { to: 30, tone: 'ok' }], pick: m => m.forage_ndf },
+  V4: { min: 0, max: 10, bands: [{ to: 5, tone: 'ok' }, { to: 7, tone: 'warn' }, { to: 10, tone: 'alert' }], pick: m => m.fat }
 }
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
@@ -82,9 +96,19 @@ export default function ChecksCard({ checks }: { checks: RationCheck[] }) {
                 <TableCell>
                   <StatusBadge status={check.status} />
                 </TableCell>
-                <TableCell className='text-sm leading-snug'>
+                <TableCell className='min-w-56 text-sm leading-snug whitespace-normal'>
                   <span className='text-muted-foreground mr-1.5 text-xs'>{check.id}</span>
                   {check.label}
+                  {(() => {
+                    const bullet = BULLETS[check.id]
+                    const value = bullet?.pick(check.metrics)
+
+                    return bullet && value !== undefined ? (
+                      <div className='mt-2.5 mr-2'>
+                        <Bullet value={value} min={bullet.min} max={bullet.max} bands={bullet.bands} />
+                      </div>
+                    ) : null
+                  })()}
                 </TableCell>
                 <TableCell className='text-sm tabular-nums'>{check.value}</TableCell>
                 <TableCell className='text-muted-foreground text-sm'>{check.limit}</TableCell>
