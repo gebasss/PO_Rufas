@@ -3,23 +3,14 @@
 import { useMemo } from 'react'
 
 import { CoinsIcon, DropletsIcon, GaugeIcon, MilkIcon, StarIcon, TrendingUpIcon, WalletIcon, WheatIcon } from 'lucide-react'
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 
-import { DivergingBars, HighlightBars, SeriesLegend, TimeSeries } from '@/components/charts'
+import { DivergingBars, HighlightBars, SeriesLegend, TimeSeries, type SeriesSpec } from '@/components/charts'
 import ChartCard from '@/components/ChartCard'
 import ExportButtons from '@/components/ExportButtons'
 import { KpiCard } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig
-} from '@/components/ui/chart'
 import { Tabs, TabsList, TabsPanel, TabsTab } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { nf, shortName, signedPct, usd } from '@/lib/format'
@@ -110,11 +101,35 @@ export default function Results({ sim, stale = false, base = null, onSetBase }: 
     dmi: sim.intervals.requirements[i]?.DMIest_requirement,
     mp: sim.intervals.requirements[i]?.MP_requirement
   }))
-  const requirementConfig = {
-    nel: { label: 'NEL exigida (Mcal/dia)', color: 'var(--chart-1)' },
-    dmi: { label: 'DMI estimado (kg/dia)', color: 'var(--chart-2)' },
-    mp: { label: 'Proteína metabolizável (g/dia)', color: 'var(--chart-3)' }
-  } satisfies ChartConfig
+  const requirementSeries: SeriesSpec[] = [
+    { key: 'nel', label: 'NEL exigida (Mcal/dia)', color: 'var(--chart-1)', kind: 'line' },
+    { key: 'dmi', label: 'DMI estimado (kg/dia)', color: 'var(--chart-3)', kind: 'line' },
+    { key: 'mp', label: 'Proteína metabolizável (g/dia)', color: 'var(--chart-5)', kind: 'line', axis: 'right' }
+  ]
+  const requirementTable = (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Dia</TableHead>
+          {requirementSeries.map(item => (
+            <TableHead key={item.key} className='text-right'>
+              {item.label}
+            </TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {requirementData.map(row => (
+          <TableRow key={row.day}>
+            <TableCell>{row.day}</TableCell>
+            <TableCell className='text-right tabular-nums'>{nf(row.nel, 1)}</TableCell>
+            <TableCell className='text-right tabular-nums'>{nf(row.dmi, 1)}</TableCell>
+            <TableCell className='text-right tabular-nums'>{nf(row.mp, 0)}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  )
 
   const compositionTable = (
     <Table>
@@ -358,20 +373,19 @@ export default function Results({ sim, stale = false, base = null, onSetBase }: 
               title='Exigências (NRC 2001)'
               description='Energia e consumo (eixo esquerdo) e proteína metabolizável (direito).'
               chart={
-                <ChartContainer config={requirementConfig} className='aspect-auto h-72 w-full'>
-                  <LineChart data={requirementData}>
-                    <CartesianGrid vertical={false} />
-                    <XAxis dataKey='day' tickLine={false} axisLine={false} interval={1} fontSize={11} />
-                    <YAxis yAxisId='left' tickLine={false} axisLine={false} width={36} domain={['auto', 'auto']} />
-                    <YAxis yAxisId='right' orientation='right' tickLine={false} axisLine={false} width={44} domain={['auto', 'auto']} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <ChartLegend content={<ChartLegendContent />} />
-                    <Line yAxisId='left' dataKey='nel' stroke='var(--color-nel)' strokeWidth={2} dot={false} />
-                    <Line yAxisId='left' dataKey='dmi' stroke='var(--color-dmi)' strokeWidth={2} dot={false} />
-                    <Line yAxisId='right' dataKey='mp' stroke='var(--color-mp)' strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ChartContainer>
+                <>
+                  <TimeSeries
+                    data={requirementData}
+                    xKey='day'
+                    series={requirementSeries}
+                    format={value => nf(value, 0)}
+                    rightFormat={value => nf(value, 0)}
+                    height={288}
+                  />
+                  <SeriesLegend series={requirementSeries} />
+                </>
               }
+              table={requirementTable}
             />
           </TabsPanel>
         </div>

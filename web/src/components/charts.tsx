@@ -12,6 +12,7 @@ import {
   ComposedChart,
   LabelList,
   Line,
+  ReferenceArea,
   ReferenceLine,
   ResponsiveContainer,
   Scatter,
@@ -274,6 +275,8 @@ export function TimeSeries({
   stacked = false,
   format,
   rightFormat,
+  markers,
+  bands,
   height = 260,
   className
 }: {
@@ -283,6 +286,10 @@ export function TimeSeries({
   stacked?: boolean
   format?: (value: number) => string
   rightFormat?: (value: number) => string
+  /** Linhas verticais tracejadas em valores do eixo X (marcos como PEV e parto); valores fora dos dados são ignorados. */
+  markers?: { x: number; label: string; color: string }[]
+  /** Faixas verticais suaves entre dois valores do eixo X (por exemplo, a gestação). */
+  bands?: { x1: number; x2: number; label?: string; color: string }[]
   height?: number
   className?: string
 }) {
@@ -292,7 +299,7 @@ export function TimeSeries({
   return (
     <div className={cn('w-full', className)} style={{ height }}>
       <ResponsiveContainer width='100%' height='100%'>
-        <ComposedChart data={data} margin={{ top: 8, right: hasRight ? 0 : 8, bottom: 0, left: 0 }}>
+        <ComposedChart data={data} margin={{ top: markers?.length ? 24 : 8, right: markers?.length ? 28 : hasRight ? 0 : 8, bottom: 0, left: 0 }}>
           <defs>
             {series.map(s => (
               <linearGradient key={s.key} id={`${id}-${s.key}`} x1='0' y1='0' x2='0' y2='1'>
@@ -308,6 +315,20 @@ export function TimeSeries({
             <YAxis yAxisId='right' orientation='right' {...AXIS} width={48} domain={['auto', 'auto']} tickFormatter={value => (rightFormat ?? String)(Number(value))} />
           )}
           <Tooltip cursor={{ stroke: CHART.tick, strokeDasharray: '3 3' }} content={<SeriesTip series={series} format={format} />} />
+          {bands?.map(band => (
+            <ReferenceArea key={`${band.x1}-${band.x2}`} yAxisId='left' x1={band.x1} x2={band.x2} fill={band.color} fillOpacity={0.08} ifOverflow='hidden' />
+          ))}
+          {markers?.map(marker => (
+            <ReferenceLine
+              key={marker.label}
+              yAxisId='left'
+              x={marker.x}
+              stroke={marker.color}
+              strokeDasharray='5 4'
+              ifOverflow='hidden'
+              label={{ value: marker.label, position: 'top', fontSize: 11, fill: marker.color }}
+            />
+          ))}
           {series.map(s =>
             s.kind === 'line' ? (
               <Line
@@ -668,6 +689,83 @@ export function ShareBars({
         )
       })}
       <SeriesLegend series={[...legend].map(([label, color]) => ({ label, color }))} />
+    </div>
+  )
+}
+
+/**
+ * Mapa de calor de duas dimensões (por exemplo, dois fatores do quadro): cada célula mostra o valor em texto, o tom
+ * esmeralda cresce com o quanto o valor é melhor (`better`) e a melhor célula ganha um contorno. `null` = sem solução.
+ */
+export function HeatMap({
+  xLabels,
+  yLabels,
+  values,
+  format = value => String(value),
+  better = 'low',
+  xTitle,
+  yTitle,
+  className
+}: {
+  xLabels: string[]
+  yLabels: string[]
+  /** `values[linha][coluna]`: a linha segue `yLabels` e a coluna, `xLabels`. */
+  values: (number | null)[][]
+  format?: (value: number) => string
+  better?: 'low' | 'high'
+  xTitle?: string
+  yTitle?: string
+  className?: string
+}) {
+  const flat = values.flat().filter((v): v is number => v !== null)
+  const min = Math.min(...flat)
+  const max = Math.max(...flat)
+  const best = better === 'low' ? min : max
+  const share = (value: number) => {
+    const t = max === min ? 1 : (value - min) / (max - min)
+
+    return Math.round(10 + 40 * (better === 'low' ? 1 - t : t))
+  }
+
+  return (
+    <div className={cn('overflow-x-auto', className)}>
+      <table className='border-separate border-spacing-1 text-sm'>
+        <thead>
+          <tr>
+            <th className='text-muted-foreground pr-2 text-left text-xs font-normal'>{yTitle && xTitle ? `${yTitle} ↓ · ${xTitle} →` : ''}</th>
+            {xLabels.map(label => (
+              <th key={label} className='text-muted-foreground px-1 text-center text-xs font-medium tabular-nums'>
+                {label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {yLabels.map((yLabel, row) => (
+            <tr key={yLabel}>
+              <th className='text-muted-foreground pr-2 text-right text-xs font-medium tabular-nums'>{yLabel}</th>
+              {xLabels.map((xLabel, col) => {
+                const value = values[row]?.[col] ?? null
+
+                return (
+                  <td
+                    key={xLabel}
+                    title={`${yTitle ?? 'linha'} ${yLabel}, ${xTitle ?? 'coluna'} ${xLabel}: ${value === null ? 'sem solução' : format(value)}`}
+                    className={cn(
+                      'h-12 min-w-20 rounded-lg px-2 text-center font-semibold tabular-nums',
+                      value === null && 'bg-destructive/15 text-destructive text-xs font-medium',
+                      value !== null && value === best && 'ring-brand ring-2'
+                    )}
+                    style={value === null ? undefined : { backgroundColor: `color-mix(in oklch, var(--brand) ${share(value)}%, transparent)` }}
+                  >
+                    {value === null ? 'inviável' : format(value)}
+                  </td>
+                )
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }

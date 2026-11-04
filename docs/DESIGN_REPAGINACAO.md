@@ -1,8 +1,7 @@
 # Sistema de design e roteiro da repaginação
 
-**Versão 0.5 (03/11/2026).** Define a linguagem visual do sistema (tokens, componentes, gráficos), registra as decisões de
-produto da repaginação e o roteiro por etapas. As etapas D1 (tokens, estrutura e componentes-base), D2 (tela Vaca leiteira), D3 (histórico de execuções), D4 (Sensibilidade) e D5 (Avaliar dietas) estão implementadas; as demais
-estão descritas na seção 7. Código: `web/src/app/globals.css`, `web/src/components/`. Complementa o `DESIGN.md` (descrição detalhada do que existe).
+**Versão 0.6 (03/11/2026).** Define a linguagem visual do sistema (tokens, componentes, gráficos), registra as decisões de
+produto da repaginação e o roteiro por etapas. As etapas D1 (tokens, estrutura e componentes-base), D2 (tela Vaca leiteira), D3 (histórico de execuções), D4 (Sensibilidade), D5 (Avaliar dietas) e D6 (Exercício do quadro e Curva de lactação) estão implementadas; o roteiro está na seção 7. Código: `web/src/app/globals.css`, `web/src/components/`. Complementa o `DESIGN.md` (descrição detalhada do que existe).
 
 ## 1. Princípios
 
@@ -92,7 +91,7 @@ estão descritas na seção 7. Código: `web/src/app/globals.css`, `web/src/comp
 | D3 | Histórico de execuções no servidor (API, tabela com busca, filtro, status, ações e paginação), estrela do cenário-base, tela de detalhe e deltas dos KPIs | **Feita (03/11/2026)** |
 | D4 | Sensibilidade: histograma, tornado e comparação de cenários com o base; tabela de cenários com o padrão da D3 | **Feita (03/11/2026)** |
 | D5 | Avaliar dietas: ranking, erro de linearização, comparação com o RuFaS e dieta ótima em gráficos | **Feita (03/11/2026)** |
-| D6 | Exercício do quadro e Curva de lactação, estados vazio, carregando e erro, "ver como tabela" em todos os gráficos | Planejada |
+| D6 | Exercício do quadro e Curva de lactação, estados vazio, carregando e erro, "ver como tabela" em todos os gráficos | **Feita (03/11/2026)** |
 
 ## 8. Tela Vaca leiteira (D2)
 
@@ -135,3 +134,12 @@ Especificação completa em `FSD.md`, seção A.12. Resumo do que a repaginaçã
   - **Dieta ótima:** KPIs, **composição da ração** do LP contra a melhor execução do RuFaS (`ShareBars`, barras empilhadas a 100%), **custo de cada execução do RuFaS** (`ScatterPlot` com a linha do LP), **folga** da dieta ótima e os preços-sombra em tabela.
 - Componentes novos em `charts`: `ToneBars` (barras com tom por barra e linha de referência), `StatusGrid`, `ShareBars`; `ScatterPlot` ganha `referenceY`, `referenceLabel` e `xInteger`. As linhas de referência estendem o eixo, então a tolerância (1%) aparece mesmo quando todos os erros são menores.
 - Nada mudou no cálculo nem na API; o módulo continua guardando entradas e resultados no `AppProvider`.
+
+## 12. Exercício do quadro e Curva de lactação (D6)
+
+- **Exercício do quadro (modo simples):** o problema (alimentos e nutrientes) fica num cartão no topo com o `RunButton` **Resolver** (pronto, executando, concluído e erro) e o aviso de solução desatualizada (`toyKey` no `AppProvider`). Os resultados vêm em duas abas:
+  - **Solução ótima:** KPIs (custo mínimo, alimentos usados, restrições ativas, maior quantidade); **quantidade de cada alimento** (`HighlightBars`); **para onde vai o custo** (`ShareBars` de uma linha); **nutrientes na faixa** (`Bullet` por nutriente: verde dentro do intervalo, vermelho fora, com o total marcado). A tabela de restrições com os preços-sombra é a alternativa "ver como tabela". Sem solução viável, um alerta explica; sem solução ainda, o estado vazio com os passos.
+  - **Cenários:** fatores e faixas como antes, com aviso de cenários desatualizados (`toySensKey`) e erro visível; KPIs (menor e maior custo, amplitude, cenários resolvidos); **custo ótimo por cenário** (barras, o menor em verde vivo) e **mapa dos dois fatores** (`HeatMap`, o custo ótimo de cada combinação, mais verde = mais barato, contorno no menor). A tabela de cenários S<sub>i</sub> do quadro continua disponível em "ver como tabela".
+- **Curva de lactação:** cartão do ciclo reprodutivo (PEV, gestação, secagem) com a frase do parto e da secagem previstos; KPIs por paridade com o mini gráfico da própria curva; **produção por dia** (`TimeSeries` em linhas, faixa verde da gestação e marcas tracejadas do PEV, da secagem e do parto) e **produção acumulada em 305 dias**. Sem parâmetros (servidor fora do ar) há estado vazio; carregando, o esqueleto.
+- **"Ver como tabela" em todos os gráficos:** o gráfico de exigências da tela Vaca leiteira (último que ainda usava o gráfico antigo) passou a `TimeSeries` com tabela; a Curva e o quadro também têm a alternância.
+- Componentes novos em `charts`: `HeatMap`; `TimeSeries` ganha `markers` (linhas verticais) e `bands` (faixas).
