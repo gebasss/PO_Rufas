@@ -80,6 +80,11 @@ interface AppContextValue {
   setToyResult: (value: ToyResult | null) => void
   toySens: ToySens | null
   setToySens: (value: ToySens | null) => void
+  /** Chaves (problema e fatores) com que o resultado e os cenários do quadro foram calculados; servem para detectar o que ficou desatualizado. */
+  toyKey: string | null
+  setToyKey: (value: string | null) => void
+  toySensKey: string | null
+  setToySensKey: (value: string | null) => void
 
   tasks: AppTask[]
   trackTask: (label: string) => TaskHandle
@@ -141,6 +146,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [toyBounds, setToyBounds] = useState<ToyBound[]>(INITIAL_TOY_BOUNDS)
   const [toyResult, setToyResult] = useState<ToyResult | null>(null)
   const [toySens, setToySens] = useState<ToySens | null>(null)
+  const [toyKey, setToyKey] = useState<string | null>(null)
+  const [toySensKey, setToySensKey] = useState<string | null>(null)
   const [exerciseMode, setExerciseMode] = useState<ExerciseMode>('simple')
   const [moduleState, setModuleState] = useState<ModuleState>(initialModuleState)
   const [tasks, setTasks] = useState<AppTask[]>([])
@@ -312,6 +319,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setToyResult,
     toySens,
     setToySens,
+    toyKey,
+    setToyKey,
+    toySensKey,
+    setToySensKey,
     tasks,
     trackTask,
     exerciseMode,
