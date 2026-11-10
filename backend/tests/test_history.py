@@ -24,6 +24,13 @@ def pasta(tmp_path, monkeypatch):
     monkeypatch.setattr(history, "HISTORY_DIR", tmp_path / "_history")
 
 
+def test_titulo_mostra_o_rebanho_so_quando_nao_e_o_padrao():
+    grande = {**SIM_RESULT, "summary": {**SIM_RESULT["summary"], "cow_num": 250}}
+    meta = history.record("simulation", {**SIM_PARAMS, "cow_num": 250}, grande)
+    assert meta["title"].endswith("2 anos · 250 vacas") and meta["summary"]["cow_num"] == 250
+    assert "vacas" not in history.record("simulation", SIM_PARAMS, SIM_RESULT)["title"]
+
+
 def test_grava_dois_arquivos_e_devolve_os_metadados_com_resumo():
     meta = history.record("simulation", SIM_PARAMS, SIM_RESULT)
     assert meta["title"] == "Simulação do RuFaS · 3 alimentos · 2 anos" and meta["status"] == "done" and not meta["is_base"]

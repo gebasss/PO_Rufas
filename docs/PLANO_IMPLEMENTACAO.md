@@ -1,6 +1,6 @@
 # Plano de implementação: módulo "Exercício do quadro" ampliado e complementos
 
-**Versão 0.16 (03/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
+**Versão 0.17 (10/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
 comportamento do sistema; as regras estão nos documentos citados e este arquivo só as sequencia.
 
 | Documento | O que fornece ao plano |
@@ -29,7 +29,8 @@ comportamento do sistema; as regras estão nos documentos citados e este arquivo
 | E8d | **Feita (03/11/2026)** | RF-22: `prices.py`, `POST /api/prices/import`, componente `PriceImport` nas telas Vaca leiteira e Avaliar dietas; 19 testes novos (151 no total) |
 | E8e | **Feita (03/11/2026)** | RF-20: `exports.py` (CSV e relatório HTML), `POST /api/export/<csv\|report>/<tela>`, `ExportButtons` nas quatro telas; 8 testes novos (159 no total) |
 | E8f | **Feita (03/11/2026)** | RF-21: `scenario_files.py`, `POST /api/scenario/save` e `/load`, `ScenarioFile` nas telas Vaca leiteira e Avaliar dietas; 29 testes novos (188 no total) |
-| E8c, E8g, E8h | Não iniciadas | |
+| E8g | **Feita (10/11/2026)** | RF-13: `herd.py` (escala o rebanho e as baias, valida 60 a 500), campo "Vacas no rebanho" na tela Vaca leiteira com aviso de tempo e memória, estimativa da sensibilidade, arquivo de cenário, histórico, relatório e comparação com o base só entre rebanhos do mesmo tamanho; 26 testes novos (223 no total); limites medidos com simulações reais; ver `FSD.md`, A.13 |
+| E8c, E8h | Não iniciadas | |
 | D6 | **Feita (03/11/2026)** | Repaginação do Exercício do quadro (botão Resolver com estados, solução em gráficos, bullet por nutriente, cenários com barras e mapa de calor) e da Curva de lactação (marcas do ciclo, KPIs por paridade, produção acumulada); "ver como tabela" em todos os gráficos; ver `DESIGN_REPAGINACAO.md`, seção 12 |
 | D5 | **Feita (03/11/2026)** | Repaginação da tela Avaliar dietas: entradas em abas, barra de execução com `RunButton`, resultados em abas (ranking, restrições, linearização, dieta ótima), custo por dieta, mapa de restrições, folga, erro de linearização com a tolerância, composição do LP × RuFaS e custo por semente; ver `DESIGN_REPAGINACAO.md`, seção 11 |
 | D4 | **Feita (03/11/2026)** | Repaginação da tela Sensibilidade: painel fixo com `RunButton`, resultados em abas (visão geral, fatores, cenários), margem por cenário com linha da simulação-base, histograma das margens, tornado dos fatores, dispersão margem × fator e ração do cenário ótimo; ver `DESIGN_REPAGINACAO.md`, seção 10 |

@@ -33,12 +33,18 @@ interface Props {
   onSetBase?: () => void
 }
 
+/** Totais do rebanho: só se comparam com o cenário-base quando os dois têm o mesmo número de vacas. */
+const HERD_TOTALS = new Set(['margem', 'receita', 'custo_alimentacao', 'leite_kg'])
+
 export default function Results({ sim, stale = false, base = null, onSetBase }: Props) {
   const s = sim.summary
   const isBase = base !== null && base.id === sim.run_id
+  const herdSize = Number(s.cow_num ?? 100)
+  const baseHerd = Number(base?.summary.cow_num ?? 100)
+  const sameHerd = herdSize === baseHerd
   /** Variação percentual em relação ao cenário-base (nada se não há base, se esta é a base ou se o valor não existe). */
   const delta = (key: string, current: number) => {
-    const reference = base && !isBase ? base.summary[key] : null
+    const reference = base && !isBase && (sameHerd || !HERD_TOTALS.has(key)) ? base.summary[key] : null
 
     return typeof reference === 'number' && reference !== 0 ? ((current - reference) / Math.abs(reference)) * 100 : undefined
   }
@@ -245,7 +251,7 @@ export default function Results({ sim, stale = false, base = null, onSetBase }: 
               {isBase
                 ? 'Esta simulação é o cenário-base.'
                 : base
-                  ? `Variações em relação ao cenário-base: ${base.title} (${shortDate(base.created)}).`
+                  ? `Variações em relação ao cenário-base: ${base.title} (${shortDate(base.created)}).${sameHerd ? '' : ` O base tem ${baseHerd} vacas e esta simulação, ${herdSize}: os totais do rebanho não são comparados.`}`
                   : 'Sem cenário-base: marque uma simulação com a estrela para ver as variações dos indicadores.'}
             </span>
           </div>

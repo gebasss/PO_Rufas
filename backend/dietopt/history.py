@@ -36,10 +36,12 @@ def _simulation(params: Mapping[str, Any], result: Mapping[str, Any]) -> tuple[s
     n_feeds, years = len(params.get("feeds", [])), int(params.get("years", 1))
     summary = {
         "margem": s["margem"], "receita": s["receita"], "custo_alimentacao": s["custo_alimentacao"], "custo_vaca_dia": s["custo_vaca_dia"],
-        "leite_kg": s["leite_kg"], "milk_price": s["milk_price"], "years": years, "n_feeds": n_feeds,
+        "leite_kg": s["leite_kg"], "milk_price": s["milk_price"], "years": years, "n_feeds": n_feeds, "cow_num": s.get("cow_num", 100),
         "alertas": (result.get("checks_summary") or {}).get("alert", 0),
     }  # fmt: skip
-    return f"{n_feeds} alimentos · {years} ano{'s' if years > 1 else ''}", summary, ""
+    cows = s.get("cow_num", 100)
+    herd = f" · {cows} vacas" if cows != 100 else ""  # o rebanho padrão não aparece no título
+    return f"{n_feeds} alimentos · {years} ano{'s' if years > 1 else ''}{herd}", summary, ""
 
 
 def _sensitivity(params: Mapping[str, Any], result: Mapping[str, Any]) -> tuple[str, dict[str, Any], str]:

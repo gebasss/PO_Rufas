@@ -10,7 +10,7 @@ from dietopt.scenario_files import FORMAT, VERSION, pack, unpack
 
 COW = {
     "standard": "NRC",
-    "params": {"milkPrice": 0.5, "years": 2, "maxReduction": 5},
+    "params": {"milkPrice": 0.5, "years": 2, "maxReduction": 5, "cowNum": 150},
     "feeds": [{"id": 50, "price": 0.09, "min": 0, "max": 100}, {"id": 44, "price": 0.28, "min": 1.5, "max": None}, {"id": 999999, "price": 1, "min": 0, "max": 1}],
     "sensitivity": {"method": "latin", "levels": 4, "factors": {"44": {"on": True, "low": 0.2, "high": 0.4}, "milk_price": {"on": False, "low": 0.4, "high": 0.6}, "138": {"on": True, "low": 0.1, "high": 0.2}}},
 }  # fmt: skip
@@ -74,6 +74,9 @@ def test_cenario_do_modulo_volta_normalizado_sem_resultados_e_sem_campos_vazios(
     [
         ("cow", {"params": {"milkPrice": -1, "years": 1, "maxReduction": 5}}, "Preço do leite"),
         ("cow", {"params": {"milkPrice": 0.5, "years": 9, "maxReduction": 5}}, "Anos"),
+        ("cow", {"params": {"milkPrice": 0.5, "years": 1, "maxReduction": 5, "cowNum": 20}}, "Vacas no rebanho"),
+        ("cow", {"params": {"milkPrice": 0.5, "years": 1, "maxReduction": 5, "cowNum": 600}}, "Vacas no rebanho"),
+        ("cow", {"params": {"milkPrice": 0.5, "years": 1, "maxReduction": 5, "cowNum": 80.5}}, "inteiro"),
         ("cow", {"feeds": [{"id": 50, "price": None, "min": 0, "max": 1}]}, "preço"),
         ("cow", {"feeds": [{"id": 50, "price": 1, "min": 5, "max": 1}]}, "mínimo"),
         ("cow", {"feeds": [{"id": 50, "price": 1}, {"id": 50, "price": 2}]}, "repetido"),
@@ -123,3 +126,10 @@ def test_arquivo_de_versao_antiga_passa_pela_migracao(monkeypatch):
     antigo = {"format": FORMAT, "version": 1, "kind": "cow", "data": {"standard": "NRC", "preco_do_leite": 0.7, "feeds": []}}
     lido = unpack(json.dumps(antigo))
     assert lido["version"] == 2 and lido["data"]["params"]["milkPrice"] == 0.7
+
+
+def test_arquivo_sem_o_rebanho_abre_com_o_padrao():
+    """Arquivos salvos antes do RF-13 não têm ``cowNum``: valem as 100 vacas do exemplo."""
+    antigo = {**COW, "params": {"milkPrice": 0.5, "years": 2, "maxReduction": 5}}
+    _, lido = volta("cow", antigo)
+    assert lido["data"]["params"]["cowNum"] == 100
