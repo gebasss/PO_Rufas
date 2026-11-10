@@ -65,7 +65,8 @@ export function cowScenarioOf(params: Params): CowScenario {
     params: {
       milkPrice: Number(params.milk_price ?? 0.45),
       years: Number(params.years ?? 1),
-      maxReduction: Number(params.max_milk_reduction ?? 5)
+      maxReduction: Number(params.max_milk_reduction ?? 5),
+      cowNum: Number(params.cow_num ?? 100)
     },
     feeds
   }

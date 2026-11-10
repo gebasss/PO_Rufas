@@ -20,6 +20,7 @@ from . import lactation
 from .diet_lp import Food, NutrientBounds, solve_diet
 from .exports import export_file
 from .feeds import FeedInfo, feed_library
+from .herd import DEFAULT_COWS, herd_limits, parse_cow_num
 from .history import base_run, delete_run, get_run, list_runs, record, set_base, with_history
 from .jobs import Job, JobManager
 from .module.api import compare_payload, defaults_payload, evaluate_payload, optimize_payload, requirements_payload
@@ -130,7 +131,7 @@ def scenario_from(params: dict[str, Any], name: str) -> tuple[Scenario, Economic
         end_date=f"{2012 + years}:365",
         random_seed=int(params.get("seed", 42)),
         nutrient_standard=standard,
-        cow_num=params.get("cow_num"),
+        cow_num=parse_cow_num(params.get("cow_num")),
         lac_cow_feeds=[int(i) for i in params["feeds"]],
         feed_limits=feed_limits_from(params, standard),
         feed_prices=prices,
@@ -178,7 +179,7 @@ def simulation_payload(scenario: Scenario, economics: Economics) -> dict[str, An
         scenario.milk_reduction_maximum,
     )
     return {
-        "summary": evaluation.as_row() | {"milk_price": economics.milk_price, "reducao_leite": evaluation.reduction, "max_reducao": scenario.milk_reduction_maximum},
+        "summary": evaluation.as_row() | {"milk_price": economics.milk_price, "reducao_leite": evaluation.reduction, "max_reducao": scenario.milk_reduction_maximum, "cow_num": scenario.cow_num or DEFAULT_COWS},
         "feeds": [{"id": int(i), "label": feed_label(i, scenario.nutrient_standard), "price": prices.get(int(i))} for i in feed_ids],
         "daily": {"day": result.days, "milk_kg": result.milk_kg, "milking_cows": result.milking_cows, "avg_dim": result.avg_dim},
         "intervals": {
@@ -290,7 +291,7 @@ class Handler(BaseHTTPRequestHandler):
                     )
                 )
             if path == "/api/defaults":
-                return self._json({"milk_price": DEFAULT_MILK_PRICE, "prices": DEFAULT_PRICES})
+                return self._json({"milk_price": DEFAULT_MILK_PRICE, "prices": DEFAULT_PRICES, "herd": herd_limits()})
             if path == "/api/lactation":
                 return self._json(
                     {

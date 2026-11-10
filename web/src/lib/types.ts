@@ -21,9 +21,18 @@ export interface Feed {
   default_max: number
 }
 
+/** Limites do número de vacas da simulação (RF-13). `warn`: acima disso a simulação fica lenta e pesada. */
+export interface HerdLimits {
+  default: number
+  min: number
+  max: number
+  warn: number
+}
+
 export interface Defaults {
   milk_price: number
   prices: Record<string, number>
+  herd: HerdLimits
 }
 
 /** Alimento escolhido para a ração: preço (US$/kg MS) e limites (kg MS/vaca/dia). */
@@ -38,6 +47,8 @@ export interface SimParams {
   milkPrice: number
   years: number
   maxReduction: number
+  /** Vacas do rebanho simulado; o rebanho todo (novilhas, reposição) acompanha. */
+  cowNum: number
 }
 
 // ---- Exercício do quadro (PL)
@@ -393,6 +404,8 @@ export interface SimSummary {
   milk_price: number
   reducao_leite: number
   max_reducao: number
+  /** Vacas do rebanho simulado (ausente em execuções antigas: eram 100). */
+  cow_num?: number
 }
 export interface Requirement {
   NEl_requirement: number | null

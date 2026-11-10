@@ -115,7 +115,7 @@ export interface TaskHandle {
 
 const AppContext = createContext<AppContextValue | null>(null)
 
-const INITIAL_PARAMS: SimParams = { milkPrice: 0.45, years: 1, maxReduction: 5 }
+const INITIAL_PARAMS: SimParams = { milkPrice: 0.45, years: 1, maxReduction: 5, cowNum: 100 }
 const INITIAL_SENS: SensSetup = { overrides: {}, method: 'grid', levels: 3 }
 
 const INITIAL_TOY_FOODS: ToyFood[] = [
@@ -188,7 +188,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           } | null
 
           if (saved?.selected && Object.keys(saved.selected).length) restored = saved.selected
-          if (saved?.params) setParamsState(saved.params)
+          // o que foi salvo antes do RF-13 não tem o número de vacas: completa com o padrão
+          if (saved?.params) setParamsState({ ...INITIAL_PARAMS, ...saved.params })
         } catch {
           // sem localStorage: segue com os valores padrão
         }

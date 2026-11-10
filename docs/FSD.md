@@ -281,7 +281,7 @@ aplicacao RuFaS/
 | Padrão NASEM 2021 | RF-24, pendente; especificado no Anexo A.3. O sistema usa só a NRC 2001. |
 | Módulo ampliado do Exercício do quadro (avaliação de dietas montadas, modelo linear das equações do RuFaS) | RF-28 e RF-29, pendentes; especificados no Anexo B. |
 | Sugestão e previsão da dieta ótima de uma vaca e fase (RF-30) | Fase 2, implementada em 03/11/2026 (Anexo B, B.8 e B.11; `LINEARIZACAO.md`, 7.6); falta o laço de redução de leite. |
-| Ajuste do tamanho do rebanho pela interface | RF-13, pendente. O servidor aceita `cow_num`; a interface não o expõe. |
+| Ajuste do tamanho do rebanho pela interface | RF-13, implementado em 10/11/2026 (A.13): de 60 a 500 vacas, com o rebanho e as baias escalados juntos. |
 | Dieta otimizada por fase da lactação | Depende da questão Q2 do PRD. A ração é formulada por grupo, pelo RuFaS. |
 | Modelo próprio de resposta do leite à dieta | Depende da questão Q3 do PRD. O leite é o simulado pelo RuFaS. |
 | Linha de comando e relatório em PDF | Fase seguinte à web. |
@@ -353,7 +353,7 @@ Lido de `vendor/RuFaS/input/data/feed/NRC_comp.csv` e `user_feeds.csv` por `load
 | `start_date`, `end_date` | `2013:1`, `2013:365` | Período; `end_date` = `<2012 + anos>:365` |
 | `random_seed` | 42 | Semente |
 | `nutrient_standard` | `NRC` | `NRC` ou `NASEM` (a aplicação usa `NRC`) |
-| `cow_num` | `None` | Mantém o rebanho do exemplo `freestall` |
+| `cow_num` | `None` | Número de vacas (60 a 500); `None` ou 100 mantém o rebanho do exemplo `freestall`. O rebanho todo e as baias são escalados junto (A.13) |
 | `lac_cow_ration`, `ration_tolerance` | `None` | Ração com percentuais fixos (não usado pela aplicação) |
 | `lac_cow_feeds` | `None` | Alimentos permitidos às vacas em lactação |
 | `feed_limits` | `{}` | `id → (mínimo, máximo)` em kg/vaca/dia |
@@ -1664,6 +1664,29 @@ indicadores das demais telas (Sensibilidade, Avaliar dietas), que seguem nas eta
 **Aceite.** `tests/test_history.py`: gravação e resumo de cada tipo, listagem com filtros, busca e paginação, base única por tipo e só
 para execução concluída, exclusão, identificador inválido, retenção que preserva a base, falha gravada com o motivo, cancelamento
 ignorado e arquivo corrompido fora da lista.
+
+### A.13 RF-13: tamanho do rebanho (implementado em 10/11/2026, etapa E8g)
+
+**O que o usuário faz.** Na tela Vaca leiteira, o campo **Vacas no rebanho** (padrão 100, de 60 a 500) vale para a simulação e para a sensibilidade. Fora da faixa, ou não inteiro, o campo mostra o motivo e os botões Executar ficam desabilitados; o servidor repete a validação (erro 500 no formato da seção 11.3). Acima de 250 vacas a tela avisa o tempo e a memória de cada simulação. O número entra no arquivo de cenário (`params.cowNum`; arquivos antigos abrem com 100), no resumo e no título da execução no histórico (só quando difere de 100), na tela de detalhe e no relatório HTML. Os totais do rebanho (margem, receita, custo de alimentação, leite total) só são comparados com o cenário-base se os dois têm o mesmo número de vacas; os valores por vaca sempre são.
+
+**Por que não basta `cow_num`.** O exemplo `freestall` tem 100 vacas e, junto, bezerras, novilhas, uma reserva de reposição e um tamanho-alvo (`herd_num`): o RuFaS vende novilhas prenhes quando vacas e novilhas prenhes passam de 103% do alvo e compra reposição abaixo de 101%. Mudar só `cow_num` deixava o alvo em 100 e o RuFaS recompunha o rebanho. Além disso, cada lote tem um número fixo de baias (`number_of_stalls`) e o RuFaS recusa a simulação se o lote passa da lotação máxima (500 vacas falhou com "Number of stalls in calf pen"). O adaptador (`backend/dietopt/herd.py`, `scale_herd`) escala por `cow_num / 100`: o próprio `cow_num` e o `herd_num`, bezerras, novilhas I, II e III, a reposição (`replace_num`) e as baias de todos os lotes (arredondando para cima), com mínimo de 1. Informar 100 equivale a não informar (mesma chave de cache).
+
+**Limites verificados** (simulações reais, 1 ano, NRC, 7 alimentos, mesma máquina, medidas em 10/11/2026):
+
+| Vacas | Resultado | Tempo | Pico de memória |
+|---|---|---|---|
+| 10 | falha (`IndexError` no otimizador de ração de um lote) | | |
+| 50 | falha (`ZeroDivisionError`, ver abaixo) | | |
+| 60 | ok (também com 3 anos: 45 s, 1,0 GB) | 25 s | 0,65 GB |
+| 75 | ok (também com 3 anos) | 50 s | 0,66 GB |
+| 90 | ok | 34 s | 0,67 GB |
+| 100 | ok (padrão) | 27 s | 0,68 GB |
+| 200 | ok (leite total 2,0× o de 100 vacas) | 37 s | 0,75 GB |
+| 500 | ok | 57 s | 0,96 GB |
+
+O tempo cresce cerca de 20 s mais 0,075 s por vaca e a memória, cerca de 0,6 GB mais 0,7 MB por vaca; a interface usa essa reta, relativa à estimativa de 17 s para 100 vacas, no aviso e na previsão de tempo da sensibilidade. O teto de 500 é o maior tamanho medido (a máquina de teste tinha pouca memória livre; 1000 vacas não foi tentado).
+
+**Limitação do RuFaS (PRD, L9).** Abaixo de 60 vacas a simulação quebra por um defeito do próprio RuFaS 1.0.6: em `herd_manager.py`, ao inserir um animal num lote vazio sem ração definida pelo usuário, a lista de alimentos do lote é filtrada com o dicionário inteiro de rações em vez da lista do lote; o lote das bezerras fica sem alimentos e a divisão por zero aborta a simulação. Em rebanhos pequenos o lote das bezerras esvazia entre um nascimento e outro. O código do RuFaS não é alterado, então o mínimo fica em 60 vacas. O resultado de um tamanho só vale se a simulação concluir; o limite foi verificado com a semente 42, e outra semente pode falhar perto do mínimo (a mensagem do RuFaS aparece no erro da execução).
 
 ### A.8 Alterações previstas em outras partes deste documento (quando implementado)
 

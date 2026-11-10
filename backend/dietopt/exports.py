@@ -190,6 +190,7 @@ def simulation_report(sim: Mapping[str, Any], meta: Mapping[str, Any] | None = N
                 ("Margem sobre custo de alimentação", _usd(s.get("margem"), 0)), ("Receita do leite", _usd(s.get("receita"), 0)),
                 ("Custo de alimentação (rebanho)", _usd(s.get("custo_alimentacao"), 0)), ("Custo da ração, vaca em lactação", f"{_usd(s.get('custo_vaca_dia'))}/dia"),
                 ("Leite total", f"{_br((s.get('leite_kg') or 0) / 1000, 0)} t"), ("Preço do leite", f"{_usd(s.get('milk_price'), 3)}/kg"),
+                ("Vacas no rebanho", _br(s.get("cow_num", 100), 0)),
                 ("Leite perdido por ração insuficiente", f"{_br(s.get('reducao_leite'))} kg/vaca/dia"),
             ]
         ),  # fmt: skip

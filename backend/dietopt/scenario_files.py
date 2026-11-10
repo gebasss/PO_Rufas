@@ -18,6 +18,7 @@ from datetime import datetime
 from typing import Any, Callable, Mapping
 
 from .feeds import feed_library
+from .herd import DEFAULT_COWS, MAX_COWS, MIN_COWS
 from .module.categories import parse_animal_type, parse_category
 from .module.evaluate import MAX_DIETS
 from .module.fields import FIELD_BY_KEY
@@ -113,6 +114,8 @@ def _cow_scenario(raw: Mapping[str, Any], warnings: list[str]) -> dict[str, Any]
             "milkPrice": _number(params.get("milkPrice"), "Preço do leite", low=0),
             "years": _number(params.get("years"), "Anos de simulação", low=1, high=3, integer=True),
             "maxReduction": _number(params.get("maxReduction"), "Redução máxima de leite", low=0),
+            # arquivos salvos antes do RF-13 não têm o rebanho: valem o padrão do exemplo
+            "cowNum": _number(params.get("cowNum", DEFAULT_COWS), "Vacas no rebanho", low=MIN_COWS, high=MAX_COWS, integer=True),
         },
         "feeds": feeds,
     }

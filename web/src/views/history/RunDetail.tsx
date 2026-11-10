@@ -67,6 +67,7 @@ function ParamsCard({ run }: { run: RunFull }) {
     : [
         ['Preço do leite', `${usd(Number(params.milk_price ?? 0), 3)}/kg`],
         ['Período', `${params.years ?? 1} ano${Number(params.years) > 1 ? 's' : ''}`],
+        ['Vacas no rebanho', String(params.cow_num ?? 100)],
         ['Redução máxima de leite', `${nf(Number(params.max_milk_reduction ?? 0), 2)} kg/vaca/dia`],
         ...(run.kind === 'sensitivity'
           ? ([

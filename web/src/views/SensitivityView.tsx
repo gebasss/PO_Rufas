@@ -17,6 +17,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { api, runJob } from '@/lib/api'
+import { DEFAULT_HERD, herdProblem, secondsPerSimulation } from '@/lib/herd'
 import type { RunMeta, SensFactor, SensFactorState as FactorState, SensResult } from '@/lib/types'
 import { useApp } from '@/providers/AppProvider'
 import { simulationBody } from '@/views/CowView'
@@ -27,13 +28,12 @@ const METHODS = [
   { value: 'latin', label: 'Hipercubo latino' }
 ]
 const MILK = 'milk_price'
-const SECONDS_PER_SIMULATION = 17
 
 const messageOf = (error: unknown) => (error instanceof Error ? error.message : 'Falha na análise').split('\n')[0]
 const showResults = () => document.getElementById('resultados')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
 export default function SensitivityView() {
-  const { connection, selected, feedById, params, sens, setSens, sensKey, setSensKey, sensSetup, setSensSetup, trackTask } = useApp()
+  const { connection, defaults, selected, feedById, params, sens, setSens, sensKey, setSensKey, sensSetup, setSensSetup, trackTask } = useApp()
   const { overrides, method, levels } = sensSetup
   const setOverrides = (change: (previous: Record<string, FactorState>) => Record<string, FactorState>) =>
     setSensSetup(s => ({ ...s, overrides: change(s.overrides) }))
@@ -94,7 +94,8 @@ export default function SensitivityView() {
   const bodyKey = JSON.stringify(body)
   const stale = sens !== null && sensKey !== null && sensKey !== bodyKey
   const state: RunState = running ? 'running' : error ? 'error' : sens && !stale ? 'done' : 'idle'
-  const blocked = !factors.length || connection !== 'online' || Object.keys(selected).length < 3
+  const herdError = herdProblem(params.cowNum, defaults?.herd ?? DEFAULT_HERD)
+  const blocked = !factors.length || connection !== 'online' || Object.keys(selected).length < 3 || herdError !== null
 
   const run = async () => {
     setRunning(true)
@@ -125,9 +126,15 @@ export default function SensitivityView() {
     <div className='space-y-2'>
       <p className='text-muted-foreground text-xs' aria-live='polite'>
         {factors.length
-          ? `${points} cenários, até ${sims} simulações do RuFaS (cerca de ${Math.max(1, Math.ceil((sims * SECONDS_PER_SIMULATION) / 60))} min).`
-          : 'Marque ao menos um fator.'}
+          ? `${points} cenários, até ${sims} simulações do RuFaS (cerca de ${Math.max(1, Math.ceil((sims * secondsPerSimulation(params.cowNum)) / 60))} min).`
+          : 'Marque ao menos um fator.'}{' '}
+        Rebanho de {params.cowNum} vacas, como na tela Vaca leiteira.
       </p>
+      {herdError && (
+        <p className='text-destructive text-xs' role='alert'>
+          {herdError} Ajuste na tela Vaca leiteira.
+        </p>
+      )}
       <RunButton
         state={state}
         progress={progress}
@@ -232,7 +239,7 @@ export default function SensitivityView() {
               title='Nenhuma análise ainda'
               steps={[
                 'Marque os fatores que vão variar (preços dos alimentos e do leite) e informe a faixa de cada um.',
-                'Escolha o método e os níveis, e clique em Executar sensibilidade: cada simulação leva cerca de 17 segundos.',
+                'Escolha o método e os níveis, e clique em Executar sensibilidade: cada simulação leva cerca de 17 segundos com 100 vacas (um pouco mais com rebanhos maiores).',
                 'Veja o cenário ótimo, a distribuição das margens e o efeito de cada fator, e exporte o relatório.'
               ]}
             />

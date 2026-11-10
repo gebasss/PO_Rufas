@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { api, runJob } from '@/lib/api'
+import { DEFAULT_HERD, herdNote, herdProblem } from '@/lib/herd'
 import type { CowScenario, RunMeta, SimResult } from '@/lib/types'
 import { useApp } from '@/providers/AppProvider'
 import Results from '@/views/cow/Results'
@@ -42,7 +43,8 @@ export function simulationBody(
     limits,
     milk_price: finite(params.milkPrice, 0.45),
     years: params.years,
-    max_milk_reduction: finite(params.maxReduction, 5)
+    max_milk_reduction: finite(params.maxReduction, 5),
+    cow_num: params.cowNum
   }
 }
 
@@ -50,8 +52,11 @@ const messageOf = (error: unknown) => (error instanceof Error ? error.message : 
 const showResults = () => document.getElementById('resultados')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
 export default function CowView() {
-  const { connection, selected, params, setParams, sim, setSim, simKey, setSimKey, cowScenario, loadCowScenario, trackTask } =
+  const { connection, defaults, selected, params, setParams, sim, setSim, simKey, setSimKey, cowScenario, loadCowScenario, trackTask } =
     useApp()
+  const herd = defaults?.herd ?? DEFAULT_HERD
+  const herdError = herdProblem(params.cowNum, herd)
+  const herdWarning = herdError ? null : herdNote(params.cowNum, herd)
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState({ done: 0, total: 0, status: 'queued' })
   const [error, setError] = useState<string | null>(null)
@@ -86,6 +91,12 @@ export default function CowView() {
   const state: RunState = running ? 'running' : error ? 'error' : sim && !stale ? 'done' : 'idle'
 
   const run = async () => {
+    if (herdError) {
+      toast.error(herdError)
+
+      return
+    }
+
     if (Object.keys(selected).length < 3) {
       toast.error('Selecione pelo menos 3 alimentos (um volumoso, um concentrado e um mineral).')
 
@@ -123,7 +134,7 @@ export default function CowView() {
       label='Executar simulação'
       unit='simulações do RuFaS'
       error={error}
-      disabled={connection !== 'online'}
+      disabled={connection !== 'online' || herdError !== null}
       onRun={run}
       onView={showResults}
     />
@@ -171,6 +182,27 @@ export default function CowView() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className='space-y-1.5'>
+              <Label htmlFor='cow-num'>Vacas no rebanho</Label>
+              <NumberInput
+                id='cow-num'
+                step={10}
+                min={herd.min}
+                value={params.cowNum}
+                onChange={v => setParams({ cowNum: v })}
+                aria-invalid={herdError !== null}
+                aria-describedby='cow-num-hint'
+              />
+              <p id='cow-num-hint' className={herdError ? 'text-destructive text-xs' : 'text-muted-foreground text-xs'} role={herdError ? 'alert' : undefined}>
+                {herdError ?? `De ${herd.min} a ${herd.max} vacas (padrão ${herd.default}). Bezerras, novilhas e reposição acompanham o tamanho.`}
+              </p>
+              {herdWarning && (
+                <Alert>
+                  <AlertTriangleIcon />
+                  <AlertDescription>{herdWarning}</AlertDescription>
+                </Alert>
+              )}
             </div>
             <div className='space-y-1.5'>
               <Label>Redução máxima de leite tolerada (kg/vaca/dia)</Label>

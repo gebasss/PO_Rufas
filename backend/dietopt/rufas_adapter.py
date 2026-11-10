@@ -23,6 +23,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from .herd import scale_herd
 from .paths import INPUT, PROJECT_ROOT, PYTHON, RUFAS_DIR, RUNS_DIR
 from .standards import NASEM_ONLY_TO_NRC, get_standard
 
@@ -85,7 +86,7 @@ class Scenario:
     end_date: str = "2013:365"
     random_seed: int = 42
     nutrient_standard: str = "NRC"  # "NRC" ou "NASEM"
-    cow_num: int | None = None
+    cow_num: int | None = None  # vacas do rebanho; o rebanho todo é escalado junto (``herd.py``)
     # Ração das vacas em lactação: {rufas_id: percentual da MS}. Se None, o RuFaS formula a ração (otimizador próprio).
     lac_cow_ration: dict[int, float] | None = None
     ration_tolerance: float | None = None
@@ -115,7 +116,7 @@ def build_scenario(scenario: Scenario, runs_dir: Path = RUNS_DIR) -> Path:
 
     animal = load_json(INPUT / "data" / "animal" / f"example_{EXAMPLE}_animal.json")
     if scenario.cow_num is not None:
-        animal["herd_information"]["cow_num"] = scenario.cow_num
+        animal = scale_herd(animal, scenario.cow_num)
     animal["ration"]["user_input"] = scenario.lac_cow_ration is not None
     dump_json(base / "animal.json", animal)
 

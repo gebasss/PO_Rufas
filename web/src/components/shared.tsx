@@ -140,6 +140,8 @@ export function NumberInput({
   min?: number
   className?: string
   'aria-label'?: string
+  'aria-invalid'?: boolean
+  'aria-describedby'?: string
   title?: string
   placeholder?: string
   id?: string

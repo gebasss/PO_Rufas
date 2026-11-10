@@ -223,7 +223,7 @@ o navegador no endereço local tem as mesmas permissões. A tabela abaixo descre
 | RF-10 | O sistema deve exibir a ração por intervalo de 30 dias, a composição média (kg, % e US$), as exigências (NEL, proteína metabolizável, DMI) e o leite diário do rebanho. | M | Atendido | Quatro visualizações. |
 | RF-11 | O sistema deve reutilizar simulações já feitas (cache) e não repetir a simulação quando só o preço do leite muda. | S | Atendido | Segunda execução idêntica retorna em segundos. |
 | RF-12 | O sistema deve indicar falhas da simulação e o leite perdido por ração insuficiente, sem mascarar. | M | Atendido | Cenário falho marcado "falhou"; indicador "Leite perdido" quando há redução. |
-| RF-13 | O usuário deve poder ajustar o tamanho do rebanho. | C | Pendente | O back-end aceita o parâmetro; a interface não o expõe. |
+| RF-13 | O usuário deve poder ajustar o tamanho do rebanho. | C | Atendido | Campo "Vacas no rebanho" (60 a 500) na tela Vaca leiteira; ver `FSD.md`, A.13. |
 
 #### 5.2.3 Curva de lactação
 
@@ -606,7 +606,7 @@ Limitações conhecidas, para que ninguém leia mais certeza do que o sistema en
 | L6 | ~~Não há exportação nem salvamento de cenários.~~ Resolvida em 03/11/2026: há exportação (RF-20) e cenários em arquivo (RF-21). | Não há histórico de cenários nem salvamento automático no servidor; a tela Vaca leiteira ainda guarda a última seleção no navegador. | RF-20, RF-21 |
 | L7 | Só a NRC 2001 está disponível. | O NASEM 2021, citado no quadro, não é oferecido. Já há especificação (FSD, Anexo A.3). | RF-24, Q6 |
 | L8 | As bibliotecas NRC 2001 e NASEM 2021 **do RuFaS** só têm farelo de arroz; o livro do NASEM traz o arroz em grão (Tabela 19-1, p. 427), que o RuFaS não carrega. | O "arroz" do exercício é representado pelo farelo de arroz. | C2, RN-07, RF-26 |
-| L9 | O tamanho do rebanho não é ajustável na interface. | Usa-se o rebanho padrão do RuFaS. | RF-13 |
+| L9 | ~~O tamanho do rebanho não é ajustável na interface.~~ Resolvida em 10/11/2026; permanece o mínimo de 60 vacas por um defeito do RuFaS (FSD, A.13). | O rebanho vai de 60 a 500 vacas. | RF-13 |
 | L10 | O exercício do quadro tem apenas dois nutrientes (carboidrato e proteína). | Não generaliza para energia, minerais e fibra. | RF-02, RF-23 |
 | L11 | Cada simulação consome ~1,2 GB de RAM e leva 30 a 37 s; só um job roda por vez. | Análises grandes demoram; máquinas com pouca memória livre podem falhar. | RNF-02, R5 |
 | L12 | Testado apenas no Windows e em um computador; sem autenticação, uso local de um usuário. | Não foi verificado em outros sistemas nem exposto a rede. | RNF-03, RNF-07 |
