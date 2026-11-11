@@ -5,7 +5,7 @@
 
 > **Status:** estudo e especificação. **Nada aqui está implementado.** O texto descreve (a) como o RuFaS v1.0.6 calcula a
 > ração, lido diretamente no código de `vendor/RuFaS`, e (b) como esse cálculo será linearizado no módulo ampliado do
-> "Exercício do quadro". Onde um fato não foi verificado, o texto diz **"a verificar"**; onde a decisão é nossa e
+> "Ruminante Singular". Onde um fato não foi verificado, o texto diz **"a verificar"**; onde a decisão é nossa e
 > ainda precisa de confirmação, diz **"(a confirmar)"**.
 
 ---
@@ -20,7 +20,7 @@ RuFaS (programação não linear, `SLSQP`).
 
 | ID | Decisão | Origem |
 |---|---|---|
-| L-D1 | O módulo ampliado do "Exercício do quadro" recebe as **características da vaca**, as **exigências e restrições nutricionais** dela, a **dieta** escolhida e os **preços** dos alimentos. | Pedido do professor |
+| L-D1 | O módulo ampliado do "Ruminante Singular" recebe as **características da vaca**, as **exigências e restrições nutricionais** dela, a **dieta** escolhida e os **preços** dos alimentos. | Pedido do professor |
 | L-D2 | **Documento principal: NASEM 2021**, onde o RuFaS teve maior influência. **Apoio: NRC 2001.** **Preços: CEPEA**, em **dólares** (as conversões de moeda ficam para depois). | Alinhamento de 01/11/2026 |
 | L-D3 | Categorias: **só as que o RuFaS trabalha** (seção 2), "sem mais nem menos". | Alinhamento de 01/11/2026 |
 | L-D4 | A entrada é uma **dieta já montada**. O módulo deve **testar várias dietas e compará-las**, da menos recomendada até a ótima. **Sugerir** a dieta ótima para uma vaca e uma fase específicas é uma funcionalidade **posterior** (fase 2). | Alinhamento de 01/11/2026 |
@@ -338,7 +338,7 @@ Se uma tolerância falhar: repetir o ponto fixo; se persistir, passar à técnic
 
 ---
 
-## 7. O módulo "Exercício do quadro" ampliado
+## 7. O módulo "Ruminante Singular" ampliado
 
 ### 7.1 Entradas
 

@@ -18,7 +18,7 @@ com as exigências do **NASEM (2021)** ou da **NRC (2001)**.
 
 | Tela | O que faz |
 |---|---|
-| 1 · Exercício do quadro | Avalia dietas já montadas para uma vaca real (NASEM ou NRC): custo, restrições lineares e ranking; compara o modelo linear com o RuFaS e sugere a dieta ótima por programação linear. |
+| 1 · Ruminante Singular | Avalia dietas já montadas para uma vaca real (NASEM ou NRC): custo, restrições lineares e ranking; compara o modelo linear com o RuFaS e sugere a dieta ótima por programação linear. |
 | 2 · Vaca leiteira (RuFaS) | Escolha de alimentos NRC (130), preços e limites. Roda o RuFaS (~30 s por ano simulado) e mostra margem, ração, exigências e leite. |
 | 3 · Curva de lactação | Curva de Wood por paridade (parâmetros calibrados pelo RuFaS), com PEV, gestação e secagem ajustáveis. |
 | 4 · Sensibilidade (RuFaS) | Varia preços de alimentos e do leite (grade ou hipercubo latino), roda o RuFaS e monta a tabela de cenários e o efeito (Spearman) de cada fator. |
@@ -26,7 +26,7 @@ com as exigências do **NASEM (2021)** ou da **NRC (2001)**.
 
 ## Como funciona por dentro
 
-- `backend/dietopt/module/`: o Exercício do quadro. Modelo linear das restrições do RuFaS (classes L, E e A), avaliação e
+- `backend/dietopt/module/`: o Ruminante Singular. Modelo linear das restrições do RuFaS (classes L, E e A), avaliação e
   ranking das dietas, comparação com o RuFaS e dieta ótima por PL com HiGHS (SciPy).
 - `backend/dietopt/rufas_adapter.py`: monta cada cenário em `runs/<id>/` (cópias editadas das entradas do RuFaS),
   roda `vendor/RuFaS/main.py` em subprocesso e lê as saídas filtradas.
@@ -73,7 +73,7 @@ tentativa, até o limite configurado); é assim que a dieta afeta o leite no mod
   brasileira), usadas como referência científica; a seção 8 de `docs/DOMINIO.md` resume o que foi conferido contra o RuFaS e o NRC.
 - [`docs/PERGUNTAS_PROFESSOR.md`](docs/PERGUNTAS_PROFESSOR.md): decisões em aberto que dependem do professor, com contexto, proposta e o que cada uma destrava.
 - [`docs/LINEARIZACAO.md`](docs/LINEARIZACAO.md): estudo e especificação da linearização do otimizador (equações do RuFaS,
-  técnicas, módulo ampliado do Exercício do quadro); nada implementado.
+  técnicas, módulo ampliado do Ruminante Singular); nada implementado.
 - [`docs/PLANO_IMPLEMENTACAO.md`](docs/PLANO_IMPLEMENTACAO.md): ordem de implementação do módulo ampliado e dos complementos
   (etapas, dependências, testes, riscos); nada implementado.
 - [`docs/DECISOES_TECNICAS.md`](docs/DECISOES_TECNICAS.md): Decisões técnicas já tomadas (stack, ambientes,

@@ -1,4 +1,4 @@
-# Plano de implementação: módulo "Exercício do quadro" ampliado e complementos
+# Plano de implementação: módulo "Ruminante Singular" ampliado e complementos
 
 **Versão 0.18 (11/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
 comportamento do sistema; as regras estão nos documentos citados e este arquivo só as sequencia.
@@ -31,7 +31,7 @@ comportamento do sistema; as regras estão nos documentos citados e este arquivo
 | E8f | **Feita (03/11/2026)** | RF-21: `scenario_files.py`, `POST /api/scenario/save` e `/load`, `ScenarioFile` nas telas Vaca leiteira e Avaliar dietas; 29 testes novos (188 no total) |
 | E8g | **Feita (10/11/2026)** | RF-13: `herd.py` (escala o rebanho e as baias, valida 60 a 500), campo "Vacas no rebanho" na tela Vaca leiteira com aviso de tempo e memória, estimativa da sensibilidade, arquivo de cenário, histórico, relatório e comparação com o base só entre rebanhos do mesmo tamanho; 26 testes novos (223 no total); limites medidos com simulações reais; ver `FSD.md`, A.13 |
 | E8c, E8h | Não iniciadas | |
-| R1 | **Feita (11/11/2026)** | Retirada do **Exercício simples** (PL de arroz e milho com tabela de cenários) da tela Exercício do quadro, a pedido do usuário: `ToyView`, `diet_lp.py`, rotas `/api/toy*`, exportação `toy`, estado do quadro no `AppProvider` e `HeatMap` saíram; a tela é só a avaliação de dietas; testes 223 → 219; documentos atualizados (RF-01 a RF-04 e RF-23 retirados) |
+| R1 | **Feita (11/11/2026)** | Retirada do **Exercício simples** (PL de arroz e milho com tabela de cenários) da tela Ruminante Singular, a pedido do usuário: `ToyView`, `diet_lp.py`, rotas `/api/toy*`, exportação `toy`, estado do quadro no `AppProvider` e `HeatMap` saíram; a tela é só a avaliação de dietas; testes 223 → 219; documentos atualizados (RF-01 a RF-04 e RF-23 retirados) |
 | D6 | **Feita (03/11/2026)** | Repaginação da Curva de lactação (marcas do ciclo, KPIs por paridade, produção acumulada) e do exercício simples (retirado depois, em R1); "ver como tabela" em todos os gráficos; ver `DESIGN_REPAGINACAO.md`, seção 12 |
 | D5 | **Feita (03/11/2026)** | Repaginação da tela Avaliar dietas: entradas em abas, barra de execução com `RunButton`, resultados em abas (ranking, restrições, linearização, dieta ótima), custo por dieta, mapa de restrições, folga, erro de linearização com a tolerância, composição do LP × RuFaS e custo por semente; ver `DESIGN_REPAGINACAO.md`, seção 11 |
 | D4 | **Feita (03/11/2026)** | Repaginação da tela Sensibilidade: painel fixo com `RunButton`, resultados em abas (visão geral, fatores, cenários), margem por cenário com linha da simulação-base, histograma das margens, tornado dos fatores, dispersão margem × fator e ração do cenário ótimo; ver `DESIGN_REPAGINACAO.md`, seção 10 |
@@ -100,7 +100,7 @@ com o intervalo preenchido, não pegaram: por isso há teste dedicado.
 
 ## 1. Objetivo e escopo
 
-**Objetivo principal (pedido do professor):** o módulo "Exercício do quadro" passa a **avaliar e comparar dietas montadas**
+**Objetivo principal (pedido do professor):** o módulo "Ruminante Singular" passa a **avaliar e comparar dietas montadas**
 para uma vaca real (categoria e fase), no padrão NASEM (principal) ou NRC (apoio), com **restrições lineares** e com o erro
 de linearização medido contra as equações do RuFaS. Em seguida (fase 2), ele **sugere a dieta ótima** e a compara com o
 otimizador do RuFaS (SLSQP).

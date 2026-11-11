@@ -25,7 +25,7 @@
 - `FSD.md`: recebido — especificação funcional do que está implementado, com o Anexo A para os
   requisitos planejados (RF-24, RF-26 e RF-27), ainda não implementados.
 - `LINEARIZACAO.md`: estudo e especificação da linearização das equações do otimizador do RuFaS e do módulo ampliado
-  do Exercício do quadro (pedido do professor). Nada implementado.
+  do Ruminante Singular (pedido do professor). Nada implementado.
 - `PLANO_IMPLEMENTACAO.md`: ordem de implementação (etapas E0 a E8), dependências, testes e riscos. Nada implementado.
 - `nasem2021_notas/` (pasta **local, não versionada**, por direitos autorais, com o `00_INDICE.md`): notas técnicas do
   livro NASEM 2021 (tradução brasileira), feitas por OCR e auditadas. Referência científica complementar; ver `DOMINIO.md`, seção 8.
@@ -51,7 +51,7 @@
 - **Contexto de uso:** local e individual, na própria máquina do usuário
   (Windows), sem uso remoto. Cada simulação leva de 30 a 37 s.
 - **Resumo funcional:** avalia dietas montadas e sugere a de menor custo para uma
-  vaca real, por programação linear (Exercício do quadro); simula uma vaca leiteira no RuFaS com alimentos, preços e limites
+  vaca real, por programação linear (Ruminante Singular); simula uma vaca leiteira no RuFaS com alimentos, preços e limites
   escolhidos e calcula receita, custo e margem; roda análise de sensibilidade
   (cenários S1..SN com coluna `Res` e efeito de Spearman); desenha a curva de
   lactação de Wood com PEV e gestação; explica premissas e limites do modelo.
@@ -183,7 +183,7 @@ Nenhuma integração com serviço externo em tempo de execução. Duas dependên
 técnicas locais, nenhuma via API HTTP de terceiros:
 - **RuFaS v1.0.6** — chamado por linha de comando em subprocesso; entrada e saída
   por arquivos.
-- **HiGHS (via SciPy)** — solucionador do PL da dieta ótima do Exercício do quadro.
+- **HiGHS (via SciPy)** — solucionador do PL da dieta ótima do Ruminante Singular.
 
 Preços de mercado (CEPEA) e o padrão NASEM 2021 **não** são integrados (PRD,
 RF-22 e RF-24 pendentes; o RF-24 está especificado no FSD, Anexo A). A instalação, uma vez feita, funciona sem internet.
@@ -278,13 +278,13 @@ Restrições arquiteturais que valem para qualquer mudança:
 
 | Perfil | Permissões |
 |---|---|
-| Usuário da aplicação (único perfil existente, implícito) | Avaliar dietas e sugerir a ótima no Exercício do quadro; escolher alimentos, preços e limites; disparar simulações e sensibilidades; ver resultados e a curva de lactação; ler premissas e limites. Não há operações de edição de dados de terceiros nem de administração |
+| Usuário da aplicação (único perfil existente, implícito) | Avaliar dietas e sugerir a ótima no Ruminante Singular; escolher alimentos, preços e limites; disparar simulações e sensibilidades; ver resultados e a curva de lactação; ler premissas e limites. Não há operações de edição de dados de terceiros nem de administração |
 
 Não existe perfil administrativo nem qualquer hierarquia de acesso.
 
 ## 7. Módulos, telas e fluxos esperados em nível alto
 
-- **Exercício do quadro** (`/`): avaliação de dietas montadas para uma vaca real,
+- **Ruminante Singular** (`/`): avaliação de dietas montadas para uma vaca real,
   comparação do modelo linear com o RuFaS e dieta ótima por PL, com preços-sombra.
 - **Vaca leiteira (RuFaS)** (`/vaca/`): seleção de alimentos, preços e limites;
   simulação; indicadores, ração por intervalo, composição, exigências e leite
@@ -379,7 +379,7 @@ documento.
 - **Validação científica:** não foi definida a referência profissional para
   comparar a ração (PRD, Q4, M6). O NASEM 2021 (cap. 20) é uma referência disponível; o código R
   oficial do modelo, que prevalece sobre o texto do livro, não está no projeto.
-- **Módulo ampliado do Exercício do quadro (PRD, RF-28 a RF-30; FSD, Anexo B):** especificado, não implementado; as
+- **Módulo ampliado do Ruminante Singular (PRD, RF-28 a RF-30; FSD, Anexo B):** especificado, não implementado; as
   pendências técnicas estão em `LINEARIZACAO.md`, seção 8 (L-Q1 a L-Q7, PRD Q11).
 - **Decisões novas (PRD, seção 15):** Q8 (limiares das verificações de consistência), Q9 (arroz em grão
   no padrão NRC) e Q10 (o limite de +30% de consumo sobre o estimado, do RuFaS, é intencional?).

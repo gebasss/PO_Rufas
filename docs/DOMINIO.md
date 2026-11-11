@@ -22,7 +22,7 @@ comando e processar saídas de centenas de megabytes — o que inviabiliza testa
 O sistema automatiza essa ponte. Ele:
 
 1. avalia dietas já montadas para uma vaca real e sugere a de custo mínimo, por programação linear, com as
-   exigências do NASEM (2021) ou da NRC (2001) (Exercício do quadro, `backend/dietopt/module/`);
+   exigências do NASEM (2021) ou da NRC (2001) (Ruminante Singular, `backend/dietopt/module/`);
 2. monta e executa uma simulação do RuFaS a partir de alimentos, preços e limites escolhidos na tela, e calcula custo,
    leite e **margem sobre o custo de alimentação**;
 3. repete a simulação para combinações de preços (análise de sensibilidade) e mostra a tabela de cenários e o efeito
@@ -41,7 +41,7 @@ nem multiestação — o servidor escuta em `127.0.0.1` (a própria máquina) e 
 | Interface web (Next.js exportado como site estático) | `web/src/` → publicada em `frontend/` | Cinco telas, estado compartilhado, chamadas à API |
 | Servidor local | `backend/dietopt/server.py` (porta 8000) | API JSON e arquivos estáticos; monta cenários a partir das requisições |
 | Gerenciador de tarefas | `backend/dietopt/jobs.py` | Executa simulações em segundo plano, uma tarefa por vez, com progresso |
-| Exercício do quadro (módulo) | `backend/dietopt/module/` | Modelo linear das restrições, avaliação e comparação de dietas e dieta ótima por PL (SciPy/HiGHS) com preços-sombra |
+| Ruminante Singular (módulo) | `backend/dietopt/module/` | Modelo linear das restrições, avaliação e comparação de dietas e dieta ótima por PL (SciPy/HiGHS) com preços-sombra |
 | Adaptador do RuFaS | `backend/dietopt/rufas_adapter.py` | `Scenario` → arquivos de entrada do RuFaS; executa `main.py` em subprocesso; detecta falha |
 | Leitor de saídas | `backend/dietopt/rufas_results.py` | Filtros de saída e conversão dos JSONs do RuFaS em `SimulationResult` |
 | Economia e cache | `backend/dietopt/scenarios.py` | Preços padrão, receita, custo, margem; cache por conteúdo do cenário |
@@ -141,16 +141,16 @@ valor por fator, `leite_kg`, `receita`, `custo_alimentacao`, `custo_vaca_dia`, `
 ### 4.10 Armazenamento local
 - **Navegador (`localStorage`):** chave `dietopt.v1` com `selected` e `params` (restaurados ao abrir); `theme`
   (next-themes). Resultados de simulação e de sensibilidade ficam só na memória da página, assim como o estado do
-  Exercício do quadro.
+  Ruminante Singular.
 - **Disco (`runs/`):** pasta de cada cenário (inclui `console.log` da execução) e o cache `runs/_cache/`. Nenhuma pasta
   é apagada automaticamente; a pasta de um cenário é recriada se o mesmo nome for usado de novo.
 - **Servidor (memória):** tarefas (`JobManager`), perdidas ao reiniciar.
 
 ## 5. Regras de negócio
 
-### 5.1 Exercício do quadro simples (removido)
+### 5.1 exercício simples do quadro (removido)
 
-Retirado em 11/11/2026 (o exercício simples de arroz e milho deixou de fazer parte do trabalho). O Exercício do quadro é hoje a avaliação de dietas de uma vaca real (FSD, Anexo B; `LINEARIZACAO.md`).
+Retirado em 11/11/2026 (o exercício simples de arroz e milho deixou de fazer parte do trabalho). O Ruminante Singular é hoje a avaliação de dietas de uma vaca real (FSD, Anexo B; `LINEARIZACAO.md`).
 
 ### 5.2 Biblioteca de alimentos e tetos padrão (`feeds.py`)
 O teto de inclusão padrão (`default_max`, kg MS/vaca/dia) evita que um mineral barato vire "enchimento":
@@ -284,7 +284,7 @@ não a recalcula nem a altera.
 
 | Regra | Arquivo | Função/trecho | Teste automatizado |
 |---|---|---|---|
-| Dieta ótima do Exercício do quadro e preços-sombra | `backend/dietopt/module/optimize.py` | `optimize_diet` | `test_module_optimize.py` |
+| Dieta ótima do Ruminante Singular e preços-sombra | `backend/dietopt/module/optimize.py` | `optimize_diet` | `test_module_optimize.py` |
 | Biblioteca e tetos padrão (5.2) | `backend/dietopt/feeds.py` | `load_feed_library`, `FeedInfo.default_max`, `nel_mcal_per_kg` | `test_adapter.py`: tetos padrão |
 | Limites, preços, período e redução máxima (5.3) | `backend/dietopt/server.py` | `scenario_from`, `feed_limits_from` | — |
 | Troca de ids NASEM → NRC (5.3) | `backend/dietopt/rufas_adapter.py` | `NASEM_ONLY_TO_NRC`, `remap_feed_ids` | `test_adapter.py`: troca de ids |
