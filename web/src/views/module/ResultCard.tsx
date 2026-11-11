@@ -339,10 +339,11 @@ export function ConstraintsView({ result, selected, onSelect }: ViewProps) {
   const detail = ranked.find(d => d.name === selected) ?? ranked[0] ?? null
 
   // os limites por alimento são dados do usuário e ficam na tabela; o mapa mostra as restrições nutricionais
-  const columns = (ranked[0]?.constraints ?? []).filter(c => !isLimit(c.id)).map(c => ({ id: c.id, label: c.label }))
-  const rows = ranked.map(diet => ({
-    label: diet.name,
-    cells: columns.map(column => CELL[diet.constraints.find(c => c.id === column.id)?.status ?? 'indisponivel'])
+  const constraints = (ranked[0]?.constraints ?? []).filter(c => !isLimit(c.id))
+  const columns = ranked.map(diet => ({ id: diet.name, label: diet.name }))
+  const rows = constraints.map(constraint => ({
+    label: constraint.label,
+    cells: ranked.map(diet => CELL[diet.constraints.find(c => c.id === constraint.id)?.status ?? 'indisponivel'])
   }))
 
   const slack = (detail?.constraints ?? [])
@@ -357,7 +358,7 @@ export function ConstraintsView({ result, selected, onSelect }: ViewProps) {
     <>
       <ChartCard
         title='Mapa de restrições'
-        description='Cada linha é uma dieta (da mais para a menos recomendada) e cada coluna, uma restrição nutricional. ✓ atende, ! no limite (folga de até 0,5%), ✕ violada, – indisponível.'
+        description='Cada linha é uma restrição nutricional e cada coluna, uma dieta (da mais para a menos recomendada). ✓ atende, ! no limite (folga de até 0,5%), ✕ violada, – indisponível.'
         chart={<StatusGrid columns={columns} rows={rows} />}
         table={detail ? <ConstraintTable diet={detail} /> : undefined}
       />
