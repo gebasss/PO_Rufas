@@ -1,6 +1,6 @@
 # Plano de implementação: módulo "Exercício do quadro" ampliado e complementos
 
-**Versão 0.17 (10/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
+**Versão 0.18 (11/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
 comportamento do sistema; as regras estão nos documentos citados e este arquivo só as sequencia.
 
 | Documento | O que fornece ao plano |
@@ -22,7 +22,7 @@ comportamento do sistema; as regras estão nos documentos citados e este arquivo
 | E2 | **Feita (02/11/2026)** | `module/` (`categories`, `fields`, `requirements`, `api`); `GET /api/module/defaults`, `POST /api/module/requirements`; padrão do módulo é NASEM |
 | E3 | **Feita (02/11/2026)** | `module/linear.py` (classes L, E e A, em NRC e NASEM, todas as categorias), `module/evaluate.py` (oferta linear × `RationOptimizer`, erro fora do ponto, estados, violação, ordenação), `module/library.py`, `module/rufas.py`; `POST /api/module/evaluate`; 71 testes passando, e a sabotagem de coeficientes confirmou que os testes falham quando algo está errado |
 | E4 | **Feita (03/11/2026)** | Rota feita junto com a E3; formatos conferidos com a interface (E5) |
-| E5 | **Feita (03/11/2026)** | Tela 1 com o seletor "Exercício simples" × "Avaliar dietas (vaca real)" e os cartões Vaca, Dietas, Preços e limites e Resultado (`ExerciseView`, `ModuleView`, `views/module/`); build em `frontend/` por `scripts\build-web.ps1`; conferida no navegador (NASEM e NRC, categoria de crescimento, painel de ≈ 800 px e tela de 375 px, sem rolagem horizontal da página). **Fica de fora:** o seletor de padrão da simulação (FSD A.3.1) e a persistência em `localStorage` |
+| E5 | **Feita (03/11/2026)** | Tela 1 com o seletor "Exercício simples" × "Avaliar dietas (vaca real)" (o seletor e o exercício simples foram retirados em 11/11/2026, etapa R1) e os cartões Vaca, Dietas, Preços e limites e Resultado (`ExerciseView`, `ModuleView`, `views/module/`); build em `frontend/` por `scripts\build-web.ps1`; conferida no navegador (NASEM e NRC, categoria de crescimento, painel de ≈ 800 px e tela de 375 px, sem rolagem horizontal da página). **Fica de fora:** o seletor de padrão da simulação (FSD A.3.1) e a persistência em `localStorage` |
 | E6 | **Feita (03/11/2026)** | `module/compare.py` (relatório sobre o resultado de `evaluate`, CSV), `POST /api/module/compare`, cartão "Comparação com o RuFaS" na tela (`CompareCard`) com tolerância editável e botão de CSV; 13 testes novos (84 no total) |
 | E7 | **Feita (03/11/2026)** | `module/optimize.py` (LP por ponto da grade de escalares, refinamento, resgate, preços-sombra, verificação com as funções do RuFaS, SLSQP em várias sementes), tarefa `optimize` com cancelamento (`jobs.py`: estado `cancelled`, `POST /api/jobs/<id>/cancel`), cartão "Dieta ótima" e coluna "Desvio do ótimo" no ranking; 31 testes novos (115 no total, ≈ 80 s) |
 | E8a, E8b | **Feitas (03/11/2026)** | RF-27 (`ration_checks.py`, cartão Verificações) e RF-19 (`ration_balance.py`, cartão Balanço nutricional), na tela Vaca leiteira; o balanço vem da avaliação do próprio RuFaS (`avg_eval_results_for_LAC_COW`); 17 testes novos (132 no total) |
@@ -31,7 +31,8 @@ comportamento do sistema; as regras estão nos documentos citados e este arquivo
 | E8f | **Feita (03/11/2026)** | RF-21: `scenario_files.py`, `POST /api/scenario/save` e `/load`, `ScenarioFile` nas telas Vaca leiteira e Avaliar dietas; 29 testes novos (188 no total) |
 | E8g | **Feita (10/11/2026)** | RF-13: `herd.py` (escala o rebanho e as baias, valida 60 a 500), campo "Vacas no rebanho" na tela Vaca leiteira com aviso de tempo e memória, estimativa da sensibilidade, arquivo de cenário, histórico, relatório e comparação com o base só entre rebanhos do mesmo tamanho; 26 testes novos (223 no total); limites medidos com simulações reais; ver `FSD.md`, A.13 |
 | E8c, E8h | Não iniciadas | |
-| D6 | **Feita (03/11/2026)** | Repaginação do Exercício do quadro (botão Resolver com estados, solução em gráficos, bullet por nutriente, cenários com barras e mapa de calor) e da Curva de lactação (marcas do ciclo, KPIs por paridade, produção acumulada); "ver como tabela" em todos os gráficos; ver `DESIGN_REPAGINACAO.md`, seção 12 |
+| R1 | **Feita (11/11/2026)** | Retirada do **Exercício simples** (PL de arroz e milho com tabela de cenários) da tela Exercício do quadro, a pedido do usuário: `ToyView`, `diet_lp.py`, rotas `/api/toy*`, exportação `toy`, estado do quadro no `AppProvider` e `HeatMap` saíram; a tela é só a avaliação de dietas; testes 223 → 219; documentos atualizados (RF-01 a RF-04 e RF-23 retirados) |
+| D6 | **Feita (03/11/2026)** | Repaginação da Curva de lactação (marcas do ciclo, KPIs por paridade, produção acumulada) e do exercício simples (retirado depois, em R1); "ver como tabela" em todos os gráficos; ver `DESIGN_REPAGINACAO.md`, seção 12 |
 | D5 | **Feita (03/11/2026)** | Repaginação da tela Avaliar dietas: entradas em abas, barra de execução com `RunButton`, resultados em abas (ranking, restrições, linearização, dieta ótima), custo por dieta, mapa de restrições, folga, erro de linearização com a tolerância, composição do LP × RuFaS e custo por semente; ver `DESIGN_REPAGINACAO.md`, seção 11 |
 | D4 | **Feita (03/11/2026)** | Repaginação da tela Sensibilidade: painel fixo com `RunButton`, resultados em abas (visão geral, fatores, cenários), margem por cenário com linha da simulação-base, histograma das margens, tornado dos fatores, dispersão margem × fator e ração do cenário ótimo; ver `DESIGN_REPAGINACAO.md`, seção 10 |
 | D3 | **Feita (03/11/2026)** | Histórico de execuções: `history.py` (arquivos em `runs/_history`, base por tipo, retenção), rotas `/api/history`, tarefas e avaliação de dietas gravam a execução (`run_id`), tela Execuções com detalhe, duplicar e exportar, deltas dos KPIs da Vaca leiteira; 9 testes novos; ver `FSD.md`, A.12 |
@@ -133,14 +134,14 @@ otimizador no RuFaS; qualquer alteração em `vendor/RuFaS`.
 
 | Peça | Arquivo | Uso no plano |
 |---|---|---|
-| Otimização linear do quadro (LP com `scipy.linprog`) | `backend/dietopt/diet_lp.py` | Base do solver da fase 2; hoje atende o exercício simples |
+| Otimização linear do quadro (LP com `scipy.linprog`) | `backend/dietopt/module/optimize.py` | Solver da fase 2 (o `diet_lp.py` do exercício simples foi retirado em 11/11/2026) |
 | Biblioteca de alimentos e presets | `backend/dietopt/feeds.py` | Passa a ser **por padrão** (NRC e NASEM) |
 | Adaptador do RuFaS (cenário, execução, leitura) | `backend/dietopt/rufas_adapter.py`, `rufas_results.py` | Ganha o campo `standard`; escreve `NASEM_Comp` |
 | Cenários, avaliação, cache | `backend/dietopt/scenarios.py` | **Corrigir** `with_defaults`: restringir preços aos ids da biblioteca do padrão |
 | Tarefas em segundo plano | `backend/dietopt/jobs.py` | Fase 2 (otimização, > 20 s) roda como tarefa |
 | Servidor HTTP e rotas | `backend/dietopt/server.py` | Novas rotas `/api/module/*` |
 | Testes | `backend/tests/` (`pytest`) | Novos testes por etapa |
-| Interface | `web/src/views/ToyView.tsx`, `web/src/lib/api.ts`, `types.ts` | Seletor de modo e quatro cartões; build por `scripts\build-web.ps1` |
+| Interface | `web/src/views/ExerciseView.tsx`, `ModuleView.tsx`, `web/src/lib/api.ts`, `types.ts` | Quatro cartões; build por `scripts\build-web.ps1` (o seletor de modo e o `ToyView` foram retirados em 11/11/2026) |
 
 Já verificado (FSD A.7.1, B.10): o modo NASEM roda com as nossas listas; as calculadoras NRC e NASEM rodam isoladas para as
 seis categorias; as saídas do modo NASEM têm os mesmos nomes. Falta exercitar o otimizador do RuFaS em vaca seca e novilha.
@@ -230,7 +231,7 @@ Aceite: testes de contrato da rota com dietas viáveis, inviáveis, mistas.
 
 ### E5. Interface do módulo — **M**
 
-1. Seletor "Exercício simples" × "Avaliar dietas (vaca real)" na tela 1; o exercício simples permanece o padrão.
+1. ~~Seletor "Exercício simples" × "Avaliar dietas (vaca real)" na tela 1; o exercício simples permanece o padrão.~~ Retirado em 11/11/2026: a tela 1 é só a avaliação de dietas.
 2. Cartões **Vaca**, **Dietas**, **Preços** e **Resultado** (FSD B.2), estados vazio, carregando e erro.
 3. Ranking, detalhe por restrição, erro de linearização; estado também em texto (não só cor).
 4. Tipos e chamadas em `lib/types.ts` e `lib/api.ts`; build por `scripts\build-web.ps1`; conferir em 1.440 px e ≈ 540 px.

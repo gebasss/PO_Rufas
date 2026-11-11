@@ -222,7 +222,6 @@ e pode ser trocado no cabeçalho.
 
 | Padrão | Uso |
 |---|---|
-| Duas colunas iguais a partir de 1.280 px (`xl:grid-cols-2`) | Exercício do quadro |
 | Painel lateral de 23 rem + resultados (`xl:grid-cols-[23rem_minmax(0,1fr)]`) | Vaca leiteira e Sensibilidade |
 | Indicadores: 1 coluna (celular), 2 (≥ 640 px), 3 (≥ 1.280 px), 4 (≥ 1.536 px) | Resultados |
 | Pares de gráficos lado a lado a partir de 1.536 px (`2xl:grid-cols-2`) | Composição × exigências; efeito × margem |
@@ -239,7 +238,7 @@ e pode ser trocado no cabeçalho.
 | Grupos | **Análise** (4 telas) e **Projeto** (1 tela) |
 | Item ativo | Fundo `primary/10` e rótulo em destaque; a comparação ignora a barra final da rota |
 | Recolher | Botão no cabeçalho ou `Ctrl/Cmd + B`; no modo ícones aparece dica (_tooltip_) com o nome |
-| Rodapé | "RuFaS v1.0.6 · NRC 2001" (some no modo ícones) |
+| Rodapé | "RuFaS v1.0.6 · NRC 2001 · NASEM 2021" (some no modo ícones) |
 | Abaixo de 1.280 px | Vira gaveta (`Sheet`) aberta pelo botão do cabeçalho e fecha ao navegar |
 
 ### Cabeçalho
@@ -321,8 +320,6 @@ Em `web/src/components/ui/`, sobre Base UI, seguindo o código do template sem a
   `mín. kg/dia`, `máx. kg/dia`) com rótulos visíveis e botão de remover com nome acessível.
 - **Mapa de calor (`heat`):** a célula usa de **8% a 40%** da cor primária (`color-mix` sobre transparente); o teto
   de 40% garante contraste de texto (seção _Acessibilidade_). Dependendo do campo, a escala pode ser invertida.
-- **Selo de restrição ativa:** na tabela de nutrientes do exercício, o selo "mínimo ativo" e o preço-sombra
-  identificam a restrição que limita o custo.
 - **Ícones:** Lucide, 16 a 20 px, estilo de linha: `CalculatorIcon` (exercício), `MilkIcon` (vaca),
   `TrendingUpIcon` (curva), `SlidersHorizontalIcon` (sensibilidade), `InfoIcon` (premissas), `WheatIcon` (marca),
   `PlayIcon` (executar), `SearchIcon`, `PlusIcon`, `Trash2Icon`, `XIcon`, `SunIcon` e `MoonStarIcon`.
@@ -357,7 +354,7 @@ Cinco telas, uma por rota. As páginas em `app/*/page.tsx` apenas renderizam a _
 
 | Rota | Tela | Arquivo |
 |---|---|---|
-| `/` | Exercício do quadro | `views/ToyView.tsx` |
+| `/` | Exercício do quadro | `views/ExerciseView.tsx` e `views/ModuleView.tsx` |
 | `/vaca/` | Vaca leiteira (RuFaS) | `views/CowView.tsx` |
 | `/curva/` | Curva de lactação | `views/CurveView.tsx` |
 | `/sensibilidade/` | Sensibilidade (RuFaS) | `views/SensitivityView.tsx` |
@@ -365,18 +362,7 @@ Cinco telas, uma por rota. As páginas em `app/*/page.tsx` apenas renderizam a _
 
 ### Exercício do quadro (`/`)
 
-**Objetivo:** reproduzir e explorar o problema de dieta de custo mínimo (PL).
-
-| Bloco | Conteúdo |
-|---|---|
-| Problema | Tabela de alimentos (nome, custo, carboidrato, proteína; botão "+ Alimento" e remover) e tabela de nutrientes (mínimo e máximo); botão **Resolver** |
-| Solução ótima | Indicadores (custo mínimo, alimentos usados); tabela de quantidades e custos; tabela de nutrientes com a restrição ativa (selo "mínimo ativo") e o preço-sombra; gráfico de barras |
-| Cenários e sensibilidade | Dois fatores (alvo, de, até, níveis) e **Gerar cenários**; tabela `S1…SN` com a coluna `Res` em mapa de calor e a dieta ótima de cada linha |
-
-**Estados:** resolve sozinho na primeira visita; _inviável_ aparece como bloco destrutivo ("Sem solução viável."); erro de rede vira aviso
-(_toast_); fatores repetidos geram aviso ("Escolha dois fatores diferentes."). Valores iniciais: arroz (US$ 1,50;
-0,77; 0,08), milho (US$ 2,23; 0,66; 0,14); carboidrato 6,0 a 9,5 kg; proteína 0,9 a 1,6 kg. Resultado esperado:
-US$ 15,35/dia.
+**Objetivo:** avaliar dietas já montadas para uma vaca real e sugerir a de menor custo. O exercício simples (PL de arroz e milho, com tabela de cenários) foi retirado em 11/11/2026. A descrição atual da tela, com os gráficos, está em `DESIGN_REPAGINACAO.md`, seção 11, e a especificação funcional no `FSD.md`, Anexo B.
 
 ### Vaca leiteira (`/vaca/`)
 
@@ -570,7 +556,7 @@ próprias, 14 dependências e 6 de desenvolvimento.
  frontend/  (HTML + CSS + JS estáticos, 2,9 MB)
    │  servido por backend/dietopt/server.py  (http://127.0.0.1:8000)
    ▼
- /api/*  (JSON): feeds, defaults, lactation, toy, toy/sensitivity, jobs/simulate, jobs/sensitivity, jobs/<id>
+ /api/*  (JSON): feeds, defaults, lactation, jobs/simulate, jobs/sensitivity, jobs/<id>
 ```
 
 Quem só **usa** o sistema não precisa de Node; só quem **altera a interface** precisa de Node 20.9 ou superior. A
@@ -602,7 +588,6 @@ navegação** entre telas.
 | `selected` | Alimentos escolhidos, com preço e limites mínimo e máximo (kg MS/vaca/dia) |
 | `params` | Preço do leite, período (1 ou 2 anos), redução máxima de leite |
 | `sim`, `sens` | Último resultado de simulação e de sensibilidade |
-| `toyFoods`, `toyBounds`, `toyResult`, `toySens` | Exercício do quadro |
 
 ### Contrato com a API
 
@@ -611,8 +596,6 @@ navegação** entre telas.
 | `GET /api/feeds` | , | Lista de alimentos (id, nome, descrição, tipo, composição, `nel`, `default_price`, `default_max`) |
 | `GET /api/defaults` | , | `milk_price` e `prices` |
 | `GET /api/lactation` | , | Parâmetros de Wood de referência e marcos |
-| `POST /api/toy` | alimentos e limites | Solução ótima, custo, totais, preços-sombra |
-| `POST /api/toy/sensitivity` | problema e dois fatores | Colunas e linhas de cenários |
 | `POST /api/jobs/simulate` | alimentos, preços, limites, preço do leite, período, redução máxima | Tarefa (`id`) |
 | `POST /api/jobs/sensitivity` | o mesmo, mais fatores, método e níveis | Tarefa (`id`) |
 | `GET /api/jobs/<id>` | , | Estado (`queued`, `running`, `done`, `error`), progresso e resultado |
@@ -741,7 +724,7 @@ web/
    │  ├─ globals.css                    tokens de cor, raio e utilitários
    │  ├─ page.tsx, vaca/, curva/, sensibilidade/, sobre/   rotas finas
    │  └─ not-found.tsx
-   ├─ views/                            ToyView, CowView, CurveView, SensitivityView, AboutView
+   ├─ views/                            ExerciseView, ModuleView, CowView, CurveView, SensitivityView, AboutView
    ├─ components/
    │  ├─ layout/                        AppShell, AppSidebar, Header, Footer, ModeToggle, nav.ts
    │  ├─ ui/                            18 componentes do shadcn (do template)

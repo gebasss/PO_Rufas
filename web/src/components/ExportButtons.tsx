@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { api } from '@/lib/api'
 import { downloadText } from '@/lib/download'
 
-type Screen = 'simulation' | 'sensitivity' | 'toy' | 'module'
+type Screen = 'simulation' | 'sensitivity' | 'module'
 
 interface Props {
   screen: Screen
@@ -18,12 +18,10 @@ interface Props {
   data: unknown
   /** Dados da tela que o resultado não traz (limites, nomes de alimentos, padrão, dieta ótima). */
   meta?: Record<string, unknown>
-  /** Sem relatório (só o CSV): o exercício do quadro. */
-  csvOnly?: boolean
 }
 
 /** Baixa o CSV da tabela e o relatório (HTML imprimível) do resultado da tela (RF-20). */
-export default function ExportButtons({ screen, data, meta, csvOnly = false }: Props) {
+export default function ExportButtons({ screen, data, meta }: Props) {
   const [busy, setBusy] = useState<'csv' | 'report' | null>(null)
   const [note, setNote] = useState('')
 
@@ -46,21 +44,17 @@ export default function ExportButtons({ screen, data, meta, csvOnly = false }: P
       <Button variant='outline' size='sm' disabled={busy !== null} onClick={() => download('csv')}>
         <DownloadIcon /> {busy === 'csv' ? 'Gerando…' : 'Baixar CSV'}
       </Button>
-      {!csvOnly && (
-        <>
-          <Button variant='outline' size='sm' disabled={busy !== null} onClick={() => download('report')}>
-            <FileTextIcon /> {busy === 'report' ? 'Gerando…' : 'Baixar relatório'}
-          </Button>
-          <Input
-            value={note}
-            onChange={e => setNote(e.target.value)}
-            placeholder='Observação para o relatório (opcional)'
-            aria-label='Observação para o relatório'
-            className='h-8 w-72 max-w-full'
-            maxLength={2000}
-          />
-        </>
-      )}
+      <Button variant='outline' size='sm' disabled={busy !== null} onClick={() => download('report')}>
+        <FileTextIcon /> {busy === 'report' ? 'Gerando…' : 'Baixar relatório'}
+      </Button>
+      <Input
+        value={note}
+        onChange={e => setNote(e.target.value)}
+        placeholder='Observação para o relatório (opcional)'
+        aria-label='Observação para o relatório'
+        className='h-8 w-72 max-w-full'
+        maxLength={2000}
+      />
     </div>
   )
 }

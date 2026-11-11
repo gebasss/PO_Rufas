@@ -1,7 +1,7 @@
 # Sistema de design e roteiro da repaginação
 
 **Versão 0.6 (03/11/2026).** Define a linguagem visual do sistema (tokens, componentes, gráficos), registra as decisões de
-produto da repaginação e o roteiro por etapas. As etapas D1 (tokens, estrutura e componentes-base), D2 (tela Vaca leiteira), D3 (histórico de execuções), D4 (Sensibilidade), D5 (Avaliar dietas) e D6 (Exercício do quadro e Curva de lactação) estão implementadas; o roteiro está na seção 7. Código: `web/src/app/globals.css`, `web/src/components/`. Complementa o `DESIGN.md` (descrição detalhada do que existe).
+produto da repaginação e o roteiro por etapas. As etapas D1 (tokens, estrutura e componentes-base), D2 (tela Vaca leiteira), D3 (histórico de execuções), D4 (Sensibilidade), D5 (Avaliar dietas) e D6 (Exercício do quadro e Curva de lactação) estão implementadas (o exercício simples da D6 foi retirado em 11/11/2026; ver a seção 12); o roteiro está na seção 7. Código: `web/src/app/globals.css`, `web/src/components/`. Complementa o `DESIGN.md` (descrição detalhada do que existe).
 
 ## 1. Princípios
 
@@ -55,7 +55,6 @@ produto da repaginação e o roteiro por etapas. As etapas D1 (tokens, estrutura
 | Saída | Gráfico | Destaque |
 |---|---|---|
 | Margem por cenário (sensibilidade) | barras verticais (`HighlightBars`) | cenário ótimo vivo; linha tracejada do base |
-| Quantidades do quadro | barras (`HighlightBars`) | alimento de maior quantidade |
 | Distribuição das margens | histograma | marcas do base e do ótimo |
 | Efeito dos fatores | tornado ordenado por \|ρ\| | maior efeito |
 | Leite, custo da ração, exigência × consumo | áreas e linhas no tempo | marcos do RuFaS (PEV, secagem) |
@@ -137,9 +136,7 @@ Especificação completa em `FSD.md`, seção A.12. Resumo do que a repaginaçã
 
 ## 12. Exercício do quadro e Curva de lactação (D6)
 
-- **Exercício do quadro (modo simples):** o problema (alimentos e nutrientes) fica num cartão no topo com o `RunButton` **Resolver** (pronto, executando, concluído e erro) e o aviso de solução desatualizada (`toyKey` no `AppProvider`). Os resultados vêm em duas abas:
-  - **Solução ótima:** KPIs (custo mínimo, alimentos usados, restrições ativas, maior quantidade); **quantidade de cada alimento** (`HighlightBars`); **para onde vai o custo** (`ShareBars` de uma linha); **nutrientes na faixa** (`Bullet` por nutriente: verde dentro do intervalo, vermelho fora, com o total marcado). A tabela de restrições com os preços-sombra é a alternativa "ver como tabela". Sem solução viável, um alerta explica; sem solução ainda, o estado vazio com os passos.
-  - **Cenários:** fatores e faixas como antes, com aviso de cenários desatualizados (`toySensKey`) e erro visível; KPIs (menor e maior custo, amplitude, cenários resolvidos); **custo ótimo por cenário** (barras, o menor em verde vivo) e **mapa dos dois fatores** (`HeatMap`, o custo ótimo de cada combinação, mais verde = mais barato, contorno no menor). A tabela de cenários S<sub>i</sub> do quadro continua disponível em "ver como tabela".
+- **Exercício do quadro:** o modo simples (PL de arroz e milho, com a solução em gráficos, o bullet por nutriente, os cenários e o mapa de calor `HeatMap`) foi retirado em 11/11/2026, por não corresponder mais aos interesses do trabalho. A tela passa a ser só a avaliação de dietas, descrita na seção 11; `HeatMap`, `toyKey` e `toySensKey` saíram junto.
 - **Curva de lactação:** cartão do ciclo reprodutivo (PEV, gestação, secagem) com a frase do parto e da secagem previstos; KPIs por paridade com o mini gráfico da própria curva; **produção por dia** (`TimeSeries` em linhas, faixa verde da gestação e marcas tracejadas do PEV, da secagem e do parto) e **produção acumulada em 305 dias**. Sem parâmetros (servidor fora do ar) há estado vazio; carregando, o esqueleto.
-- **"Ver como tabela" em todos os gráficos:** o gráfico de exigências da tela Vaca leiteira (último que ainda usava o gráfico antigo) passou a `TimeSeries` com tabela; a Curva e o quadro também têm a alternância.
-- Componentes novos em `charts`: `HeatMap`; `TimeSeries` ganha `markers` (linhas verticais) e `bands` (faixas).
+- **"Ver como tabela" em todos os gráficos:** o gráfico de exigências da tela Vaca leiteira (último que ainda usava o gráfico antigo) passou a `TimeSeries` com tabela; a Curva também tem a alternância.
+- Componente novo em `charts`: `TimeSeries` ganha `markers` (linhas verticais) e `bands` (faixas).

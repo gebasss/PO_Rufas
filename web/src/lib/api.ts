@@ -14,8 +14,6 @@ import type {
   RunMeta,
   RunPage,
   ScenarioLoad,
-  ToyResult,
-  ToySens
 } from '@/lib/types'
 
 async function request<T>(path: string, body?: unknown): Promise<T> {
@@ -36,8 +34,6 @@ export const api = {
   feeds: (standard: NutrientStandard = 'NRC') => request<Feed[]>(`/api/feeds?standard=${standard}`),
   defaults: () => request<Defaults>('/api/defaults'),
   lactation: () => request<LactationInfo>('/api/lactation'),
-  toy: (body: unknown) => request<ToyResult>('/api/toy', body),
-  toySensitivity: (body: unknown) => request<ToySens>('/api/toy/sensitivity', body),
   moduleDefaults: (standard: NutrientStandard, category: string, animalType: string) =>
     request<ModuleDefaults>(
       `/api/module/defaults?standard=${standard}&category=${category}&animal_type=${animalType}`
@@ -63,7 +59,7 @@ export const api = {
   saveScenario: (kind: 'cow' | 'module', data: unknown) =>
     request<{ filename: string; mime: string; content: string }>('/api/scenario/save', { kind, data }),
   loadScenario: <T>(text: string) => request<ScenarioLoad<T>>('/api/scenario/load', { text }),
-  exportFile: (format: 'csv' | 'report', screen: 'simulation' | 'sensitivity' | 'toy' | 'module', data: unknown, meta: unknown) =>
+  exportFile: (format: 'csv' | 'report', screen: 'simulation' | 'sensitivity' | 'module', data: unknown, meta: unknown) =>
     request<{ filename: string; mime: string; content: string }>(`/api/export/${format}/${screen}`, { data, meta })
 }
 

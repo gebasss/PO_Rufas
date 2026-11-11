@@ -21,8 +21,8 @@ comando e processar saídas de centenas de megabytes — o que inviabiliza testa
 
 O sistema automatiza essa ponte. Ele:
 
-1. resolve o exercício de dieta de custo mínimo do quadro do professor (arroz e milho, carboidrato e proteína) por
-   programação linear;
+1. avalia dietas já montadas para uma vaca real e sugere a de custo mínimo, por programação linear, com as
+   exigências do NASEM (2021) ou da NRC (2001) (Exercício do quadro, `backend/dietopt/module/`);
 2. monta e executa uma simulação do RuFaS a partir de alimentos, preços e limites escolhidos na tela, e calcula custo,
    leite e **margem sobre o custo de alimentação**;
 3. repete a simulação para combinações de preços (análise de sensibilidade) e mostra a tabela de cenários e o efeito
@@ -41,7 +41,7 @@ nem multiestação — o servidor escuta em `127.0.0.1` (a própria máquina) e 
 | Interface web (Next.js exportado como site estático) | `web/src/` → publicada em `frontend/` | Cinco telas, estado compartilhado, chamadas à API |
 | Servidor local | `backend/dietopt/server.py` (porta 8000) | API JSON e arquivos estáticos; monta cenários a partir das requisições |
 | Gerenciador de tarefas | `backend/dietopt/jobs.py` | Executa simulações em segundo plano, uma tarefa por vez, com progresso |
-| Problema da dieta (PL) | `backend/dietopt/diet_lp.py` | Resolve o exercício do quadro (SciPy/HiGHS) com preços-sombra |
+| Exercício do quadro (módulo) | `backend/dietopt/module/` | Modelo linear das restrições, avaliação e comparação de dietas e dieta ótima por PL (SciPy/HiGHS) com preços-sombra |
 | Adaptador do RuFaS | `backend/dietopt/rufas_adapter.py` | `Scenario` → arquivos de entrada do RuFaS; executa `main.py` em subprocesso; detecta falha |
 | Leitor de saídas | `backend/dietopt/rufas_results.py` | Filtros de saída e conversão dos JSONs do RuFaS em `SimulationResult` |
 | Economia e cache | `backend/dietopt/scenarios.py` | Preços padrão, receita, custo, margem; cache por conteúdo do cenário |
@@ -129,10 +129,9 @@ leite imposta pelo RuFaS), `result` e `detail` (motivo da falha, quando `ok` é 
 `id` (10 caracteres), `kind` (`simulate` ou `sensitivity`), `params`, `status` (`queued`, `running`, `done`, `error`),
 `done`, `total`, `result`, `error`, `created`, `finished`. Vive só na memória do servidor.
 
-### 4.8 Problema do quadro (`Food`, `NutrientBounds`, `DietResult`)
-`Food`: `name`, `cost` (US$/kg), `nutrients` (kg de nutriente por kg de alimento) e `max_amount` (kg).
-`NutrientBounds`: `minimum` (0) e `maximum` (infinito). `DietResult`: `feasible`, `status`, `cost`, `amounts`,
-`nutrient_totals`, `shadow_prices` e `reduced_costs`.
+### 4.8 Problema do quadro (removido)
+
+Retirado em 11/11/2026 (o exercício simples de arroz e milho deixou de fazer parte do trabalho). As estruturas `Food`, `NutrientBounds` e `DietResult` saíram junto com `diet_lp.py`.
 
 ### 4.9 Fator de sensibilidade e linha de cenário
 `Factor`: `key` (id do alimento ou `milk_price`), `label`, `low`, `high`. Linha de cenário: `cenario` (`S1`…`SN`), um
@@ -141,28 +140,17 @@ valor por fator, `leite_kg`, `receita`, `custo_alimentacao`, `custo_vaca_dia`, `
 
 ### 4.10 Armazenamento local
 - **Navegador (`localStorage`):** chave `dietopt.v1` com `selected` e `params` (restaurados ao abrir); `theme`
-  (next-themes). Resultados de simulação e de sensibilidade ficam só na memória da página. O exercício do quadro
-  também não é salvo.
+  (next-themes). Resultados de simulação e de sensibilidade ficam só na memória da página, assim como o estado do
+  Exercício do quadro.
 - **Disco (`runs/`):** pasta de cada cenário (inclui `console.log` da execução) e o cache `runs/_cache/`. Nenhuma pasta
   é apagada automaticamente; a pasta de um cenário é recriada se o mesmo nome for usado de novo.
 - **Servidor (memória):** tarefas (`JobManager`), perdidas ao reiniciar.
 
 ## 5. Regras de negócio
 
-### 5.1 Exercício do quadro: dieta de custo mínimo (`solve_diet`)
-- Minimiza `Σ custo_i · x_i` sujeito a `mínimo_j ≤ Σ q_ij · x_i ≤ máximo_j` para cada nutriente `j` e
-  `0 ≤ x_i ≤ máximo_i`. Resolvido com `linprog(method="highs")`.
-- Uma restrição de máximo só entra se o máximo for finito; uma de mínimo só entra se o mínimo for maior que zero.
-- Sem solução, devolve `feasible = false` e a mensagem do solucionador; não há resultado parcial.
-- **Preço-sombra** (chave `<nutriente>_min` ou `<nutriente>_max`): variação do custo ótimo por unidade adicional do
-  limite correspondente (sinal ajustado para o mínimo). `reduced_costs` guarda o custo reduzido por alimento.
-- Valores iniciais da tela (não são regra do solucionador): arroz custo 1,50, carboidrato 0,77, proteína 0,08; milho
-  custo 2,23, carboidrato 0,66, proteína 0,14; carboidrato entre 6,0 e 9,5; proteína entre 0,9 e 1,6. O ótimo é
-  US$ 15,3453 com 4,473 kg de arroz e 3,873 kg de milho.
-- **Cenários do quadro** (`toy_sensitivity`): cada fator tem alvo `cost:<alimento>`, `min:<nutriente>` ou
-  `max:<nutriente>`, valores de `low` a `high` em `n` níveis igualmente espaçados; as linhas são o produto cartesiano
-  dos níveis. `Res` é o custo ótimo arredondado a 4 casas, ou `null` se inviável. A tela exige **dois fatores
-  diferentes**.
+### 5.1 Exercício do quadro simples (removido)
+
+Retirado em 11/11/2026 (o exercício simples de arroz e milho deixou de fazer parte do trabalho). O Exercício do quadro é hoje a avaliação de dietas de uma vaca real (FSD, Anexo B; `LINEARIZACAO.md`).
 
 ### 5.2 Biblioteca de alimentos e tetos padrão (`feeds.py`)
 O teto de inclusão padrão (`default_max`, kg MS/vaca/dia) evita que um mineral barato vire "enchimento":
@@ -255,8 +243,8 @@ abortar, e mostra o leite perdido.
 ### 5.10 Servidor e API (`server.py`)
 - Escuta em `127.0.0.1:8000` por padrão (`--host` e `--port` configuráveis). Não há autenticação, token, controle de
   origem nem limite de requisições: a proteção é só o endereço local. Não deve ser exposto à rede.
-- Rotas: `GET /api/feeds`, `/api/defaults`, `/api/lactation`, `/api/jobs`, `/api/jobs/<id>`; `POST /api/toy`,
-  `/api/toy/sensitivity`, `/api/jobs/simulate`, `/api/jobs/sensitivity` (responde 202). `POST` em rota inexistente e
+- Rotas: `GET /api/feeds`, `/api/defaults`, `/api/lactation`, `/api/jobs`, `/api/jobs/<id>`; `POST /api/module/*`,
+  `/api/jobs/simulate`, `/api/jobs/sensitivity` (responde 202). `POST` em rota inexistente e
   tarefa desconhecida → 404 JSON; exceção → 500 JSON com `Tipo: mensagem`; `GET` fora da API tenta um arquivo
   estático e, se não houver, responde 404 em texto.
 - Respostas JSON trocam `NaN` e infinito por `null`. Todas as respostas levam `Cache-Control: no-store`.
@@ -296,8 +284,7 @@ não a recalcula nem a altera.
 
 | Regra | Arquivo | Função/trecho | Teste automatizado |
 |---|---|---|---|
-| PL da dieta e preços-sombra (5.1) | `backend/dietopt/diet_lp.py` | `solve_diet` | `test_diet_lp.py`: ótimo do quadro, preço-sombra, inviabilidade |
-| Cenários do quadro (5.1) | `backend/dietopt/server.py` | `toy_problem`, `toy_sensitivity` | — |
+| Dieta ótima do Exercício do quadro e preços-sombra | `backend/dietopt/module/optimize.py` | `optimize_diet` | `test_module_optimize.py` |
 | Biblioteca e tetos padrão (5.2) | `backend/dietopt/feeds.py` | `load_feed_library`, `FeedInfo.default_max`, `nel_mcal_per_kg` | `test_adapter.py`: tetos padrão |
 | Limites, preços, período e redução máxima (5.3) | `backend/dietopt/server.py` | `scenario_from`, `feed_limits_from` | — |
 | Troca de ids NASEM → NRC (5.3) | `backend/dietopt/rufas_adapter.py` | `NASEM_ONLY_TO_NRC`, `remap_feed_ids` | `test_adapter.py`: troca de ids |

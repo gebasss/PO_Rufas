@@ -1,7 +1,7 @@
 # Documento de Requisitos do Produto (PRD)
 
 **Produto:** Dieta Ótima com RuFaS
-**Versão do documento:** 0.15 (rascunho para avaliação)
+**Versão do documento:** 0.16 (rascunho para avaliação)
 **Data:** 02/11/2026
 **Status:** Versão web implementada; documento em revisão
 **Autor(es):** _[a preencher]_
@@ -50,7 +50,7 @@ deste PRD.
 O **Dieta Ótima com RuFaS** é uma aplicação web local que ajuda a formular a dieta de vacas leiteiras de **custo
 mínimo** e a medir seu efeito econômico ao longo da lactação. Ela une três peças:
 
-- um **otimizador de dieta** (programação linear) que resolve o problema do quadro do professor, com arroz e milho;
+- um **otimizador de dieta** (programação linear) que avalia dietas já montadas e sugere a de menor custo para uma vaca real, a partir das equações do RuFaS linearizadas (Exercício do quadro);
 - o **RuFaS**, um simulador de fazenda leiteira de código aberto, usado como simulador de rebanho e de exigências
   nutricionais segundo a **NRC (2001)**;
 - uma **análise de sensibilidade** que varia preços de alimentos e do leite e mostra como a margem sobre o custo de
@@ -71,7 +71,7 @@ seções 5.2.5, 14 e 15.
 | Usuário-alvo | Nutricionista de rebanho leiteiro e produtor de leite (persona principal e secundária, seção 4) |
 | Avaliador | Professor de Pesquisa Operacional |
 | Núcleo científico | RuFaS v1.0.6 (GPLv3, usado sem modificação), padrão NRC (2001) |
-| Núcleo de otimização | Programação linear (SciPy/HiGHS) para o exercício; otimizador SLSQP do próprio RuFaS para a ração da vaca |
+| Núcleo de otimização | Programação linear (SciPy/HiGHS) para a dieta ótima do Exercício do quadro; otimizador SLSQP do próprio RuFaS para a ração da vaca |
 | Entrega principal | Cinco telas: exercício do quadro, vaca leiteira, curva de lactação, sensibilidade, premissas e limites |
 | Estado | Implementado e testado (71 testes automatizados); validação científica pendente |
 
@@ -123,7 +123,7 @@ cenário, a **dieta ótima, o custo e a margem**, com tabelas e gráficos pronto
 
 | ID | Objetivo |
 |---|---|
-| O1 | Reproduzir fielmente o exercício do quadro (PL de dieta de custo mínimo) e generalizá-lo para vários alimentos. |
+| O1 | Generalizar o exercício de dieta de custo mínimo do quadro para avaliar e otimizar as dietas de uma vaca real, com um modelo linear das equações do RuFaS (RF-28 a RF-30). |
 | O2 | Integrar o RuFaS como simulador, sem modificá-lo, para obter exigências, leite e ração de uma vaca em lactação. |
 | O3 | Permitir a análise de sensibilidade de preços e limites com uma tabela de cenários no formato do quadro. |
 | O4 | Visualizar a curva de lactação e seus marcos reprodutivos (PEV, gestação, secagem). |
@@ -135,7 +135,7 @@ Os itens que **não** são objetivos desta versão estão na seção 6.
 
 | ID | Métrica | Meta | Medição atual | Situação |
 |---|---|---|---|---|
-| M1 | Reprodução do exercício do quadro | custo ótimo = US$ 15,35 ± 0,01; arroz 4,473 kg; milho 3,873 kg | US$ 15,3453; 4,473 kg; 3,873 kg | Atingida |
+| M1 | ~~Reprodução do exercício do quadro~~ | custo ótimo = US$ 15,35 ± 0,01; arroz 4,473 kg; milho 3,873 kg | US$ 15,3453; 4,473 kg; 3,873 kg (medida antes da retirada) | Retirada em 11/11/2026 |
 | M2 | Tempo de uma simulação RuFaS (1 ano, 100 vacas) | ≤ 60 s | 30 a 37 s | Atingida |
 | M3 | Tempo de uma sensibilidade com 4 simulações | ≤ 3 min | ~66 s (2 em paralelo) | Atingida |
 | M4 | Simulações que falham sem aviso ao usuário | 0 | 0 (bug corrigido e verificado manualmente; o teste automatizado cobre só o resumo da falha) | Atingida |
@@ -169,7 +169,7 @@ As personas abaixo são **ilustrativas** (fictícias) e servem para orientar dec
 ### 4.3 Usuário de avaliação: professor de Pesquisa Operacional
 
 Não é o usuário final, mas é quem avalia o produto. Precisa enxergar a modelagem, a integração com o simulador e a
-análise de sensibilidade, e conferir que o resultado do exercício do quadro é reproduzido.
+análise de sensibilidade, e conferir a avaliação das dietas da vaca real e a comparação do modelo linear com o RuFaS.
 
 ### 4.4 Perfis de acesso
 
@@ -190,7 +190,7 @@ o navegador no endereço local tem as mesmas permissões. A tabela abaixo descre
 
 | Módulo (tela) | O que entrega | Requisitos |
 |---|---|---|
-| Exercício do quadro | PL de dieta, preços-sombra e tabela de cenários `S1..SN` | RF-01 a RF-04 |
+| Exercício do quadro | Avaliação de dietas montadas para uma vaca real, modelo linear, comparação com o RuFaS e dieta ótima por PL | RF-28 a RF-30 |
 | Vaca leiteira (RuFaS) | Seleção de alimentos, simulação, indicadores, ração, exigências e leite diário | RF-05 a RF-13 |
 | Curva de lactação | Curva de Wood por paridade com PEV, gestação e secagem | RF-14, RF-15 |
 | Sensibilidade (RuFaS) | Cenários por grade ou hipercubo latino, tabela com `Res`, efeito dos fatores | RF-16 a RF-18 |
@@ -202,14 +202,16 @@ o navegador no endereço local tem as mesmas permissões. A tabela abaixo descre
 **Prioridade (MoSCoW):** M = deve ter; S = deveria ter; C = poderia ter.
 **Situação:** Atendido, Parcial ou Pendente.
 
-#### 5.2.1 Exercício do quadro (programação linear)
+#### 5.2.1 Exercício do quadro simples (retirado em 11/11/2026)
+
+O exercício simples (PL de arroz e milho com tabela de cenários) saiu do sistema a pedido do usuário, por não corresponder mais aos interesses do trabalho. Os requisitos abaixo ficam registrados como retirados; o Exercício do quadro passou a ser a avaliação de dietas (RF-28 a RF-30, seção 5.2.5).
 
 | ID | Requisito | Prior. | Situação | Aceite |
 |---|---|---|---|---|
-| RF-01 | O sistema deve resolver o problema de dieta de custo mínimo com N alimentos e nutrientes com mínimo e máximo. | M | Atendido | Resultado da M1; casos inviáveis são sinalizados. |
-| RF-02 | O usuário deve poder editar custo e composição dos alimentos, adicionar alimentos e editar os limites dos nutrientes. | M | Parcial | Edição e adição de alimentos funcionam; os nutrientes são fixos (carboidrato e proteína). |
-| RF-03 | O sistema deve mostrar quantidade e custo por alimento, total de cada nutriente, restrição ativa e preço-sombra. | M | Atendido | Tabelas de solução e de nutrientes exibidas. |
-| RF-04 | O sistema deve gerar uma tabela de cenários variando dois fatores (custos ou limites), com a coluna `Res`. | M | Atendido | 9 cenários para 3 níveis × 3 níveis, com a dieta ótima de cada um. |
+| RF-01 | O sistema deve resolver o problema de dieta de custo mínimo com N alimentos e nutrientes com mínimo e máximo. | M | Retirado | Retirado em 11/11/2026, junto com o exercício simples. |
+| RF-02 | O usuário deve poder editar custo e composição dos alimentos, adicionar alimentos e editar os limites dos nutrientes. | M | Retirado | Retirado em 11/11/2026, junto com o exercício simples. |
+| RF-03 | O sistema deve mostrar quantidade e custo por alimento, total de cada nutriente, restrição ativa e preço-sombra. | M | Retirado | Retirado em 11/11/2026, junto com o exercício simples. |
+| RF-04 | O sistema deve gerar uma tabela de cenários variando dois fatores (custos ou limites), com a coluna `Res`. | M | Retirado | Retirado em 11/11/2026, junto com o exercício simples. |
 
 #### 5.2.2 Simulação de vaca leiteira com o RuFaS
 
@@ -248,7 +250,7 @@ o navegador no endereço local tem as mesmas permissões. A tabela abaixo descre
 | RF-20 | O sistema deve **exportar** tabela de cenários e resultados (CSV) e gerar relatório. | S | Implementado | Documentar a recomendação. Feito em 03/11/2026 (etapa E8e): CSV das tabelas e relatório HTML imprimível nas telas Vaca leiteira, Sensibilidade, Exercício e Avaliar dietas (FSD, A.10). |
 | RF-21 | O sistema deve **salvar e carregar** configurações de cenário. | S | Implementado | Reuso entre sessões. Feito em 03/11/2026 (etapa E8f): arquivo JSON local e versionado, nas telas Vaca leiteira (com a sensibilidade) e Avaliar dietas (FSD, A.11). |
 | RF-22 | O sistema deve permitir **importar preços** (CSV) para cenários com cotações reais, por exemplo do CEPEA. | S | Implementado | Hoje os preços são digitados à mão e os valores iniciais são ilustrativos. Preços em US$; a regra de conversão está em `LINEARIZACAO.md`, seção 7.2. Feito em 03/11/2026 (etapa E8d): importação de CSV nas telas Vaca leiteira e Avaliar dietas, com conversão para US$/kg MS e lista do que não casou (FSD, A.9). |
-| RF-23 | O sistema deve permitir adicionar **nutrientes** ao exercício do quadro. | C | Pendente | Generalização do exercício. |
+| RF-23 | O sistema deve permitir adicionar **nutrientes** ao exercício do quadro. | C | Retirado | Retirado em 11/11/2026, junto com o exercício simples. |
 | RF-24 | O sistema deve oferecer o padrão **NASEM 2021** como alternativa à NRC 2001 e permitir **comparar os dois padrões** no mesmo cenário. | S | Parcial | Previsto no quadro do professor. **Especificado** no FSD, Anexo A.3; **back-end implementado em 02/11/2026** (`standard` nos cenários, biblioteca por padrão, `GET /api/feeds?standard=`, preços restritos à biblioteca); faltam o seletor na interface, o aviso de alimentos removidos e a comparação dos dois padrões; viabilidade técnica verificada (o RuFaS já aceita `NASEM`; todos os alimentos dos presets existem na biblioteca NASEM; o modo NASEM roda o "Conjunto base" desde que os preços sejam restritos à biblioteca, FSD A.7.1). Depende da decisão Q6. |
 | RF-25 | O sistema deve ter uma tela de **premissas e limites** que explique o que o modelo assume e não faz. | S | Atendido | Tela `/sobre/`, com quatro blocos (funcionamento, premissas, limites, créditos). |
 | RF-26 | O sistema deve permitir cadastrar **alimentos personalizados**, começando pelo **arroz em grão** (Tabela 19-1 do NASEM, p. 427), que não existe nas bibliotecas do RuFaS. | S | Pendente | O quadro do professor usa arroz; hoje o "arroz" é farelo de arroz (RN-07). **Especificado** no FSD, Anexo A.5; depende de RF-24 (dados completos só no NASEM) e da decisão Q9. |
@@ -316,7 +318,7 @@ registrada na seção 15.
 | RN-15 | A curva de lactação é a de **Wood por paridade**; o próximo parto ≈ PEV + gestação e a secagem ocorre antes dele. Valores iniciais do quadro: PEV 60 dias e gestação 270 dias. | Curva de lactação |
 | RN-16 | O **preço-sombra** de um nutriente é a variação do custo ótimo por unidade adicional do seu limite mínimo ativo. | Exercício do quadro |
 | RN-17 | Os preços iniciais são **ilustrativos** e rotulados como tal na interface, no rodapé e no README (P4). | Todas as telas |
-| RN-18 | O exercício do quadro exige **dois fatores diferentes** para gerar a tabela de cenários. | Exercício do quadro |
+| RN-18 | ~~O exercício do quadro exige dois fatores diferentes para gerar a tabela de cenários.~~ Retirada em 11/11/2026. | Exercício do quadro |
 | RN-19 **(a definir)** | Como o leite deve responder à dieta, já que no RuFaS v1.0.6 ela é fraca (Q3). | Vaca, Sensibilidade |
 | RN-20 **(a definir)** | Se a dieta deve ser otimizada por fase da lactação, e não por grupo (Q2). | Vaca |
 
@@ -331,7 +333,7 @@ registrada na seção 15.
 | **Alimento da biblioteca** | id do RuFaS, nome, PB, FDN, extrato etéreo, TDN, NEL estimada, preço padrão ilustrativo, teto padrão | Metadados da NRC 2001 no RuFaS | Lida pelo servidor a partir dos arquivos do RuFaS | Somente leitura |
 | **Alimento selecionado** | id, preço (US$/kg MS), mínimo e máximo (kg MS/vaca/dia) | Usuário | Navegador (`localStorage`, chave `dietopt.v1`) | Até limpar os dados do navegador |
 | **Parâmetros da simulação** | preço do leite, período (1 ou 2 anos), redução máxima de leite | Usuário | Navegador (mesma chave) | Idem |
-| **Exercício do quadro** | alimentos (custo, composição, máximo), nutrientes (mínimo e máximo), fatores do cenário | Usuário | Memória da página | Perdido ao recarregar |
+| **Exercício do quadro** | padrão, vaca, alimentos, dietas, preços e limites, tolerância e resultados | Usuário | Memória da página (e arquivo de cenário, RF-21) | Perdido ao recarregar |
 | **Cenário de simulação** | nome, datas, semente, padrão nutricional, ração, alimentos, limites, preços, redução máxima | Montado pelo servidor a partir da entrada | `runs/<nome>/` (cópias editadas das entradas do RuFaS) | Permanece em disco |
 | **Resultado da simulação** | leite diário do rebanho, ração por intervalo, exigências, compras (quantidade e custo), parâmetros de Wood | Saídas filtradas do RuFaS | `runs/_cache/<hash>.json` | Permanece em disco |
 | **Avaliação econômica** | leite total, receita, custo de alimentação, custo da ração por vaca por dia, margem, ração média, redução de leite, detalhe de falha | Calculada a partir do resultado e dos preços | Resposta da API; memória da página | Recalculada quando só os preços mudam |
@@ -368,15 +370,14 @@ registrada na seção 15.
 3. O sistema responde em `http://127.0.0.1:8000`. Se a porta estiver ocupada, o servidor não sobe; encerre o processo
    anterior.
 
-**F1. Resolver o exercício do quadro** (professor)
+**F1. Avaliar dietas e sugerir a ótima** (professor, nutricionista)
 
 1. Abrir _Exercício do quadro_.
-2. Conferir ou editar custos, composição e limites; adicionar alimentos, se quiser.
-3. Resolver. O sistema mostra quantidade e custo por alimento, total de cada nutriente, restrições ativas e preços-sombra.
-4. Em "Cenários e sensibilidade", escolher **dois fatores diferentes** (custos ou limites) e gerar a tabela `S1..SN` com a
-   coluna `Res`.
-5. _Saída:_ custo ótimo (US$ 15,3453 no exemplo do quadro) e tabela de cenários colorida pelo resultado.
-6. _Exceção:_ problema inviável é sinalizado; fator repetido gera aviso.
+2. Escolher o padrão (NASEM ou NRC), informar a vaca e montar as dietas, com preços e limites dos alimentos.
+3. **Avaliar dietas**: o sistema mostra o ranking (da menos para a mais recomendada), as restrições de cada dieta e o custo.
+4. Em _Linearização_, comparar o modelo linear com o RuFaS; em _Dieta ótima_, calcular a dieta de menor custo e compará-la com o otimizador do RuFaS.
+5. _Saída:_ ranking, mapa de restrições, erro de linearização e dieta ótima, com exportação (CSV e relatório).
+6. _Exceção:_ dados da vaca incompletos ou dieta sem alimentos bloqueiam a avaliação e mostram o motivo.
 
 **F2. Simular uma vaca leiteira** (nutricionista)
 
@@ -431,9 +432,8 @@ A aplicação tem **cinco telas**, acessadas por uma barra lateral (grupo _Anál
 _Projeto_ com a quinta), que seguem o raciocínio do quadro do professor. O detalhamento visual está em
 [DESIGN.md](DESIGN.md).
 
-1. **Exercício do quadro:** tabelas editáveis de alimentos e nutrientes, botão "Resolver", solução ótima com
-   preços-sombra e gráfico de barras, e a seção "Cenários e sensibilidade" com a tabela `S1..SN` colorida pelo
-   resultado.
+1. **Exercício do quadro:** avaliação de dietas montadas para uma vaca real, em abas (Ranking, Restrições, Linearização e
+   Dieta ótima), com gráficos e a opção de ver cada um como tabela.
 2. **Vaca leiteira (RuFaS):** painel lateral com preço do leite, período, redução máxima de leite, presets
    ("Arroz + milho + volumosos" e "Lista ampla"), busca de alimentos e lista dos selecionados com preço e limites.
    À direita, indicadores, ração por intervalo (barras empilhadas), composição média, exigências e leite diário.
@@ -452,7 +452,7 @@ ilustrativos.
 
 | ID | Como... | Quero... | Para... | Aceite |
 |---|---|---|---|---|
-| HU1 | professor | resolver o exercício do quadro e ver a tabela de cenários | verificar a modelagem de PO | Resultado igual ao da M1; tabela com colunas de fatores e `Res` |
+| HU1 | professor | ~~resolver o exercício do quadro e ver a tabela de cenários~~ | ~~verificar a modelagem de PO~~ | Retirada em 11/11/2026 (o exercício simples saiu; a modelagem de PO está na avaliação de dietas, HU15 a HU17) |
 | HU2 | nutricionista | escolher os alimentos disponíveis na fazenda e informar seus preços | formular uma dieta realista | Busca na biblioteca NRC; preço por alimento editável |
 | HU3 | nutricionista | limitar a quantidade de cada alimento | evitar rações impraticáveis | Limites em kg de matéria seca por vaca por dia respeitados pelo otimizador |
 | HU4 | nutricionista | simular com o RuFaS e ver ração, custo, leite e margem | avaliar a dieta ao longo de um ano | KPIs, ração por intervalo de 30 dias e leite diário exibidos |
@@ -478,7 +478,7 @@ ilustrativos.
 
 O produto é aceito quando:
 
-1. O exercício do quadro retorna US$ 15,35 e as quantidades de 4,473 kg de arroz e 3,873 kg de milho (M1).
+1. ~~O exercício do quadro retorna US$ 15,35 e as quantidades de 4,473 kg de arroz e 3,873 kg de milho (M1).~~ Critério retirado em 11/11/2026.
 2. Uma simulação de vaca leiteira com o preset padrão termina em até 60 s e exibe os seis indicadores (RF-09).
 3. Uma sensibilidade com dois fatores de alimento e o preço do leite gera a tabela de cenários com coluna `Res`
    (RF-18).
@@ -492,7 +492,7 @@ Formato _Dado / Quando / Então_. Apenas as histórias já atendidas.
 
 | História | Critério |
 |---|---|
-| HU1 | **Dado** os valores do quadro, **quando** o usuário resolve, **então** o custo é US$ 15,3453, o arroz é 4,473 kg e o milho é 3,873 kg. **Quando** gera cenários com dois fatores, **então** a tabela traz 9 linhas (3 × 3) com `Res`. |
+| HU1 | Retirada em 11/11/2026. |
 | HU2 | **Dado** a biblioteca NRC, **quando** o usuário busca por nome e seleciona um alimento, **então** ele entra na lista com preço editável e composição resumida. |
 | HU3 | **Dado** um limite máximo para um alimento, **quando** a simulação termina, **então** a ração média desse alimento não o ultrapassa. |
 | HU4 | **Dado** o preset padrão, **quando** o usuário simula 1 ano, **então** vê seis indicadores, a ração por intervalo de 30 dias e o leite diário, em até 60 s. |
@@ -505,7 +505,7 @@ Formato _Dado / Quando / Então_. Apenas as histórias já atendidas.
 
 | Nível | Cobertura | Situação |
 |---|---|---|
-| Unitário | PL (ótimo, preço-sombra, inviabilidade), amostragem (grade, hipercubo latino, Spearman), troca de ids NASEM→NRC, tetos padrão, resumo de falha, chave de cache, padrão NASEM no adaptador e na biblioteca, exigências da vaca pelas calculadoras do RuFaS | 71 testes passando |
+| Unitário | dieta ótima por PL (ótimo e inviabilidade), amostragem (grade, hipercubo latino, Spearman), troca de ids NASEM→NRC, tetos padrão, resumo de falha, chave de cache, padrão NASEM no adaptador e na biblioteca, exigências da vaca pelas calculadoras do RuFaS | 219 testes passando (11/11/2026) |
 | Integração | Execução real do RuFaS por cenário, leitura de saídas, cache, falha e degradação com perda de leite | Executado manualmente; **sem teste automatizado** |
 | Interface | Uso das cinco telas no navegador, nos temas claro e escuro | Executado manualmente; **sem teste automatizado** |
 | Validação científica | Comparação com formulador de referência ou tabelas da NRC | **Pendente** (M6, RNF-10) |
@@ -538,15 +538,15 @@ Formato _Dado / Quando / Então_. Apenas as histórias já atendidas.
 | Quais alimentos a ração usa em cada intervalo de 30 dias? | Vaca leiteira (ração por intervalo) |
 | A ração atende às exigências de energia, proteína e consumo? | Vaca leiteira (exigências); balanço completo pendente (RF-19) |
 | A que preço a margem é mais sensível? | Sensibilidade (efeito dos fatores) |
-| Em que preço o ótimo muda de ração? | Exercício do quadro e Sensibilidade (tabela de cenários) |
+| Em que preço o ótimo muda de ração? | Sensibilidade (tabela de cenários) |
 | Como é a lactação de cada paridade e quando seca? | Curva de lactação |
 
 ### 12.3 Relatórios e visualizações
 
 | Visualização | Tela | Tipo |
 |---|---|---|
-| Solução do PL, nutrientes e preços-sombra | Exercício do quadro | Tabelas e gráfico de barras |
-| Tabela de cenários `S1..SN` colorida pelo resultado | Exercício do quadro; Sensibilidade | Tabela |
+| Ranking, restrições, erro de linearização e dieta ótima | Exercício do quadro | Gráficos e tabelas |
+| Tabela de cenários `S1..SN` colorida pelo resultado | Sensibilidade | Tabela |
 | Ração por intervalo | Vaca leiteira | Barras empilhadas |
 | Composição média da ração (kg, % e US$) | Vaca leiteira | Tabela |
 | Exigências (NEL, proteína metabolizável, DMI) | Vaca leiteira | Gráfico |
@@ -562,7 +562,7 @@ Resultados podem ser exportados em CSV e em relatório HTML imprimível (RF-20; 
 
 | Cenário | Resultado |
 |---|---|
-| Quadro do professor | Custo US$ 15,3453; arroz 4,473 kg; milho 3,873 kg; preços-sombra US$ 0,57/kg (carboidrato) e US$ 13,22/kg (proteína) |
+| Quadro do professor (exercício simples, retirado em 11/11/2026) | Custo US$ 15,3453; arroz 4,473 kg; milho 3,873 kg; preços-sombra US$ 0,57/kg (carboidrato) e US$ 13,22/kg (proteína) |
 | Simulação, ração formulada pelo RuFaS | Margem ~US$ 385 mil; custo da ração US$ 4,02 por vaca por dia; leite de 40,3 kg por vaca por dia |
 | Efeito do preço do farelo de arroz (US$ 0,375 → US$ 0,125 por kg MS; milho a US$ 0,14 e leite a US$ 0,54) | Uso passa de 0,4 para 11,2 kg por vaca por dia; margem sobe de US$ 513.574 para US$ 519.929 |
 | Sensibilidade (arroz × milho × preço do leite, 8 cenários, 4 simulações) | ρ de Spearman com a margem: leite +0,87; arroz −0,44; milho −0,22. O preço do milho muda pouco o resultado porque a ração ótima quase não usa milho em grão. |
@@ -607,7 +607,7 @@ Limitações conhecidas, para que ninguém leia mais certeza do que o sistema en
 | L7 | Só a NRC 2001 está disponível. | O NASEM 2021, citado no quadro, não é oferecido. Já há especificação (FSD, Anexo A.3). | RF-24, Q6 |
 | L8 | As bibliotecas NRC 2001 e NASEM 2021 **do RuFaS** só têm farelo de arroz; o livro do NASEM traz o arroz em grão (Tabela 19-1, p. 427), que o RuFaS não carrega. | O "arroz" do exercício é representado pelo farelo de arroz. | C2, RN-07, RF-26 |
 | L9 | ~~O tamanho do rebanho não é ajustável na interface.~~ Resolvida em 10/11/2026; permanece o mínimo de 60 vacas por um defeito do RuFaS (FSD, A.13). | O rebanho vai de 60 a 500 vacas. | RF-13 |
-| L10 | O exercício do quadro tem apenas dois nutrientes (carboidrato e proteína). | Não generaliza para energia, minerais e fibra. | RF-02, RF-23 |
+| L10 | ~~O exercício do quadro tem apenas dois nutrientes (carboidrato e proteína).~~ Retirada em 11/11/2026, com o exercício simples. | | RF-02, RF-23 |
 | L11 | Cada simulação consome ~1,2 GB de RAM e leva 30 a 37 s; só um job roda por vez. | Análises grandes demoram; máquinas com pouca memória livre podem falhar. | RNF-02, R5 |
 | L12 | Testado apenas no Windows e em um computador; sem autenticação, uso local de um usuário. | Não foi verificado em outros sistemas nem exposto a rede. | RNF-03, RNF-07 |
 | L13 | Jobs ficam na memória do servidor; reiniciá-lo perde jobs em andamento e resultados não exportados. Os resultados em disco permanecem no cache. | Reiniciar durante uma análise obriga a rodar de novo (as simulações prontas voltam do cache). | Seção 8 |
@@ -657,7 +657,7 @@ A coluna "Proposta" é o que o autor assumiria se não houver resposta; **precis
 | RF-21 | Salvar e carregar | Onde guardar (arquivo local ou navegador), nome, versão do formato | **Decidido em 03/11/2026:** arquivo local JSON (`format`, `version`, `kind`); o formato é versionado e arquivos de versão mais nova são recusados.
 | RF-22 | Importar preços | Layout do CSV, mapeamento de nomes para ids do RuFaS, tratamento de itens sem correspondência |
 | RF-13 | Tamanho do rebanho | Limites mínimo e máximo, efeito no tempo e na memória |
-| RF-23 | Mais nutrientes | Só se o professor exigir |
+| RF-23 | Mais nutrientes | Retirado em 11/11/2026, com o exercício simples |
 | RF-24, RF-26, RF-27 | NASEM, alimentos personalizados, verificações | **Já especificados** no FSD, Anexo A; faltam as decisões Q6, Q8, Q9 e Q10 |
 | RF-28 a RF-30 | Módulo ampliado do Exercício do quadro (avaliação de dietas, modelo linear, dieta ótima) | **Já especificados** no FSD, Anexo B e `LINEARIZACAO.md`; falta a decisão Q11 |
 
@@ -676,12 +676,11 @@ sobre o custo de alimentação ao longo da lactação, chamando o RuFaS v1.0.6 (
 
 **Para quem.** Nutricionista e produtor de leite; avaliada pelo professor de Pesquisa Operacional.
 
-**O que já faz.** Cinco telas: reproduz o exercício do quadro (US$ 15,3453; 4,473 kg de arroz e 3,873 kg de milho),
+**O que já faz.** Cinco telas: avalia dietas montadas para uma vaca real e sugere a ótima (Exercício do quadro),
 simula a vaca com ração, custo e margem, desenha a curva de lactação com PEV e gestação, roda análise de
 sensibilidade com tabela `S1..SN` e `Res`, e explica premissas e limites. Falhas e leite perdido ficam visíveis.
 
-**Estado.** 17 dos 30 requisitos funcionais atendidos, 2 parciais (RF-02 e RF-24, este só no back-end) e 11 pendentes (RF-13, RF-19 a RF-23 e RF-26 a RF-30; RF-26 a RF-30 estão especificados, sem implementação); dos 11
-requisitos não funcionais, 10 atendidos e 1 pendente (validade científica, RNF-10). 71 testes automatizados passam.
+**Estado (11/11/2026).** Dos 30 requisitos funcionais, 5 foram retirados com o exercício simples (RF-01 a RF-04 e RF-23); dos 25 restantes, 22 estão atendidos ou implementados, 1 é parcial (RF-24) e 2 constam como pendentes na tabela (RF-26 e RF-28; o RF-28 já está implementado no código, a linha da tabela é que não foi atualizada); dos 11 requisitos não funcionais, 10 atendidos e 1 pendente (validade científica, RNF-10). 219 testes automatizados passam.
 
 **Principais limites.** Preços ilustrativos; o leite quase não responde à dieta no RuFaS v1.0.6; ração por grupo, não
 por fase; ração que pode passar do consumo estimado em até 30% (limite do RuFaS); sem balanço de nutrientes, exportação nem interface para o NASEM (o back-end já o aceita); sem validação contra referência profissional.
@@ -754,7 +753,7 @@ por fase; ração que pode passar do consumo estimado em até 30% (limite do RuF
         ▼
  Servidor Python (biblioteca padrão) ── Jobs em segundo plano
         │
-        ├── diet_lp.py        PL da dieta (SciPy / HiGHS)
+        ├── module/           avaliação de dietas, modelo linear e dieta ótima (SciPy / HiGHS)
         ├── sensitivity.py    grade, hipercubo latino, Spearman
         ├── scenarios.py      economia, margem, cache de simulações
         └── rufas_adapter.py  monta entradas ─► RuFaS v1.0.6 (subprocesso) ─► lê saídas filtradas
@@ -762,7 +761,7 @@ por fase; ração que pode passar do consumo estimado em até 30% (limite do RuF
 
 | Componente | Responsabilidade |
 |---|---|
-| `backend/dietopt/diet_lp.py` | Formulação e solução do PL; preços-sombra. |
+| `backend/dietopt/module/` | Modelo linear das restrições, avaliação e comparação de dietas, dieta ótima por PL e preços-sombra. |
 | `backend/dietopt/rufas_adapter.py` | Cenário → arquivos de entrada do RuFaS; execução; detecção de falha. |
 | `backend/dietopt/rufas_results.py` | Leitura das variáveis de saída (leite, ração, exigências, compras, parâmetros de Wood). |
 | `backend/dietopt/scenarios.py` | Preços, receita, custo, margem; cache por conteúdo do cenário. |
@@ -776,12 +775,12 @@ por fase; ração que pode passar do consumo estimado em até 30% (limite do RuF
 
 | Elemento do quadro / pedido | Requisito no produto | Situação |
 |---|---|---|
-| Modelagem da dieta (arroz, milho, carboidrato, proteína, mínimos e máximos) | RF-01 a RF-03 | Atendido |
+| Modelagem da dieta (arroz, milho, carboidrato, proteína, mínimos e máximos) | RF-01 a RF-03 | Retirado em 11/11/2026 (o exercício simples saiu; a modelagem segue na avaliação de dietas, RF-28 a RF-30) |
 | Valor do kg de arroz e de milho | RF-06 | Atendido |
 | Caixa **Simulador** (RuFaS) | RF-05 a RF-10 | Atendido |
 | Caixa **Otimizador** alimentada pelo simulador | RF-06, RF-08 e RF-09 (otimizador do RuFaS com preços e limites do usuário) | Atendido |
 | **Análise de sensibilidade** S1…SN | RF-16 a RF-18 | Atendido |
-| Tabela de **Cenários** (`Arroz`, `Milho`, `Mín`, `Máx`, …, `Res`) | RF-04 e RF-18 | Atendido |
+| Tabela de **Cenários** (`Arroz`, `Milho`, `Mín`, `Máx`, …, `Res`) | RF-18 (RF-04 retirado em 11/11/2026) | Atendido na Sensibilidade |
 | Gráfico de produção × dias, com **PEV** em 60 d e faixa de 270 d | RF-14 e RF-15 | Atendido (interpretação a confirmar, Q1) |
 | **NRC (2001)** | Biblioteca e exigências NRC | Atendido |
 | **NASEM (2021)** | RF-24 (e RF-26, RF-27) | Pendente; especificado no FSD, Anexo A (viabilidade técnica verificada) |
@@ -916,3 +915,4 @@ próprio RuFaS.
 | 0.13 | 03/11/2026 | _[a preencher]_ | Etapa E8d: importação de preços por CSV (RF-22) com conversão para US$/kg MS. |
 | 0.14 | 03/11/2026 | _[a preencher]_ | Etapa E8e: exportação de CSV e relatório HTML dos resultados (RF-20). |
 | 0.15 | 03/11/2026 | _[a preencher]_ | Etapa E8f: salvar e abrir cenários em arquivo JSON versionado (RF-21). |
+| 0.16 | 11/11/2026 | _[a preencher]_ | Retirado o exercício simples (PL de arroz e milho) da tela Exercício do quadro: RF-01 a RF-04 e RF-23, M1, RN-18, HU1 e L10 retirados; a tela passa a ser só a avaliação de dietas (RF-28 a RF-30). |

@@ -1,9 +1,9 @@
 # Dieta Ótima com RuFaS
 
 Sistema web local que integra o simulador **RuFaS** (modelo de fazenda leiteira) a um otimizador de dieta de custo
-mínimo, com análise de sensibilidade e a curva de lactação. Nasceu de um exercício de Pesquisa Operacional:
-dieta de arroz e milho (carboidratos e proteína) que se generaliza para uma vaca leiteira real, com as exigências
-da **NRC (2001)**.
+mínimo, com análise de sensibilidade e a curva de lactação. Nasceu de um exercício de Pesquisa Operacional
+(dieta de custo mínimo, com arroz e milho), generalizado para avaliar e otimizar as dietas de uma vaca leiteira real,
+com as exigências do **NASEM (2021)** ou da **NRC (2001)**.
 
 ```
  Cenários (S1..SN)  ──►  RuFaS (simulador)  ──►  otimizador de ração  ──►  margem sobre o custo de alimentação
@@ -18,7 +18,7 @@ da **NRC (2001)**.
 
 | Tela | O que faz |
 |---|---|
-| 1 · Exercício do quadro | PL da dieta (arroz × milho). Editável, com preços-sombra e tabela de cenários `S1..SN` (colunas dos fatores + `Res`). Resposta instantânea. |
+| 1 · Exercício do quadro | Avalia dietas já montadas para uma vaca real (NASEM ou NRC): custo, restrições lineares e ranking; compara o modelo linear com o RuFaS e sugere a dieta ótima por programação linear. |
 | 2 · Vaca leiteira (RuFaS) | Escolha de alimentos NRC (130), preços e limites. Roda o RuFaS (~30 s por ano simulado) e mostra margem, ração, exigências e leite. |
 | 3 · Curva de lactação | Curva de Wood por paridade (parâmetros calibrados pelo RuFaS), com PEV, gestação e secagem ajustáveis. |
 | 4 · Sensibilidade (RuFaS) | Varia preços de alimentos e do leite (grade ou hipercubo latino), roda o RuFaS e monta a tabela de cenários e o efeito (Spearman) de cada fator. |
@@ -26,8 +26,8 @@ da **NRC (2001)**.
 
 ## Como funciona por dentro
 
-- `backend/dietopt/diet_lp.py`: PL da dieta com HiGHS (SciPy), reproduz o quadro: **US$ 15,35/dia** (4,473 kg de arroz e
-  3,873 kg de milho).
+- `backend/dietopt/module/`: o Exercício do quadro. Modelo linear das restrições do RuFaS (classes L, E e A), avaliação e
+  ranking das dietas, comparação com o RuFaS e dieta ótima por PL com HiGHS (SciPy).
 - `backend/dietopt/rufas_adapter.py`: monta cada cenário em `runs/<id>/` (cópias editadas das entradas do RuFaS),
   roda `vendor/RuFaS/main.py` em subprocesso e lê as saídas filtradas.
 - `backend/dietopt/scenarios.py`: economia (preço do leite, custo da dieta, margem) e cache de simulações em
@@ -52,7 +52,7 @@ tentativa, até o limite configurado); é assim que a dieta afeta o leite no mod
   conjunto de alimentos ou os limites ficam restritivos (veja "Leite perdido" na interface).
 - **Limites de inclusão** são em kg de matéria seca por vaca por dia (unidade do `limit` do RuFaS). Minerais,
   gorduras e farinhas proteicas animais têm teto padrão; sem ele, o otimizador usa calcário como "enchimento".
-- **NRC 2001 só traz farelo de arroz** (não arroz em grão). O "arroz" do exercício vira farelo de arroz (id 138).
+- **NRC 2001 só traz farelo de arroz** (não arroz em grão). O arroz em grão do quadro do professor não existe nas bibliotecas (pendente, Q9).
 - **PEV = período de espera voluntário** e a faixa de 270 d como gestação são a *leitura* do quadro do professor.
   Confirme com ele.
 - O RuFaS pode abortar com certos preços (o otimizador não converge). A simulação então aparece como "falhou" na

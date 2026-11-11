@@ -51,38 +51,6 @@ export interface SimParams {
   cowNum: number
 }
 
-// ---- Exercício do quadro (PL)
-export interface ToyFood {
-  name: string
-  cost: number
-  carb: number
-  prot: number
-}
-export interface ToyBound {
-  name: string
-  min: number
-  max: number
-}
-export interface ToyResult {
-  feasible: boolean
-  status: string
-  cost: number | null
-  amounts: Record<string, number>
-  nutrient_totals: Record<string, number>
-  shadow_prices: Record<string, number>
-  reduced_costs: Record<string, number>
-}
-export interface ToySensRow {
-  cenario: string
-  Res: number | null
-  amounts: Record<string, number>
-  [column: string]: string | number | null | Record<string, number>
-}
-export interface ToySens {
-  columns: string[]
-  rows: ToySensRow[]
-}
-
 // ---- Avaliar dietas (vaca real): contratos de /api/module/* (FSD, Anexo B.7)
 export type NutrientStandard = 'NASEM' | 'NRC'
 export type ModuleCategory = 'LAC_COW' | 'CLOSE_UP' | 'GROWING'

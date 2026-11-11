@@ -20,7 +20,7 @@ export const navGroups: NavGroup[] = [
       {
         label: 'Exercício do quadro',
         title: 'Exercício do quadro',
-        description: 'Dieta de custo mínimo por programação linear, com preços-sombra e cenários.',
+        description: 'Avalia dietas já montadas para uma vaca real e sugere a de menor custo, com exigências do NASEM ou do NRC.',
         href: '/',
         icon: CalculatorIcon
       },

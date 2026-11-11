@@ -21,7 +21,7 @@ const message = (error: unknown, fallback: string) => (error instanceof Error ? 
 export default function HistoryView() {
   const router = useRouter()
   const id = useSearchParams().get('id')
-  const { loadCowScenario, setModuleState, setExerciseMode } = useApp()
+  const { loadCowScenario, setModuleState } = useApp()
 
   const open = useCallback((runId: string) => router.push(`/execucoes/?id=${runId}`), [router])
   const back = useCallback(() => router.push('/execucoes/'), [router])
@@ -36,7 +36,6 @@ export default function HistoryView() {
           loadCowScenario(cowScenarioOf(run.params))
         } else {
           setModuleState(moduleStateFromScenario(moduleScenarioOf(run.params)))
-          setExerciseMode('module')
         }
 
         toast.success('Parâmetros abertos na tela. Ajuste o que quiser e execute de novo.')
@@ -45,7 +44,7 @@ export default function HistoryView() {
         toast.error(message(error, 'Falha ao duplicar a execução'))
       }
     },
-    [loadCowScenario, router, setExerciseMode, setModuleState]
+    [loadCowScenario, router, setModuleState]
   )
 
   const exportRun = useCallback(async (runId: string) => {
