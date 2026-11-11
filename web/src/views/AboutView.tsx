@@ -59,11 +59,11 @@ export default function AboutView() {
             farinhas proteicas animais têm teto padrão, para o otimizador não usar mineral como enchimento.
           </li>
           <li>
-            A NRC 2001 só traz <Strong>farelo de arroz</Strong>; o “arroz” do exercício vira farelo de arroz.
+            As bibliotecas do RuFaS só trazem <Strong>farelo de arroz</Strong>, não o arroz em grão do quadro do professor.
           </li>
           <li>
-            Simulação de 1 ou 2 anos, 100 vacas (exemplo freestall do RuFaS) e semente aleatória fixa, para resultados
-            reproduzíveis.
+            Simulação de 1 ou 2 anos, 100 vacas por padrão (de 60 a 500; exemplo freestall do RuFaS) e semente aleatória
+            fixa, para resultados reproduzíveis.
           </li>
         </Section>
 

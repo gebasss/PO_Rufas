@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import argparse
-import itertools
 import json
 import math
 import mimetypes
@@ -17,7 +16,6 @@ from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 from . import lactation
-from .diet_lp import Food, NutrientBounds, solve_diet
 from .exports import export_file
 from .feeds import FeedInfo, feed_library
 from .herd import DEFAULT_COWS, herd_limits, parse_cow_num
@@ -55,52 +53,6 @@ def clean(value: Any) -> Any:
     if isinstance(value, (list, tuple)):
         return [clean(v) for v in value]
     return value
-
-
-# ----------------------------------------------------------------------------------------------------------------
-# Exercício do quadro (PL rápido)
-# ----------------------------------------------------------------------------------------------------------------
-def toy_problem(payload: dict[str, Any]) -> dict[str, Any]:
-    foods = [
-        Food(f["name"], float(f["cost"]), {k: float(v) for k, v in f["nutrients"].items()}, float(f.get("max", math.inf)))
-        for f in payload["foods"]
-    ]
-    bounds = {n: NutrientBounds(float(b["min"]), float(b.get("max", math.inf))) for n, b in payload["bounds"].items()}
-    result = solve_diet(foods, bounds)
-    return {
-        "feasible": result.feasible,
-        "status": result.status,
-        "cost": result.cost,
-        "amounts": result.amounts,
-        "nutrient_totals": result.nutrient_totals,
-        "shadow_prices": result.shadow_prices,
-        "reduced_costs": result.reduced_costs,
-    }
-
-
-def toy_sensitivity(payload: dict[str, Any]) -> dict[str, Any]:
-    """Tabela de cenários do quadro: varia custos e limites de nutrientes e registra o custo ótimo (``Res``)."""
-    factors = payload["factors"]  # [{"target": "cost:Arroz" | "min:Proteina" | "max:Carboidrato", "low", "high", "n"}]
-    levels = [
-        [f["low"] + (f["high"] - f["low"]) * i / max(f["n"] - 1, 1) for i in range(f["n"])] for f in factors
-    ]
-    rows = []
-    for index, point in enumerate(itertools.product(*levels), start=1):
-        scenario = json.loads(json.dumps(payload["problem"]))
-        for factor, value in zip(factors, point):
-            kind, name = factor["target"].split(":", 1)
-            if kind == "cost":
-                next(f for f in scenario["foods"] if f["name"] == name)["cost"] = value
-            else:
-                scenario["bounds"][name][kind] = value
-        solved = toy_problem(scenario)
-        row: dict[str, Any] = {"cenario": f"S{index}"}
-        for factor, value in zip(factors, point):
-            row[factor["target"]] = round(value, 4)
-        row["Res"] = round(solved["cost"], 4) if solved["feasible"] else None
-        row["amounts"] = {k: round(v, 4) for k, v in solved["amounts"].items()}
-        rows.append(row)
-    return {"columns": [f["target"] for f in factors] + ["Res"], "rows": rows}
 
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -326,10 +278,6 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         try:
             body = self._body()
-            if path == "/api/toy":
-                return self._json(toy_problem(body))
-            if path == "/api/toy/sensitivity":
-                return self._json(toy_sensitivity(body))
             if path == "/api/module/evaluate":
                 evaluation = evaluate_payload(body)
                 return self._json({**evaluation, "run_id": record("evaluation", body, evaluation)["id"]})

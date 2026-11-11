@@ -6,7 +6,7 @@ from datetime import datetime
 
 import pytest
 
-from dietopt.exports import export_file, module_report, sensitivity_csv, sensitivity_report, simulation_csv, simulation_report, toy_csv
+from dietopt.exports import export_file, module_report, sensitivity_csv, sensitivity_report, simulation_csv, simulation_report
 from dietopt.module.evaluate import evaluate_diets
 
 AGORA = datetime(2026, 11, 3, 15, 0)
@@ -28,7 +28,6 @@ SENS = {
     ],
     "effects": [{"fator": "Corn silage", "spearman": -0.8}, {"fator": "Preço do leite", "spearman": None}],
 }  # fmt: skip
-TOY = {"columns": ["cost:Arroz", "Res"], "rows": [{"cenario": "S1", "cost:Arroz": 2.0, "Res": 10.5, "amounts": {"Arroz": 3.0, "Milho": 1.0}}, {"cenario": "S2", "cost:Arroz": 3.0, "Res": None, "amounts": {}}]}
 
 
 def linhas(texto):
@@ -50,12 +49,6 @@ def test_csv_da_sensibilidade_traz_fatores_resultado_e_uma_coluna_por_alimento()
     s1, s3 = tabela[1], tabela[3]
     assert float(s1[3]) == 1000.0 and float(s1[tabela[0].index("kg_ms: Silagem de milho")]) == 12.0
     assert s3[3] == "" and s3[-1].startswith("RuntimeError")  # cenário que falhou: sem números inventados
-
-
-def test_csv_do_exercicio_do_quadro():
-    tabela = linhas(toy_csv(TOY))
-    assert tabela[0] == ["cenario", "cost:Arroz", "Res", "quantidade: Arroz", "quantidade: Milho"]
-    assert tabela[1][2] == "10.5" and tabela[2][2] == "" and tabela[2][3] == ""
 
 
 def test_relatorio_da_simulacao_tem_indicadores_racao_verificacoes_e_balanco_em_formato_brasileiro():

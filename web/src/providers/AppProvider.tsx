@@ -21,11 +21,7 @@ import type {
   SensResult,
   SensSetup,
   SimParams,
-  SimResult,
-  ToyBound,
-  ToyFood,
-  ToyResult,
-  ToySens
+  SimResult
 } from '@/lib/types'
 import { initialModuleState, type ModuleState } from '@/views/module/model'
 
@@ -72,32 +68,13 @@ interface AppContextValue {
   /** Aplica um cenário aberto de arquivo: troca alimentos, parâmetros e fatores e descarta os resultados. */
   loadCowScenario: (scenario: CowScenario) => void
 
-  toyFoods: ToyFood[]
-  setToyFoods: (value: ToyFood[]) => void
-  toyBounds: ToyBound[]
-  setToyBounds: (value: ToyBound[]) => void
-  toyResult: ToyResult | null
-  setToyResult: (value: ToyResult | null) => void
-  toySens: ToySens | null
-  setToySens: (value: ToySens | null) => void
-  /** Chaves (problema e fatores) com que o resultado e os cenários do quadro foram calculados; servem para detectar o que ficou desatualizado. */
-  toyKey: string | null
-  setToyKey: (value: string | null) => void
-  toySensKey: string | null
-  setToySensKey: (value: string | null) => void
-
   tasks: AppTask[]
   trackTask: (label: string) => TaskHandle
 
-  /** Tela 1: exercício simples ou avaliação de dietas de uma vaca real. */
-  exerciseMode: ExerciseMode
-  setExerciseMode: (value: ExerciseMode) => void
   /** Estado da avaliação de dietas; fica aqui para sobreviver à navegação entre telas (memória da página). */
   moduleState: ModuleState
   setModuleState: Dispatch<SetStateAction<ModuleState>>
 }
-
-export type ExerciseMode = 'simple' | 'module'
 
 /** Tarefa em andamento (simulação, sensibilidade, dieta ótima), mostrada no menu Tarefas do cabeçalho. */
 export interface AppTask {
@@ -118,15 +95,6 @@ const AppContext = createContext<AppContextValue | null>(null)
 const INITIAL_PARAMS: SimParams = { milkPrice: 0.45, years: 1, maxReduction: 5, cowNum: 100 }
 const INITIAL_SENS: SensSetup = { overrides: {}, method: 'grid', levels: 3 }
 
-const INITIAL_TOY_FOODS: ToyFood[] = [
-  { name: 'Arroz', cost: 1.5, carb: 0.77, prot: 0.08 },
-  { name: 'Milho', cost: 2.23, carb: 0.66, prot: 0.14 }
-]
-const INITIAL_TOY_BOUNDS: ToyBound[] = [
-  { name: 'Carboidrato', min: 6, max: 9.5 },
-  { name: 'Proteína', min: 0.9, max: 1.6 }
-]
-
 function priceOf(feed: Feed, defaults: Defaults | null) {
   return defaults?.prices[String(feed.id)] ?? feed.default_price ?? FALLBACK_PRICE[feed.kind] ?? 0.3
 }
@@ -142,13 +110,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [sens, setSens] = useState<SensResult | null>(null)
   const [sensKey, setSensKey] = useState<string | null>(null)
   const [sensSetup, setSensSetup] = useState<SensSetup>(INITIAL_SENS)
-  const [toyFoods, setToyFoods] = useState<ToyFood[]>(INITIAL_TOY_FOODS)
-  const [toyBounds, setToyBounds] = useState<ToyBound[]>(INITIAL_TOY_BOUNDS)
-  const [toyResult, setToyResult] = useState<ToyResult | null>(null)
-  const [toySens, setToySens] = useState<ToySens | null>(null)
-  const [toyKey, setToyKey] = useState<string | null>(null)
-  const [toySensKey, setToySensKey] = useState<string | null>(null)
-  const [exerciseMode, setExerciseMode] = useState<ExerciseMode>('simple')
   const [moduleState, setModuleState] = useState<ModuleState>(initialModuleState)
   const [tasks, setTasks] = useState<AppTask[]>([])
 
@@ -312,22 +273,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSensSetup,
     cowScenario,
     loadCowScenario,
-    toyFoods,
-    setToyFoods,
-    toyBounds,
-    setToyBounds,
-    toyResult,
-    setToyResult,
-    toySens,
-    setToySens,
-    toyKey,
-    setToyKey,
-    toySensKey,
-    setToySensKey,
     tasks,
     trackTask,
-    exerciseMode,
-    setExerciseMode,
     moduleState,
     setModuleState
   }

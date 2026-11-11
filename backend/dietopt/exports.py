@@ -89,14 +89,6 @@ def sensitivity_csv(result: Mapping[str, Any], meta: Mapping[str, Any] | None = 
     return _csv(header, rows)
 
 
-def toy_csv(result: Mapping[str, Any], meta: Mapping[str, Any] | None = None) -> str:
-    """Tabela de cenários do exercício do quadro: fatores, custo ótimo (``Res``) e a quantidade de cada alimento."""
-    factors = [c for c in result["columns"] if c != "Res"]
-    foods = sorted({name for row in result["rows"] for name in row.get("amounts", {})})
-    rows = [[row["cenario"], *(row.get(f) for f in factors), row.get("Res"), *(row.get("amounts", {}).get(food) for food in foods)] for row in result["rows"]]
-    return _csv(["cenario", *factors, "Res", *(f"quantidade: {food}" for food in foods)], rows)
-
-
 def module_csv(evaluation: Mapping[str, Any], meta: Mapping[str, Any] | None = None) -> str:
     """Avaliação das dietas: uma linha por dieta e restrição, com a posição no ranking (1 = mais recomendada)."""
     position = {name: len(evaluation["ranking"]) - index for index, name in enumerate(evaluation["ranking"])}
@@ -282,7 +274,6 @@ def module_report(evaluation: Mapping[str, Any], meta: Mapping[str, Any] | None 
 BUILDERS: Mapping[tuple[str, str], tuple[Callable[..., str], str, str, str]] = {
     ("csv", "simulation"): (simulation_csv, "racao-media.csv", "text/csv;charset=utf-8", "﻿"),
     ("csv", "sensitivity"): (sensitivity_csv, "cenarios-sensibilidade.csv", "text/csv;charset=utf-8", "﻿"),
-    ("csv", "toy"): (toy_csv, "cenarios-exercicio.csv", "text/csv;charset=utf-8", "﻿"),
     ("csv", "module"): (module_csv, "avaliacao-de-dietas.csv", "text/csv;charset=utf-8", "﻿"),
     ("report", "simulation"): (simulation_report, "relatorio-simulacao.html", "text/html;charset=utf-8", ""),
     ("report", "sensitivity"): (sensitivity_report, "relatorio-sensibilidade.html", "text/html;charset=utf-8", ""),
@@ -291,7 +282,7 @@ BUILDERS: Mapping[tuple[str, str], tuple[Callable[..., str], str, str, str]] = {
 
 
 def export_file(fmt: str, screen: str, data: Mapping[str, Any], meta: Mapping[str, Any] | None = None) -> dict[str, str]:
-    """Arquivo pedido (``fmt``: ``csv`` ou ``report``; ``screen``: simulation, sensitivity, toy ou module)."""
+    """Arquivo pedido (``fmt``: ``csv`` ou ``report``; ``screen``: simulation, sensitivity ou module)."""
     try:
         build, filename, mime, prefix = BUILDERS[(fmt, screen)]
     except KeyError:

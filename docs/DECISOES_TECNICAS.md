@@ -50,8 +50,8 @@
   avaliador.
 - **Contexto de uso:** local e individual, na própria máquina do usuário
   (Windows), sem uso remoto. Cada simulação leva de 30 a 37 s.
-- **Resumo funcional:** resolve o exercício de dieta do quadro por programação
-  linear; simula uma vaca leiteira no RuFaS com alimentos, preços e limites
+- **Resumo funcional:** avalia dietas montadas e sugere a de menor custo para uma
+  vaca real, por programação linear (Exercício do quadro); simula uma vaca leiteira no RuFaS com alimentos, preços e limites
   escolhidos e calcula receita, custo e margem; roda análise de sensibilidade
   (cenários S1..SN com coluna `Res` e efeito de Spearman); desenha a curva de
   lactação de Wood com PEV e gestação; explica premissas e limites do modelo.
@@ -169,7 +169,7 @@ Não há arquivo único de configuração. Os dados de referência estão em:
 - `feeds.py` — tetos de inclusão padrão por tipo de alimento;
 - `lactation.py` — `DEFAULT_WOOD` (curva de referência usada sem simulação);
 - `web/src/providers/AppProvider.tsx` — conjuntos de alimentos "base" e "ampla" e
-  valores iniciais do exercício do quadro.
+  valores iniciais da tela Vaca leiteira.
 
 ### Uploads
 Não existe.
@@ -183,7 +183,7 @@ Nenhuma integração com serviço externo em tempo de execução. Duas dependên
 técnicas locais, nenhuma via API HTTP de terceiros:
 - **RuFaS v1.0.6** — chamado por linha de comando em subprocesso; entrada e saída
   por arquivos.
-- **HiGHS (via SciPy)** — solucionador do PL do exercício do quadro.
+- **HiGHS (via SciPy)** — solucionador do PL da dieta ótima do Exercício do quadro.
 
 Preços de mercado (CEPEA) e o padrão NASEM 2021 **não** são integrados (PRD,
 RF-22 e RF-24 pendentes; o RF-24 está especificado no FSD, Anexo A). A instalação, uma vez feita, funciona sem internet.
@@ -278,14 +278,14 @@ Restrições arquiteturais que valem para qualquer mudança:
 
 | Perfil | Permissões |
 |---|---|
-| Usuário da aplicação (único perfil existente, implícito) | Resolver o exercício do quadro; escolher alimentos, preços e limites; disparar simulações e sensibilidades; ver resultados e a curva de lactação; ler premissas e limites. Não há operações de edição de dados de terceiros nem de administração |
+| Usuário da aplicação (único perfil existente, implícito) | Avaliar dietas e sugerir a ótima no Exercício do quadro; escolher alimentos, preços e limites; disparar simulações e sensibilidades; ver resultados e a curva de lactação; ler premissas e limites. Não há operações de edição de dados de terceiros nem de administração |
 
 Não existe perfil administrativo nem qualquer hierarquia de acesso.
 
 ## 7. Módulos, telas e fluxos esperados em nível alto
 
-- **Exercício do quadro** (`/`): PL de dieta com arroz e milho, preços-sombra e
-  tabela de cenários S1..SN.
+- **Exercício do quadro** (`/`): avaliação de dietas montadas para uma vaca real,
+  comparação do modelo linear com o RuFaS e dieta ótima por PL, com preços-sombra.
 - **Vaca leiteira (RuFaS)** (`/vaca/`): seleção de alimentos, preços e limites;
   simulação; indicadores, ração por intervalo, composição, exigências e leite
   diário.

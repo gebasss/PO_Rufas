@@ -77,7 +77,7 @@ const AppSidebar = () => {
 
       <SidebarFooter>
         <p className='text-sidebar-foreground/60 px-2 text-xs group-data-[collapsible=icon]:hidden'>
-          RuFaS v1.0.6 · NRC 2001
+          RuFaS v1.0.6 · NRC 2001 · NASEM 2021
         </p>
       </SidebarFooter>
     </Sidebar>

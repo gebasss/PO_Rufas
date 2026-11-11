@@ -5,7 +5,7 @@
 | Item | Valor |
 |---|---|
 | Versão do sistema descrita | Web 1.0 (protótipo acadêmico; o código não tem número de versão formal, o servidor se identifica como `DietOpt/1.0`) |
-| Data de referência | 12/10/2026 (seções 1 a 28, sistema implementado); Anexos A e B revistos em 02/11/2026 (funcionalidades planejadas, não implementadas) |
+| Data de referência | 12/10/2026 (seções 1 a 28, sistema implementado); Anexos A e B revistos em 02/11/2026 (funcionalidades planejadas, não implementadas); exercício simples do quadro retirado em 11/11/2026 (seções 6.1, 9.8, 10.3, 14.1 e fluxos F3 e F4 atualizados) |
 | Natureza do documento | Especificação consolidada de um sistema **já implementado e verificado, ainda sem uso em produção**. Serve como documentação formal, base de manutenção e referência para reimplementação. |
 
 Este documento é autossuficiente. Quando o comportamento da implementação atual diverge do que está especificado aqui, a divergência está catalogada na seção 26 (Desvios Conhecidos), com identificadores `D1`, `D2`, etc., referenciados ao longo do texto. Os requisitos `RF-24`, `RF-26` e `RF-27` estão especificados no **Anexo A**, e os requisitos `RF-28` a `RF-30` (módulo ampliado do Exercício do quadro, com modelo linear) no **Anexo B** e em `LINEARIZACAO.md` (todos planejados, **não implementados**). Os demais requisitos do PRD ainda não implementados (`RF-13`, `RF-19` a `RF-23`) **não** são especificados aqui: constam como pendentes na seção 27 e não devem ser inventados.
@@ -18,7 +18,7 @@ Este documento é autossuficiente. Quando o comportamento da implementação atu
 
 **Objetivo principal:** formular a dieta de vacas leiteiras de custo mínimo e medir o efeito econômico dessa dieta ao longo da lactação (margem sobre o custo de alimentação), usando o simulador RuFaS e permitindo testar muitos cenários de preço sem editar arquivos nem usar linha de comando.
 
-**Resumo do funcionamento:** o usuário abre uma aplicação web que roda na própria máquina. Em uma tela, resolve o exercício de dieta do quadro do professor (arroz e milho) por programação linear. Em outra, escolhe alimentos da biblioteca NRC 2001, informa preços e limites de inclusão e dispara uma simulação do RuFaS. O servidor local monta os arquivos de entrada do RuFaS, executa-o em um processo separado, lê os resultados e calcula custo, receita e margem. Uma terceira tela repete a simulação para combinações de preços (análise de sensibilidade) e mostra a tabela de cenários e o efeito de cada fator. Uma quarta desenha a curva de lactação de Wood com PEV e gestação.
+**Resumo do funcionamento:** o usuário abre uma aplicação web que roda na própria máquina. Em uma tela, avalia dietas já montadas para uma vaca real e sugere a de menor custo por programação linear (Exercício do quadro). Em outra, escolhe alimentos da biblioteca NRC 2001, informa preços e limites de inclusão e dispara uma simulação do RuFaS. O servidor local monta os arquivos de entrada do RuFaS, executa-o em um processo separado, lê os resultados e calcula custo, receita e margem. Uma terceira tela repete a simulação para combinações de preços (análise de sensibilidade) e mostra a tabela de cenários e o efeito de cada fator. Uma quarta desenha a curva de lactação de Wood com PEV e gestação.
 
 **Público usuário:** nutricionista de rebanho leiteiro e produtor de leite; o professor de Pesquisa Operacional como avaliador. Perfil único e implícito, sem hierarquia.
 
@@ -115,7 +115,7 @@ O repositório contém também a implementação de referência que este FSD des
 | Interface web | Navegador | Cinco telas, estado compartilhado, chamadas à API, gráficos |
 | Servidor local (`server.py`) | Processo Python de longa duração | API JSON, arquivos estáticos, montagem de cenários a partir das requisições |
 | Gerenciador de tarefas (`jobs.py`) | Threads do servidor | Executa simulações e sensibilidades em segundo plano, uma por vez |
-| Problema da dieta (`diet_lp.py`) | Servidor | PL do exercício do quadro, preços-sombra |
+| Exercício do quadro (`module/`) | Servidor | Modelo linear das restrições, avaliação e comparação de dietas, dieta ótima por PL e preços-sombra |
 | Adaptador do RuFaS (`rufas_adapter.py`) | Servidor | Escreve entradas do RuFaS, executa-o, detecta falha |
 | Leitor de saídas (`rufas_results.py`) | Servidor | Filtros de saída e conversão dos JSONs em `SimulationResult` |
 | Economia e cache (`scenarios.py`) | Servidor | Preços padrão, receita, custo, margem, cache |
@@ -174,7 +174,7 @@ aplicacao RuFaS/
     dietopt/                  Pacote Python do sistema
       server.py               Servidor HTTP e API
       jobs.py                 Tarefas em segundo plano
-      diet_lp.py              PL da dieta
+      module/                 Exercício do quadro: avaliação de dietas, modelo linear, dieta ótima (PL)
       rufas_adapter.py        Cenário -> entradas do RuFaS; execução
       rufas_results.py        Filtros e leitura das saídas
       scenarios.py            Preços padrão, economia, cache
@@ -213,14 +213,13 @@ aplicacao RuFaS/
 
 ## 6. Escopo Funcional da Primeira Versão
 
-### 6.1 Exercício do quadro (programação linear)
+### 6.1 Exercício do quadro: avaliação de dietas
 
-- **Objetivo:** reproduzir e explorar o problema de dieta de custo mínimo do professor.
+- **Objetivo:** avaliar e comparar dietas já montadas para uma vaca real e sugerir a de menor custo, com as equações do RuFaS linearizadas.
 - **Usuários:** professor, estudante, nutricionista.
-- **Ações permitidas:** editar nome, custo e composição dos alimentos (carboidrato e proteína); adicionar e remover alimentos (mínimo de 2); editar mínimo e máximo de cada nutriente; resolver; gerar a tabela de cenários variando dois fatores.
-- **Resultado esperado:** custo mínimo, quantidade e custo por alimento, total de cada nutriente com a restrição ativa e o preço-sombra, gráfico de barras e tabela `S1..SN` com a coluna `Res`.
+- **Ações permitidas, resultado e regras:** Anexo B (B.2 a B.8) e `LINEARIZACAO.md`; a tela está descrita em 10.3.
+- **Observação:** o exercício simples (PL de arroz e milho, com tabela de cenários `S1..SN`) que esta seção descrevia foi retirado em 11/11/2026, por não fazer mais parte do trabalho.
 - **Dependências:** servidor ativo.
-- **Regras:** seção 14.1.
 
 ### 6.2 Seleção de alimentos, preços e limites
 
@@ -277,7 +276,7 @@ aplicacao RuFaS/
 | Balanço nutricional (oferta × exigência) da ração obtida | Requisito RF-19, pendente. Hoje só as exigências são exibidas. |
 | Exportação de tabelas e relatórios; salvar e carregar cenários | RF-20 e RF-21, implementados em 03/11/2026 (A.10 e A.11). |
 | Importação de preços (CEPEA ou CSV) | RF-22, pendente. Preços são digitados. |
-| Mais nutrientes no exercício do quadro | RF-23, pendente. Os nutrientes são fixos (carboidrato e proteína). |
+| Mais nutrientes no exercício do quadro | RF-23, retirado em 11/11/2026 junto com o exercício simples. |
 | Padrão NASEM 2021 | RF-24, pendente; especificado no Anexo A.3. O sistema usa só a NRC 2001. |
 | Módulo ampliado do Exercício do quadro (avaliação de dietas montadas, modelo linear das equações do RuFaS) | RF-28 e RF-29, pendentes; especificados no Anexo B. |
 | Sugestão e previsão da dieta ótima de uma vaca e fase (RF-30) | Fase 2, implementada em 03/11/2026 (Anexo B, B.8 e B.11; `LINEARIZACAO.md`, 7.6); falta o laço de redução de leite. |
@@ -300,7 +299,7 @@ aplicacao RuFaS/
 
 | Perfil | Pode | Não pode |
 |---|---|---|
-| Usuário da aplicação (único, implícito) | Resolver o exercício; escolher alimentos, preços e limites; disparar simulações e sensibilidades; ver resultados e a curva; ler premissas | Nada é restrito dentro da ferramenta: não há papéis |
+| Usuário da aplicação (único, implícito) | Avaliar dietas no Exercício do quadro; escolher alimentos, preços e limites; disparar simulações e sensibilidades; ver resultados e a curva; ler premissas | Nada é restrito dentro da ferramenta: não há papéis |
 
 Marina (nutricionista), Carlos (produtor) e o professor são **personas de produto**, não perfis do sistema. O mantenedor não é um perfil dentro da ferramenta; atua sobre arquivos.
 
@@ -390,11 +389,9 @@ Gravado em `runs/_cache/<chave>.json` (`result_to_dict`) e lido por `result_from
 | `error` | Tipo, mensagem e parte do *traceback* (somente em `error`) |
 | `created`, `finished` | Instantes (segundos desde a época) |
 
-### 9.8 Dados do exercício do quadro
+### 9.8 Dados do exercício do quadro (removido)
 
-`Food { name, cost (US$/kg), nutrients (kg por kg), max_amount (kg) }`; `NutrientBounds { minimum, maximum }`; `DietResult { feasible, status, cost, amounts, nutrient_totals, shadow_prices, reduced_costs }`.
-
-Valores iniciais da tela: **Arroz** (custo 1,50; carboidrato 0,77; proteína 0,08), **Milho** (custo 2,23; carboidrato 0,66; proteína 0,14); **Carboidrato** 6,0 a 9,5 kg; **Proteína** 0,9 a 1,6 kg.
+Retirado em 11/11/2026 (o exercício simples de arroz e milho deixou de fazer parte do trabalho). As estruturas `Food`, `NutrientBounds` e `DietResult` e os valores iniciais (arroz e milho) saíram junto com `diet_lp.py`. Os dados do Exercício do quadro atual estão no Anexo B.
 
 ### 9.9 Dados de referência no código
 
@@ -420,7 +417,7 @@ O sistema tem **cinco telas**, todas dentro da mesma estrutura (barra lateral, c
 
 ### 10.1 Estrutura da página
 
-1. **Barra lateral recolhível:** marca "Dieta Ótima / com RuFaS"; grupo **Análise** (Exercício do quadro `/`, Vaca leiteira `/vaca`, Curva de lactação `/curva`, Sensibilidade `/sensibilidade`) e grupo **Projeto** (Premissas e limites `/sobre`); rodapé "RuFaS v1.0.6 · NRC 2001". Largura 16 rem (aberta), 3 rem (ícones), 18 rem (gaveta no celular). Atalho `Ctrl/Cmd + B`. Abaixo de 1.280 px vira gaveta.
+1. **Barra lateral recolhível:** marca "Dieta Ótima / com RuFaS"; grupo **Análise** (Exercício do quadro `/`, Vaca leiteira `/vaca`, Curva de lactação `/curva`, Sensibilidade `/sensibilidade`) e grupo **Projeto** (Premissas e limites `/sobre`); rodapé "RuFaS v1.0.6 · NRC 2001 · NASEM 2021". Largura 16 rem (aberta), 3 rem (ícones), 18 rem (gaveta no celular). Atalho `Ctrl/Cmd + B`. Abaixo de 1.280 px vira gaveta.
 2. **Cabeçalho fixo:** botão da barra lateral; *breadcrumb* "Dieta Ótima › <página>" (oculto em telas muito estreitas); selo de conexão; botão de tema.
 3. **Conteúdo:** título, descrição e blocos da tela, com largura máxima de 1.440 px e margens de 16 px (24 px a partir de 640 px).
 4. **Rodapé:** "Simulador: RuFaS v1.0.6 (GPLv3) · Exigências e composição: NRC (2001) · Preços ilustrativos, não são cotações." e "Interface adaptada do template AdminCN (shadcn/studio, licença MIT)."
@@ -437,21 +434,7 @@ Sem conexão, os botões de execução ficam desabilitados.
 
 ### 10.3 Tela 1: Exercício do quadro (`/`)
 
-Título: "Exercício do quadro". Duas colunas a partir de 1.280 px.
-
-| Bloco | Conteúdo |
-|---|---|
-| **Problema** | Fórmula "Minimizar Σ custo × quantidade, com mín ≤ Σ nutriente × quantidade ≤ máx para cada nutriente." Tabela **Alimentos** (Alimento, Custo (US$/kg), Carboidrato (kg/kg), Proteína (kg/kg), remover — o botão de remover só aparece com mais de 2 alimentos); botão **+ Alimento** (cria "Alimento N", custo 1, carboidrato 0,5, proteína 0,1). Tabela **Nutrientes** (Mínimo (kg), Máximo (kg)). Botão **Resolver** ("Resolvendo…" durante a chamada) |
-| **Solução ótima** | "Clique em “Resolver”." antes da primeira solução. Se inviável: bloco "**Sem solução viável.** Os limites mínimo e máximo são incompatíveis com os alimentos disponíveis." Se viável: indicadores "Custo mínimo por dia" (US$, 2 casas) e "Alimentos usados" (com "de N disponíveis"); tabela Alimento/Quantidade (kg, 3 casas)/Custo; tabela Nutriente/Total/Faixa/Restrição/Preço-sombra; nota "Preço-sombra: quanto o custo ótimo aumenta se o mínimo do nutriente subir 1 kg."; gráfico de barras "kg por dia" |
-| **Cenários e sensibilidade** | Dois fatores (Fator 1 e Fator 2, cada um com seleção do alvo, **De**, **Até** e **Níveis**, mínimo 2); botão **Gerar cenários** ("Gerando…"); tabela com colunas `Sn`, um por fator, "Res (US$/dia)" em mapa de calor e "Dieta ótima" (texto "Alimento x,xx kg · …") |
-
-Regras de exibição:
-
-- Resolve sozinho na primeira visita, quando a conexão fica ativa e ainda não há solução.
-- Restrição: "mínimo ativo" ou "máximo ativo" (selo) se o total difere do limite por menos de 1e-6; senão "folga". Preço-sombra mostrado como "US$ x,xx/kg" só para o mínimo (traço se zero ou ausente).
-- Alvos disponíveis dos fatores: `Custo · <alimento>`, `Mínimo · <nutriente>`, `Máximo · <nutriente>`. Valores iniciais: Fator 1 = custo do Arroz, de 1 a 2, 3 níveis; Fator 2 = custo do Milho, de 1,8 a 2,6, 3 níveis.
-- Linha inviável mostra "inviável" em vermelho na coluna `Res`.
-- Máximo de nutriente vazio é enviado como 1e9 (sem limite superior prático).
+Título: "Exercício do quadro". A tela é só a **avaliação de dietas de uma vaca real**: entradas em abas (Vaca, Dietas, Preços e limites), botão **Avaliar dietas** com quatro estados e resultados em abas (Ranking, Restrições, Linearização, Dieta ótima). A especificação está no Anexo B (B.2) e o desenho dos gráficos em `DESIGN_REPAGINACAO.md`, seção 11. O exercício simples que ocupava esta tela (PL de arroz e milho, solução e cenários `S1..SN`) foi retirado. Retirado em 11/11/2026 (o exercício simples de arroz e milho deixou de fazer parte do trabalho).
 
 ### 10.4 Tela 2: Vaca leiteira (`/vaca`)
 
@@ -582,8 +565,6 @@ Servidor HTTP em `http://127.0.0.1:8000` (porta e endereço configuráveis por `
 | `GET /api/lactation` | — | 200: `{ curves, wood, milestones }`; `curves` = paridade → 330 valores diários; `milestones` = `{ pev: 60, proximo_parto: 330, secagem: 270 }` |
 | `GET /api/jobs` | — | 200: lista de tarefas sem resultado, da mais recente para a mais antiga |
 | `GET /api/jobs/<id>` | — | 200: tarefa com `result`; 404 `{"error": "job não encontrado"}` |
-| `POST /api/toy` | `{ foods: [{ name, cost, nutrients: { <nutriente>: <kg/kg> }, max? }], bounds: { <nutriente>: { min, max? } } }` | 200: `{ feasible, status, cost, amounts, nutrient_totals, shadow_prices, reduced_costs }` |
-| `POST /api/toy/sensitivity` | `{ problem: <corpo de /api/toy>, factors: [{ target, low, high, n }] }`, com `target` = `cost:<alimento>`, `min:<nutriente>` ou `max:<nutriente>` | 200: `{ columns, rows }`; cada linha: `cenario`, um valor por alvo, `Res` (4 casas, ou `null`), `amounts` |
 | `POST /api/jobs/simulate` | `{ feeds: [ids], prices?, limits?, milk_price?, years?, max_milk_reduction?, seed?, cow_num? }` | 202: tarefa (`id`, `kind`, `status`, `done`, `total`, `error`, `created`, `finished`), sem resultado |
 | `POST /api/jobs/sensitivity` | O mesmo corpo de simulação mais `{ factors: [{ key, label, low, high }], method?, n?, workers? }` | 202: tarefa, sem resultado |
 | qualquer outro `POST` | — | 404 `{"error": "rota não encontrada"}` |
@@ -641,7 +622,7 @@ Os códigos 400, 401, 403, 421 e 429 não são usados.
 
 ### 12.2 HiGHS (via SciPy)
 
-Solucionador do PL do exercício do quadro (`scipy.optimize.linprog`, `method="highs"`). Execução local, sem rede.
+Solucionador do PL da dieta ótima do Exercício do quadro (`scipy.optimize.linprog`, `method="highs"`). Execução local, sem rede.
 
 ### 12.3 Dados nutricionais (NRC 2001)
 
@@ -677,20 +658,18 @@ Arquivos locais (pacote `geist`). Nenhuma requisição externa em tempo de uso.
 - **Erros possíveis:** porta 8000 ocupada (o servidor não sobe); servidor fechado (selo "sem conexão com o servidor" e botões desabilitados; **não há nova tentativa automática**: é preciso iniciar o servidor e recarregar a página).
 - **Logs:** console do servidor.
 
-### F3. Resolver o exercício do quadro
+### F3. Avaliar dietas e sugerir a ótima
 
-- **Perfil:** professor, estudante.
+- **Perfil:** professor, estudante, nutricionista.
 - **Pré-condições:** servidor ativo.
-- **Passo a passo:** abrir a tela 1 (resolve sozinha na primeira visita); editar custos, composição ou limites; acionar **Resolver**.
-- **Resultado esperado:** com os valores iniciais, custo mínimo US$ 15,35 por dia, arroz 4,473 kg, milho 3,873 kg; carboidrato e proteína com "mínimo ativo".
-- **Erros possíveis:** inviável (bloco "Sem solução viável."); erro de rede (aviso com a mensagem); nomes de alimento repetidos (D3).
-- **Logs:** nenhum.
+- **Passo a passo:** abrir a tela 1; escolher o padrão e informar a vaca; montar as dietas e os preços; acionar **Avaliar dietas**; em _Linearização_, **Comparar com o RuFaS**; em _Dieta ótima_, **Calcular dieta ótima** (Anexo B).
+- **Resultado esperado:** ranking das dietas, restrições por dieta, erro de linearização e dieta ótima, com exportação.
+- **Erros possíveis:** dados da vaca incompletos ou dieta sem alimentos (o botão fica bloqueado e a tela diz o motivo); servidor fora do ar; metano e nitrogênio urinário ausentes no NASEM (a energia fica indisponível).
+- **Logs:** a execução é gravada no histórico (A.12).
 
-### F4. Gerar a tabela de cenários do quadro
+### F4. Gerar a tabela de cenários do quadro (retirado)
 
-- **Passo a passo:** escolher dois fatores diferentes, faixas e níveis; acionar **Gerar cenários**.
-- **Resultado esperado:** `n₁ × n₂` linhas `S1…SN`, `Res` em mapa de calor e a dieta ótima de cada linha.
-- **Erros possíveis:** fatores iguais ("Escolha dois fatores diferentes."); fator que aponta para alimento renomeado ou removido (D4).
+Retirado em 11/11/2026 (o exercício simples de arroz e milho deixou de fazer parte do trabalho).
 
 ### F5. Montar e simular uma vaca leiteira
 
@@ -743,14 +722,9 @@ Arquivos locais (pacote `geist`). Nenhuma requisição externa em tempo de uso.
 
 ## 14. Validações e Regras de Negócio
 
-### 14.1 Exercício do quadro
+### 14.1 Exercício do quadro simples (removido)
 
-- Minimiza `Σ custo_i · x_i` sujeito a `mínimo_j ≤ Σ q_ij · x_i ≤ máximo_j` para cada nutriente `j`, com `0 ≤ x_i ≤ máximo_i`. Resolvido por HiGHS.
-- Restrição de máximo só entra se o máximo for finito; restrição de mínimo só entra se o mínimo for maior que zero. Máximo de nutriente vazio na tela vira 1e9.
-- Sem solução: `feasible = false` e a mensagem do solucionador; sem resultado parcial.
-- **Preço-sombra** (chaves `<nutriente>_min` e `<nutriente>_max`): variação do custo ótimo por unidade adicional do limite, com o sinal ajustado para o mínimo. `reduced_costs`: custo reduzido por alimento.
-- **Cenários do quadro:** dois fatores obrigatoriamente diferentes; cada fator tem `n` níveis igualmente espaçados de `low` a `high` (`n` efetivo ≥ 2 na tela; o servidor usa `max(n − 1, 1)` no passo); as linhas são o produto cartesiano; `Res` = custo ótimo (4 casas) ou `null` se inviável.
-- O exercício exige no mínimo 2 alimentos; os nomes dos alimentos devem ser únicos (não validado, D3).
+Retirado em 11/11/2026 (o exercício simples de arroz e milho deixou de fazer parte do trabalho). As regras do Exercício do quadro atual (restrições L, E e A, ordenação das dietas, dieta ótima) estão no Anexo B e em `LINEARIZACAO.md`.
 
 ### 14.2 Biblioteca e tetos de inclusão padrão
 
@@ -874,7 +848,6 @@ Resultados obtidos nesta implementação, com semente 42, rebanho `freestall` (1
 
 | Caso | Entrada | Resultado esperado |
 |---|---|---|
-| Exercício do quadro | Valores iniciais (seção 9.8) | Custo US$ 15,3453; arroz 4,473 kg; milho 3,873 kg; mínimos de carboidrato e proteína ativos; preços-sombra aproximados US$ 0,57/kg (carboidrato) e US$ 13,22/kg (proteína) |
 | Simulação padrão | "Conjunto base"; preço do leite 0,45 | Margem ≈ US$ 385 mil; custo da ração ≈ US$ 4,02 por vaca por dia; leite ≈ 40,3 kg por vaca por dia; 30 a 37 s |
 | Preço do farelo de arroz | Farelo de arroz de US$ 0,375 para US$ 0,125 por kg MS; milho a US$ 0,14; leite a US$ 0,54 | Uso do farelo de arroz de 0,4 para 11,2 kg por vaca por dia; margem de US$ 513.574 para US$ 519.929 |
 | Sensibilidade | Arroz × milho × preço do leite, grade de 2 níveis (8 cenários, 4 simulações) | ρ de Spearman com a margem: leite ≈ +0,87; arroz ≈ −0,44; milho ≈ −0,22; ≈ 66 s |
@@ -1050,7 +1023,7 @@ O sistema é considerado implementado quando:
 
 1. `scripts\setup.ps1` cria o ambiente e `iniciar.bat` inicia o servidor conforme F1 e F2.
 2. O servidor expõe as rotas da seção 11.2 com os formatos e códigos da seção 11, escutando em loopback por padrão e servindo apenas `frontend/`.
-3. O PL do exercício reproduz os casos da seção 15.4 (custo 15,3453; 4,473 kg; 3,873 kg), com preços-sombra, restrições ativas e inviabilidade sinalizada.
+3. ~~O PL do exercício reproduz os casos da seção 15.4 (custo 15,3453; 4,473 kg; 3,873 kg).~~ Critério retirado em 11/11/2026.
 4. O adaptador monta as entradas do RuFaS conforme a seção 12.1, usa caminhos relativos, trata ids NASEM → NRC e detecta falha pela linha de resumo.
 5. A economia segue a seção 15.1 e o cache segue a seção 14.6.
 6. A sensibilidade segue a seção 15.2, incluindo simulações únicas, falha por cenário e efeitos de Spearman.
@@ -1067,11 +1040,7 @@ O sistema é considerado implementado quando:
 
 | Cenário | Resultado esperado |
 |---|---|
-| Abrir o sistema com o servidor ativo | Selo "conectado · N alimentos NRC"; exercício resolvido sozinho |
-| Resolver o exercício com os valores iniciais | US$ 15,35/dia; arroz 4,473 kg; milho 3,873 kg |
-| Tornar o problema inviável (máximo menor que o mínimo) | "Sem solução viável." |
-| Gerar cenários com fatores iguais | "Escolha dois fatores diferentes." |
-| Gerar cenários com 3 × 3 níveis | 9 linhas `S1…S9` com `Res` e dieta de cada uma |
+| Abrir o sistema com o servidor ativo | Selo "conectado · N alimentos NRC" |
 | Buscar "soja" na lista de alimentos | Apenas alimentos cujo título ou tipo contém o texto |
 | Aplicar "Lista ampla" | Até 18 alimentos selecionados (ids que não existam na biblioteca são ignorados), com preços e tetos padrão |
 | Simular com menos de 3 alimentos | Aviso; nenhuma tarefa criada |
@@ -1122,7 +1091,6 @@ O sistema é considerado implementado quando:
 
 | Arquivo | Cobertura |
 |---|---|
-| `test_diet_lp.py` | Ótimo do quadro, preço-sombra positivo, inviabilidade |
 | `test_sensitivity.py` | Produto cartesiano da grade com extremos, hipercubo latino, sinal dos efeitos de Spearman |
 | `test_adapter.py` | Troca de ids NASEM → NRC, tetos padrão, resumo de falha do RuFaS, chave de cache |
 | `test_standards.py` | Padrão nutricional (NRC e NASEM): bibliotecas, preços restritos à biblioteca, montagem do cenário NASEM com limites |
@@ -1170,7 +1138,7 @@ Um único ambiente: a máquina do usuário. Não há homologação nem produçã
 Ordem recomendada para (re)construir o sistema, cada etapa validável sozinha:
 
 1. **Ambiente:** `setup.ps1`, `requirements-rufas.txt`, clone do RuFaS v1.0.6; verificar que o RuFaS roda um exemplo.
-2. **PL do exercício** (`diet_lp.py`): validar com o caso do quadro e a inviabilidade (`test_diet_lp.py`).
+2. ~~**PL do exercício** (`diet_lp.py`)~~ Retirado em 11/11/2026; o PL da dieta ótima está em `module/optimize.py` (`test_module_optimize.py`).
 3. **Biblioteca de alimentos e constantes** (`feeds.py`, `DEFAULT_PRICES`): conferir os 130 alimentos e os tetos.
 4. **Adaptador do RuFaS** (`rufas_adapter.py`): montar um cenário, executá-lo e detectar falha; validar a troca de ids e o resumo de falha.
 5. **Leitor de saídas** (`rufas_results.py`): filtros e `SimulationResult`.
@@ -1192,8 +1160,8 @@ Dependências principais: as etapas 4 a 6 dependem da 3; 7 depende de 6; 9 depen
 |---|---|---|---|
 | D1 | Resultados exibidos devem indicar a que parâmetros correspondem, ou deixar de ser exibidos como atuais quando a entrada muda ou a nova simulação falha (princípio de não esconder o que o modelo fez) | Os resultados da simulação e da sensibilidade permanecem na tela sem marca. Depois de editar preços ou alimentos, ou de uma nova simulação que falhou, o resultado anterior continua visível como se fosse atual | O usuário pode ler um resultado desatualizado como o do cenário em edição |
 | D2 | A estimativa de simulações da sensibilidade reflete o que será executado | No modo hipercubo latino com apenas o preço do leite marcado, a tela estima `n` simulações, mas só 1 é executada (o leite não gera simulação) | Estimativa de tempo maior que a real; sem impacto nos dados |
-| D3 | Nomes de alimento do exercício do quadro únicos | Dois alimentos com o mesmo nome colidem: as quantidades são indexadas pelo nome, uma sobrescreve a outra e as linhas da tabela se repetem | Solução do exercício incorreta ou tela inconsistente com nomes repetidos |
-| D4 | Fator de cenário do quadro que aponta para alimento renomeado ou removido deve gerar mensagem clara | O fator mantém o alvo antigo; o servidor falha com `StopIteration` e a tela mostra uma mensagem genérica. Mais amplamente, o servidor quase não valida entradas (chaves ausentes geram `KeyError` 500) | Mensagem pouco útil; sem corrupção de dados |
+| D3 | ~~Nomes de alimento do exercício do quadro únicos~~ | Retirado em 11/11/2026, com o exercício simples | |
+| D4 | ~~Fator de cenário do quadro que aponta para alimento renomeado ou removido deve gerar mensagem clara~~ | Retirado em 11/11/2026, com o exercício simples. Permanece a observação geral: o servidor valida pouco as entradas (chaves ausentes geram `KeyError` 500) | |
 | D5 | O servidor só atende a própria máquina (PRD, RNF-07) | O argumento `--host` permite escutar em outros endereços, e não há autenticação, validação de `Host`/`Origin` nem limite de requisições | Servidor exposto à rede sem proteção, se alguém usar `--host` |
 | D6 | Mesma entrada, mesmo resultado, inclusive após trocar a versão do RuFaS ou suas tabelas (RNF-06) | A chave do cache considera apenas os parâmetros do cenário; trocar a versão do RuFaS ou editar as tabelas de entrada sem apagar `runs/_cache/` devolve resultados antigos | Resultados desatualizados e silenciosamente reaproveitados |
 | D7 | A NEL estimada exibida na lista de alimentos só vale para alimentos com TDN informado (NRC, Eq. 2-3) | O código calcula `0,0245 × TDN − 0,12` para todos. Para minerais, com TDN igual a 0 (por exemplo, carbonato de cálcio), o valor sai −0,12 Mcal/kg, e a tela formata o valor sem tratamento especial (conferido no código; **não conferido na tela**) | Valor sem sentido físico exibido para minerais; sem efeito no cálculo, que é do RuFaS |
@@ -1552,20 +1520,19 @@ separador e vírgula decimal; cabeçalho incompleto.
 **Objetivo.** Registrar um resultado sem captura de tela: a tabela em CSV, para abrir no Excel, e um relatório que se lê e se imprime.
 
 **Onde.** Botões **Baixar CSV** e **Baixar relatório**, com um campo "Observação para o relatório", no topo dos resultados das telas
-Vaca leiteira, Sensibilidade e Avaliar dietas; o Exercício simples só tem o CSV da tabela de cenários.
+Vaca leiteira, Sensibilidade e Avaliar dietas.
 
 | Tela | CSV | Relatório (HTML) |
 |---|---|---|
 | Vaca leiteira | `racao-media.csv`: por alimento, kg de MS por vaca e dia, % da dieta, preço e custo (mais a linha TOTAL) | Indicadores, ração média com preços e limites, verificações (A.4) e balanço nutricional (A.4b) |
 | Sensibilidade | `cenarios-sensibilidade.csv`: uma linha por cenário com os fatores, `Res`, indicadores, a ração (uma coluna por alimento) e o erro, se falhou | Resumo (melhor e pior margem, ração do melhor cenário), tabela de cenários e correlação de Spearman |
-| Exercício simples | `cenarios-exercicio.csv`: fatores, `Res` e a quantidade de cada alimento | (só CSV) |
 | Avaliar dietas | `avaliacao-de-dietas.csv`: uma linha por dieta e restrição, com a posição no ranking | Ranking (com o desvio do ótimo, se a dieta ótima estiver atualizada), dieta ótima e comparação com o RuFaS |
 
 **Formato.** CSV com vírgula como separador, ponto decimal e BOM (o Excel reconhece os acentos); células sem valor ficam vazias, e o
 cenário que falhou não ganha números. O relatório é um HTML único, sem arquivos externos, com números no formato brasileiro, estilo de
 impressão (salvar em PDF pelo navegador) e a data da geração. Todo texto vindo do usuário (observação, nomes) é **escapado**.
 
-**API.** `POST /api/export/<csv|report>/<simulation|sensitivity|toy|module>` com `{ data, meta }` (o resultado que está na tela e
+**API.** `POST /api/export/<csv|report>/<simulation|sensitivity|module>` com `{ data, meta }` (o resultado que está na tela e
 dados extras: `note`, `standard`, `feed_names`, `optimal`). Resposta: `{ filename, mime, content }`. Nada é gravado no servidor.
 A simulação passou a devolver `limits` (mínimo e máximo de cada alimento) para o relatório mostrar os que valeram.
 
@@ -1611,7 +1578,7 @@ versão e acrescenta a migração.
 **Efeito colateral.** Os fatores, o método e os níveis da sensibilidade passaram a ficar na memória da página (antes eram locais da
 tela e se perdiam ao trocar de página); continuam sem ir para o navegador (`dietopt.v1` só guarda a seleção e os parâmetros).
 
-**Não feito.** Histórico de cenários, salvamento automático e cenário do Exercício simples.
+**Não feito.** Histórico de cenários, salvamento automático.
 
 **Aceite.** `tests/test_scenario_files.py`: ida e volta (idempotente), avisos de alimento removido, os dados inválidos de cada campo,
 arquivo inválido ou de versão mais nova, BOM e migração.
@@ -1734,11 +1701,9 @@ arroz em grão. Sem RF-24, o módulo funciona só no padrão NRC.
 
 ### B.2 Interface
 
-O módulo amplia a **tela 1 (Exercício do quadro)**, sem remover o exercício atual.
+O módulo é a **tela 1 (Exercício do quadro)**. O exercício simples que ela tinha antes (e o seletor que alternava entre os dois) foi retirado em 11/11/2026.
 
-- Um seletor no topo da tela alterna entre **"Exercício simples"** (o atual, padrão da tela) e **"Avaliar dietas (vaca
-  real)"**.
-- No modo ampliado, a tela tem quatro cartões, em ordem:
+- A tela tem quatro cartões, em ordem:
 
 | Cartão | Conteúdo |
 |---|---|
@@ -1754,8 +1719,7 @@ O módulo amplia a **tela 1 (Exercício do quadro)**, sem remover o exercício a
 **Implementada em 03/11/2026 (etapa E5)**, em `web/src/views/ExerciseView.tsx`, `ModuleView.tsx` e `web/src/views/module/`.
 Onde a tela difere ou completa o texto acima:
 
-- O seletor "Exercício simples" × "Avaliar dietas (vaca real)" fica no cabeçalho da tela 1; o exercício simples continua o
-  padrão. A escolha e todos os dados do modo ampliado ficam na memória da página (some ao recarregar).
+- Todos os dados da tela ficam na memória da página (somem ao recarregar), exceto o que se salva em arquivo de cenário (A.11).
 - **Vaca:** o padrão (NASEM, principal, ou NRC), a categoria e o tipo de animal (vaca seca ou novilha pré-parto; novilha I ou
   II) ficam neste cartão. Os campos vêm de `GET /api/module/defaults` (obrigatórios com `*`, faixas validadas) e abrem com uma
   vaca de **exemplo** da categoria; trocar de categoria ou de tipo volta ao exemplo do novo tipo. Os campos do lote (metano e N
@@ -1779,8 +1743,7 @@ Onde a tela difere ou completa o texto acima:
 - **Não feito nesta etapa:** persistência em `localStorage`, seletor de padrão da simulação (A.3.1, tela Vaca leiteira) e
   o selo do cabeçalho com o padrão.
 - A cor nunca é o único canal: estados "viável", "inviável" e "no limite" também aparecem em texto.
-- Os dados do modo ampliado ficam na **memória da página** (como o exercício simples); persistência em `localStorage` fica
-  como melhoria **(a confirmar)**.
+- Os dados da tela ficam na **memória da página**; persistência em `localStorage` fica como melhoria **(a confirmar)**.
 
 ### B.3 Entradas: padrão, categoria e vaca
 
