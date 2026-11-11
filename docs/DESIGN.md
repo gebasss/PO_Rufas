@@ -354,13 +354,13 @@ Cinco telas, uma por rota. As páginas em `app/*/page.tsx` apenas renderizam a _
 
 | Rota | Tela | Arquivo |
 |---|---|---|
-| `/` | Exercício do quadro | `views/ExerciseView.tsx` e `views/ModuleView.tsx` |
+| `/` | Ruminante Singular | `views/ExerciseView.tsx` e `views/ModuleView.tsx` |
 | `/vaca/` | Vaca leiteira (RuFaS) | `views/CowView.tsx` |
 | `/curva/` | Curva de lactação | `views/CurveView.tsx` |
 | `/sensibilidade/` | Sensibilidade (RuFaS) | `views/SensitivityView.tsx` |
 | `/sobre/` | Premissas e limites | `views/AboutView.tsx` |
 
-### Exercício do quadro (`/`)
+### Ruminante Singular (`/`)
 
 **Objetivo:** avaliar dietas já montadas para uma vaca real e sugerir a de menor custo. O exercício simples (PL de arroz e milho, com tabela de cenários) foi retirado em 11/11/2026. A descrição atual da tela, com os gráficos, está em `DESIGN_REPAGINACAO.md`, seção 11, e a especificação funcional no `FSD.md`, Anexo B.
 

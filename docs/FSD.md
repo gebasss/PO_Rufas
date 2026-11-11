@@ -8,7 +8,7 @@
 | Data de referência | 12/10/2026 (seções 1 a 28, sistema implementado); Anexos A e B revistos em 02/11/2026 (funcionalidades planejadas, não implementadas); exercício simples do quadro retirado em 11/11/2026 (seções 6.1, 9.8, 10.3, 14.1 e fluxos F3 e F4 atualizados) |
 | Natureza do documento | Especificação consolidada de um sistema **já implementado e verificado, ainda sem uso em produção**. Serve como documentação formal, base de manutenção e referência para reimplementação. |
 
-Este documento é autossuficiente. Quando o comportamento da implementação atual diverge do que está especificado aqui, a divergência está catalogada na seção 26 (Desvios Conhecidos), com identificadores `D1`, `D2`, etc., referenciados ao longo do texto. Os requisitos `RF-24`, `RF-26` e `RF-27` estão especificados no **Anexo A**, e os requisitos `RF-28` a `RF-30` (módulo ampliado do Exercício do quadro, com modelo linear) no **Anexo B** e em `LINEARIZACAO.md` (todos planejados, **não implementados**). Os demais requisitos do PRD ainda não implementados (`RF-13`, `RF-19` a `RF-23`) **não** são especificados aqui: constam como pendentes na seção 27 e não devem ser inventados.
+Este documento é autossuficiente. Quando o comportamento da implementação atual diverge do que está especificado aqui, a divergência está catalogada na seção 26 (Desvios Conhecidos), com identificadores `D1`, `D2`, etc., referenciados ao longo do texto. Os requisitos `RF-24`, `RF-26` e `RF-27` estão especificados no **Anexo A**, e os requisitos `RF-28` a `RF-30` (módulo ampliado do Ruminante Singular, com modelo linear) no **Anexo B** e em `LINEARIZACAO.md` (todos planejados, **não implementados**). Os demais requisitos do PRD ainda não implementados (`RF-13`, `RF-19` a `RF-23`) **não** são especificados aqui: constam como pendentes na seção 27 e não devem ser inventados.
 
 ---
 
@@ -18,7 +18,7 @@ Este documento é autossuficiente. Quando o comportamento da implementação atu
 
 **Objetivo principal:** formular a dieta de vacas leiteiras de custo mínimo e medir o efeito econômico dessa dieta ao longo da lactação (margem sobre o custo de alimentação), usando o simulador RuFaS e permitindo testar muitos cenários de preço sem editar arquivos nem usar linha de comando.
 
-**Resumo do funcionamento:** o usuário abre uma aplicação web que roda na própria máquina. Em uma tela, avalia dietas já montadas para uma vaca real e sugere a de menor custo por programação linear (Exercício do quadro). Em outra, escolhe alimentos da biblioteca NRC 2001, informa preços e limites de inclusão e dispara uma simulação do RuFaS. O servidor local monta os arquivos de entrada do RuFaS, executa-o em um processo separado, lê os resultados e calcula custo, receita e margem. Uma terceira tela repete a simulação para combinações de preços (análise de sensibilidade) e mostra a tabela de cenários e o efeito de cada fator. Uma quarta desenha a curva de lactação de Wood com PEV e gestação.
+**Resumo do funcionamento:** o usuário abre uma aplicação web que roda na própria máquina. Em uma tela, avalia dietas já montadas para uma vaca real e sugere a de menor custo por programação linear (Ruminante Singular). Em outra, escolhe alimentos da biblioteca NRC 2001, informa preços e limites de inclusão e dispara uma simulação do RuFaS. O servidor local monta os arquivos de entrada do RuFaS, executa-o em um processo separado, lê os resultados e calcula custo, receita e margem. Uma terceira tela repete a simulação para combinações de preços (análise de sensibilidade) e mostra a tabela de cenários e o efeito de cada fator. Uma quarta desenha a curva de lactação de Wood com PEV e gestação.
 
 **Público usuário:** nutricionista de rebanho leiteiro e produtor de leite; o professor de Pesquisa Operacional como avaliador. Perfil único e implícito, sem hierarquia.
 
@@ -115,7 +115,7 @@ O repositório contém também a implementação de referência que este FSD des
 | Interface web | Navegador | Cinco telas, estado compartilhado, chamadas à API, gráficos |
 | Servidor local (`server.py`) | Processo Python de longa duração | API JSON, arquivos estáticos, montagem de cenários a partir das requisições |
 | Gerenciador de tarefas (`jobs.py`) | Threads do servidor | Executa simulações e sensibilidades em segundo plano, uma por vez |
-| Exercício do quadro (`module/`) | Servidor | Modelo linear das restrições, avaliação e comparação de dietas, dieta ótima por PL e preços-sombra |
+| Ruminante Singular (`module/`) | Servidor | Modelo linear das restrições, avaliação e comparação de dietas, dieta ótima por PL e preços-sombra |
 | Adaptador do RuFaS (`rufas_adapter.py`) | Servidor | Escreve entradas do RuFaS, executa-o, detecta falha |
 | Leitor de saídas (`rufas_results.py`) | Servidor | Filtros de saída e conversão dos JSONs em `SimulationResult` |
 | Economia e cache (`scenarios.py`) | Servidor | Preços padrão, receita, custo, margem, cache |
@@ -151,7 +151,7 @@ Servidor -> receita, custo, margem -> resultado da tarefa -> Interface (tela)
 | `localStorage` do navegador | `dietopt.v1` | `{ selected, params }`: alimentos selecionados (preço, mínimo, máximo) e parâmetros da simulação | Até o usuário limpar os dados do site |
 | `localStorage` do navegador | `theme` | Tema claro, escuro ou do sistema (next-themes) | Idem |
 | Cookie | `sidebar_state` | Estado aberto ou recolhido da barra lateral | 7 dias |
-| Memória da página | resultados de simulação e de sensibilidade, exercício do quadro (alimentos, nutrientes, solução, cenários) | Estado do `AppProvider` | Até recarregar a página (sobrevive à navegação entre telas) |
+| Memória da página | resultados de simulação e de sensibilidade, Ruminante Singular (padrão, vaca, dietas, preços e resultados) | Estado do `AppProvider` | Até recarregar a página (sobrevive à navegação entre telas) |
 | Memória do servidor | tarefas (`JobManager`) | Estado, progresso e resultado de cada tarefa | Até reiniciar o servidor; nunca removidas enquanto o processo vive |
 | Disco | `runs/<nome>/` | Entradas editadas do RuFaS, saídas, `console.log` | Permanente; não há limpeza automática |
 | Disco | `runs/_cache/<chave>.json` | Resultado de simulações bem-sucedidas | Permanente |
@@ -174,7 +174,7 @@ aplicacao RuFaS/
     dietopt/                  Pacote Python do sistema
       server.py               Servidor HTTP e API
       jobs.py                 Tarefas em segundo plano
-      module/                 Exercício do quadro: avaliação de dietas, modelo linear, dieta ótima (PL)
+      module/                 Ruminante Singular: avaliação de dietas, modelo linear, dieta ótima (PL)
       rufas_adapter.py        Cenário -> entradas do RuFaS; execução
       rufas_results.py        Filtros e leitura das saídas
       scenarios.py            Preços padrão, economia, cache
@@ -213,7 +213,7 @@ aplicacao RuFaS/
 
 ## 6. Escopo Funcional da Primeira Versão
 
-### 6.1 Exercício do quadro: avaliação de dietas
+### 6.1 Ruminante Singular: avaliação de dietas
 
 - **Objetivo:** avaliar e comparar dietas já montadas para uma vaca real e sugerir a de menor custo, com as equações do RuFaS linearizadas.
 - **Usuários:** professor, estudante, nutricionista.
@@ -278,7 +278,7 @@ aplicacao RuFaS/
 | Importação de preços (CEPEA ou CSV) | RF-22, pendente. Preços são digitados. |
 | Mais nutrientes no exercício do quadro | RF-23, retirado em 11/11/2026 junto com o exercício simples. |
 | Padrão NASEM 2021 | RF-24, pendente; especificado no Anexo A.3. O sistema usa só a NRC 2001. |
-| Módulo ampliado do Exercício do quadro (avaliação de dietas montadas, modelo linear das equações do RuFaS) | RF-28 e RF-29, pendentes; especificados no Anexo B. |
+| Módulo ampliado do Ruminante Singular (avaliação de dietas montadas, modelo linear das equações do RuFaS) | RF-28 e RF-29, pendentes; especificados no Anexo B. |
 | Sugestão e previsão da dieta ótima de uma vaca e fase (RF-30) | Fase 2, implementada em 03/11/2026 (Anexo B, B.8 e B.11; `LINEARIZACAO.md`, 7.6); falta o laço de redução de leite. |
 | Ajuste do tamanho do rebanho pela interface | RF-13, implementado em 10/11/2026 (A.13): de 60 a 500 vacas, com o rebanho e as baias escalados juntos. |
 | Dieta otimizada por fase da lactação | Depende da questão Q2 do PRD. A ração é formulada por grupo, pelo RuFaS. |
@@ -299,7 +299,7 @@ aplicacao RuFaS/
 
 | Perfil | Pode | Não pode |
 |---|---|---|
-| Usuário da aplicação (único, implícito) | Avaliar dietas no Exercício do quadro; escolher alimentos, preços e limites; disparar simulações e sensibilidades; ver resultados e a curva; ler premissas | Nada é restrito dentro da ferramenta: não há papéis |
+| Usuário da aplicação (único, implícito) | Avaliar dietas no Ruminante Singular; escolher alimentos, preços e limites; disparar simulações e sensibilidades; ver resultados e a curva; ler premissas | Nada é restrito dentro da ferramenta: não há papéis |
 
 Marina (nutricionista), Carlos (produtor) e o professor são **personas de produto**, não perfis do sistema. O mantenedor não é um perfil dentro da ferramenta; atua sobre arquivos.
 
@@ -391,7 +391,7 @@ Gravado em `runs/_cache/<chave>.json` (`result_to_dict`) e lido por `result_from
 
 ### 9.8 Dados do exercício do quadro (removido)
 
-Retirado em 11/11/2026 (o exercício simples de arroz e milho deixou de fazer parte do trabalho). As estruturas `Food`, `NutrientBounds` e `DietResult` e os valores iniciais (arroz e milho) saíram junto com `diet_lp.py`. Os dados do Exercício do quadro atual estão no Anexo B.
+Retirado em 11/11/2026 (o exercício simples de arroz e milho deixou de fazer parte do trabalho). As estruturas `Food`, `NutrientBounds` e `DietResult` e os valores iniciais (arroz e milho) saíram junto com `diet_lp.py`. Os dados do Ruminante Singular atual estão no Anexo B.
 
 ### 9.9 Dados de referência no código
 
@@ -417,7 +417,7 @@ O sistema tem **cinco telas**, todas dentro da mesma estrutura (barra lateral, c
 
 ### 10.1 Estrutura da página
 
-1. **Barra lateral recolhível:** marca "Dieta Ótima / com RuFaS"; grupo **Análise** (Exercício do quadro `/`, Vaca leiteira `/vaca`, Curva de lactação `/curva`, Sensibilidade `/sensibilidade`) e grupo **Projeto** (Premissas e limites `/sobre`); rodapé "RuFaS v1.0.6 · NRC 2001 · NASEM 2021". Largura 16 rem (aberta), 3 rem (ícones), 18 rem (gaveta no celular). Atalho `Ctrl/Cmd + B`. Abaixo de 1.280 px vira gaveta.
+1. **Barra lateral recolhível:** marca "Dieta Ótima / com RuFaS"; grupo **Análise** (Ruminante Singular `/`, Vaca leiteira `/vaca`, Curva de lactação `/curva`, Sensibilidade `/sensibilidade`) e grupo **Projeto** (Premissas e limites `/sobre`); rodapé "RuFaS v1.0.6 · NRC 2001 · NASEM 2021". Largura 16 rem (aberta), 3 rem (ícones), 18 rem (gaveta no celular). Atalho `Ctrl/Cmd + B`. Abaixo de 1.280 px vira gaveta.
 2. **Cabeçalho fixo:** botão da barra lateral; *breadcrumb* "Dieta Ótima › <página>" (oculto em telas muito estreitas); selo de conexão; botão de tema.
 3. **Conteúdo:** título, descrição e blocos da tela, com largura máxima de 1.440 px e margens de 16 px (24 px a partir de 640 px).
 4. **Rodapé:** "Simulador: RuFaS v1.0.6 (GPLv3) · Exigências e composição: NRC (2001) · Preços ilustrativos, não são cotações." e "Interface adaptada do template AdminCN (shadcn/studio, licença MIT)."
@@ -432,9 +432,9 @@ O sistema tem **cinco telas**, todas dentro da mesma estrutura (barra lateral, c
 
 Sem conexão, os botões de execução ficam desabilitados.
 
-### 10.3 Tela 1: Exercício do quadro (`/`)
+### 10.3 Tela 1: Ruminante Singular (`/`)
 
-Título: "Exercício do quadro". A tela é só a **avaliação de dietas de uma vaca real**: entradas em abas (Vaca, Dietas, Preços e limites), botão **Avaliar dietas** com quatro estados e resultados em abas (Ranking, Restrições, Linearização, Dieta ótima). A especificação está no Anexo B (B.2) e o desenho dos gráficos em `DESIGN_REPAGINACAO.md`, seção 11. O exercício simples que ocupava esta tela (PL de arroz e milho, solução e cenários `S1..SN`) foi retirado. Retirado em 11/11/2026 (o exercício simples de arroz e milho deixou de fazer parte do trabalho).
+Título: "Ruminante Singular". A tela é só a **avaliação de dietas de uma vaca real**: entradas em abas (Vaca, Dietas, Preços e limites), botão **Avaliar dietas** com quatro estados e resultados em abas (Ranking, Restrições, Linearização, Dieta ótima). A especificação está no Anexo B (B.2) e o desenho dos gráficos em `DESIGN_REPAGINACAO.md`, seção 11. O exercício simples que ocupava esta tela (PL de arroz e milho, solução e cenários `S1..SN`) foi retirado. Retirado em 11/11/2026 (o exercício simples de arroz e milho deixou de fazer parte do trabalho).
 
 ### 10.4 Tela 2: Vaca leiteira (`/vaca`)
 
@@ -622,7 +622,7 @@ Os códigos 400, 401, 403, 421 e 429 não são usados.
 
 ### 12.2 HiGHS (via SciPy)
 
-Solucionador do PL da dieta ótima do Exercício do quadro (`scipy.optimize.linprog`, `method="highs"`). Execução local, sem rede.
+Solucionador do PL da dieta ótima do Ruminante Singular (`scipy.optimize.linprog`, `method="highs"`). Execução local, sem rede.
 
 ### 12.3 Dados nutricionais (NRC 2001)
 
@@ -653,7 +653,7 @@ Arquivos locais (pacote `geist`). Nenhuma requisição externa em tempo de uso.
 
 - **Perfil:** usuário.
 - **Pré-condições:** F1 concluído; porta 8000 livre.
-- **Passo a passo:** executar `iniciar.bat`; ele abre `http://127.0.0.1:8000` no navegador e inicia o servidor em `backend/`. O servidor escreve "Servidor em http://127.0.0.1:8000  (Ctrl+C para parar)" no console. A interface carrega `/api/feeds` e `/api/defaults`; com sucesso, o selo mostra "conectado · N alimentos NRC", a seleção anterior (ou o "Conjunto base") é aplicada e o exercício do quadro é resolvido.
+- **Passo a passo:** executar `iniciar.bat`; ele abre `http://127.0.0.1:8000` no navegador e inicia o servidor em `backend/`. O servidor escreve "Servidor em http://127.0.0.1:8000  (Ctrl+C para parar)" no console. A interface carrega `/api/feeds` e `/api/defaults`; com sucesso, o selo mostra "conectado · N alimentos NRC", a seleção anterior (ou o "Conjunto base") é aplicada.
 - **Resultado esperado:** interface conectada.
 - **Erros possíveis:** porta 8000 ocupada (o servidor não sobe); servidor fechado (selo "sem conexão com o servidor" e botões desabilitados; **não há nova tentativa automática**: é preciso iniciar o servidor e recarregar a página).
 - **Logs:** console do servidor.
@@ -722,9 +722,9 @@ Retirado em 11/11/2026 (o exercício simples de arroz e milho deixou de fazer pa
 
 ## 14. Validações e Regras de Negócio
 
-### 14.1 Exercício do quadro simples (removido)
+### 14.1 exercício simples do quadro (removido)
 
-Retirado em 11/11/2026 (o exercício simples de arroz e milho deixou de fazer parte do trabalho). As regras do Exercício do quadro atual (restrições L, E e A, ordenação das dietas, dieta ótima) estão no Anexo B e em `LINEARIZACAO.md`.
+Retirado em 11/11/2026 (o exercício simples de arroz e milho deixou de fazer parte do trabalho). As regras do Ruminante Singular atual (restrições L, E e A, ordenação das dietas, dieta ótima) estão no Anexo B e em `LINEARIZACAO.md`.
 
 ### 14.2 Biblioteca e tetos de inclusão padrão
 
@@ -1117,7 +1117,7 @@ Windows 10/11; Python 3.12 (`py -3.12`); Git; internet na instalação; cerca de
 1. Copiar a pasta do projeto para um local de trabalho (de preferência fora do OneDrive e sem acentos no caminho para o build da interface).
 2. Executar `scripts\setup.ps1` (F1).
 3. Executar `iniciar.bat` (F2).
-4. Rodar o exercício do quadro e uma simulação para conferir.
+4. Avaliar dietas no Ruminante Singular e rodar uma simulação para conferir.
 
 ### 24.4 Atualizações
 
@@ -1146,7 +1146,7 @@ Ordem recomendada para (re)construir o sistema, cada etapa validável sozinha:
 7. **Sensibilidade** (`sensitivity.py`): pontos, cenários únicos, Spearman.
 8. **Curva de lactação** (`lactation.py`).
 9. **Tarefas e servidor** (`jobs.py`, `server.py`): rotas, erros, arquivos estáticos; validar com a seção 23.3.
-10. **Interface:** estado compartilhado e cliente da API; exercício do quadro; seletor de alimentos e tela da vaca; sensibilidade; curva; premissas.
+10. **Interface:** estado compartilhado e cliente da API; Ruminante Singular; seletor de alimentos e tela da vaca; sensibilidade; curva; premissas.
 11. **Build e distribuição da interface** (`build-web.ps1`, `iniciar.bat`).
 12. **Validação ponta a ponta:** seção 23 completa em uma máquina limpa.
 
@@ -1682,7 +1682,7 @@ O tempo cresce cerca de 20 s mais 0,075 s por vaca e a memória, cerca de 0,6 GB
 
 ### B.1 Visão geral
 
-**Origem.** Pedido do professor de Pesquisa Operacional: maximizar a sessão "Exercício do quadro", com entradas mais
+**Origem.** Pedido do professor de Pesquisa Operacional: maximizar a sessão "Ruminante Singular", com entradas mais
 ricas (características da vaca, exigências e restrições nutricionais pelo NASEM, dieta escolhida e preços em dólares) e com
 **equações lineares**, para que o otimizador próprio seja **comparável** ao do RuFaS.
 
@@ -1701,7 +1701,7 @@ arroz em grão. Sem RF-24, o módulo funciona só no padrão NRC.
 
 ### B.2 Interface
 
-O módulo é a **tela 1 (Exercício do quadro)**. O exercício simples que ela tinha antes (e o seletor que alternava entre os dois) foi retirado em 11/11/2026.
+O módulo é a **tela 1 (Ruminante Singular)**. O exercício simples que ela tinha antes (e o seletor que alternava entre os dois) foi retirado em 11/11/2026.
 
 - A tela tem quatro cartões, em ordem:
 

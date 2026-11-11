@@ -1,7 +1,7 @@
 # Sistema de design e roteiro da repaginação
 
 **Versão 0.6 (03/11/2026).** Define a linguagem visual do sistema (tokens, componentes, gráficos), registra as decisões de
-produto da repaginação e o roteiro por etapas. As etapas D1 (tokens, estrutura e componentes-base), D2 (tela Vaca leiteira), D3 (histórico de execuções), D4 (Sensibilidade), D5 (Avaliar dietas) e D6 (Exercício do quadro e Curva de lactação) estão implementadas (o exercício simples da D6 foi retirado em 11/11/2026; ver a seção 12); o roteiro está na seção 7. Código: `web/src/app/globals.css`, `web/src/components/`. Complementa o `DESIGN.md` (descrição detalhada do que existe).
+produto da repaginação e o roteiro por etapas. As etapas D1 (tokens, estrutura e componentes-base), D2 (tela Vaca leiteira), D3 (histórico de execuções), D4 (Sensibilidade), D5 (Avaliar dietas) e D6 (Ruminante Singular e Curva de lactação) estão implementadas (o exercício simples da D6 foi retirado em 11/11/2026; ver a seção 12); o roteiro está na seção 7. Código: `web/src/app/globals.css`, `web/src/components/`. Complementa o `DESIGN.md` (descrição detalhada do que existe).
 
 ## 1. Princípios
 
@@ -90,7 +90,7 @@ produto da repaginação e o roteiro por etapas. As etapas D1 (tokens, estrutura
 | D3 | Histórico de execuções no servidor (API, tabela com busca, filtro, status, ações e paginação), estrela do cenário-base, tela de detalhe e deltas dos KPIs | **Feita (03/11/2026)** |
 | D4 | Sensibilidade: histograma, tornado e comparação de cenários com o base; tabela de cenários com o padrão da D3 | **Feita (03/11/2026)** |
 | D5 | Avaliar dietas: ranking, erro de linearização, comparação com o RuFaS e dieta ótima em gráficos | **Feita (03/11/2026)** |
-| D6 | Exercício do quadro e Curva de lactação, estados vazio, carregando e erro, "ver como tabela" em todos os gráficos | **Feita (03/11/2026)** |
+| D6 | Ruminante Singular e Curva de lactação, estados vazio, carregando e erro, "ver como tabela" em todos os gráficos | **Feita (03/11/2026)** |
 
 ## 8. Tela Vaca leiteira (D2)
 
@@ -134,9 +134,9 @@ Especificação completa em `FSD.md`, seção A.12. Resumo do que a repaginaçã
 - Componentes novos em `charts`: `ToneBars` (barras com tom por barra e linha de referência), `StatusGrid`, `ShareBars`; `ScatterPlot` ganha `referenceY`, `referenceLabel` e `xInteger`. As linhas de referência estendem o eixo, então a tolerância (1%) aparece mesmo quando todos os erros são menores.
 - Nada mudou no cálculo nem na API; o módulo continua guardando entradas e resultados no `AppProvider`.
 
-## 12. Exercício do quadro e Curva de lactação (D6)
+## 12. Ruminante Singular e Curva de lactação (D6)
 
-- **Exercício do quadro:** o modo simples (PL de arroz e milho, com a solução em gráficos, o bullet por nutriente, os cenários e o mapa de calor `HeatMap`) foi retirado em 11/11/2026, por não corresponder mais aos interesses do trabalho. A tela passa a ser só a avaliação de dietas, descrita na seção 11; `HeatMap`, `toyKey` e `toySensKey` saíram junto.
+- **Ruminante Singular:** o modo simples (PL de arroz e milho, com a solução em gráficos, o bullet por nutriente, os cenários e o mapa de calor `HeatMap`) foi retirado em 11/11/2026, por não corresponder mais aos interesses do trabalho. A tela passa a ser só a avaliação de dietas, descrita na seção 11; `HeatMap`, `toyKey` e `toySensKey` saíram junto.
 - **Curva de lactação:** cartão do ciclo reprodutivo (PEV, gestação, secagem) com a frase do parto e da secagem previstos; KPIs por paridade com o mini gráfico da própria curva; **produção por dia** (`TimeSeries` em linhas, faixa verde da gestação e marcas tracejadas do PEV, da secagem e do parto) e **produção acumulada em 305 dias**. Sem parâmetros (servidor fora do ar) há estado vazio; carregando, o esqueleto.
 - **"Ver como tabela" em todos os gráficos:** o gráfico de exigências da tela Vaca leiteira (último que ainda usava o gráfico antigo) passou a `TimeSeries` com tabela; a Curva também tem a alternância.
 - Componente novo em `charts`: `TimeSeries` ganha `markers` (linhas verticais) e `bands` (faixas).

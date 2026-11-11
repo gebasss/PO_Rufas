@@ -18,8 +18,8 @@ export const navGroups: NavGroup[] = [
     label: 'Análise',
     items: [
       {
-        label: 'Exercício do quadro',
-        title: 'Exercício do quadro',
+        label: 'Ruminante Singular',
+        title: 'Ruminante Singular',
         description: 'Avalia dietas já montadas para uma vaca real e sugere a de menor custo, com exigências do NASEM ou do NRC.',
         href: '/',
         icon: CalculatorIcon
