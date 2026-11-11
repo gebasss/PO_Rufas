@@ -595,7 +595,10 @@ const CELL_STYLE: Record<CellStatus, { className: string; mark: string; label: s
   indisponivel: { className: 'bg-muted text-muted-foreground', mark: '–', label: 'indisponível' }
 }
 
-/** Mapa de estados (linhas × colunas): cada célula tem cor, símbolo e rótulo para leitores de tela, nunca só a cor. */
+/**
+ * Mapa de estados: cada linha tem o seu nome à esquerda e cada coluna o seu título na horizontal; cada célula tem cor, símbolo e
+ * rótulo para leitores de tela, nunca só a cor.
+ */
 export function StatusGrid({
   columns,
   rows,
@@ -607,15 +610,13 @@ export function StatusGrid({
 }) {
   return (
     <div className={cn('overflow-x-auto', className)}>
-      <table className='border-separate border-spacing-1 text-xs'>
+      <table className='border-separate border-spacing-1.5 text-xs'>
         <thead>
           <tr>
-            <th className='sticky left-0 z-10 min-w-36 bg-[var(--card)]' />
+            <th className='sticky left-0 z-10 bg-[var(--card)]' />
             {columns.map(column => (
-              <th key={column.id} className='h-44 align-bottom' title={column.label}>
-                <span className='text-muted-foreground inline-block max-h-44 overflow-hidden text-left font-medium whitespace-nowrap [writing-mode:vertical-rl] rotate-180'>
-                  {column.label}
-                </span>
+              <th key={column.id} className='text-muted-foreground min-w-24 px-1 pb-1 text-center align-bottom text-sm leading-snug font-medium'>
+                {column.label}
               </th>
             ))}
           </tr>
@@ -623,11 +624,11 @@ export function StatusGrid({
         <tbody>
           {rows.map(row => (
             <tr key={row.label}>
-              <th className='sticky left-0 z-10 max-w-44 truncate bg-[var(--card)] pr-3 text-left text-sm font-medium'>{row.label}</th>
+              <th className='sticky left-0 z-10 min-w-44 bg-[var(--card)] pr-3 text-left text-sm leading-snug font-medium'>{row.label}</th>
               {row.cells.map((status, index) => (
                 <td key={columns[index].id} className='p-0'>
                   <span
-                    className={cn('flex size-8 items-center justify-center rounded-lg text-sm font-semibold', CELL_STYLE[status].className)}
+                    className={cn('flex h-9 w-full items-center justify-center rounded-lg text-base font-semibold', CELL_STYLE[status].className)}
                     title={`${row.label}: ${columns[index].label}, ${CELL_STYLE[status].label}`}
                   >
                     <span aria-hidden>{CELL_STYLE[status].mark}</span>
