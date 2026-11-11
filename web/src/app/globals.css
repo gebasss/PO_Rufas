@@ -193,10 +193,16 @@ select[data-slot='native-select']:not(:disabled) {
   cursor: pointer !important;
 }
 
-/* For number input spin buttons */
+/* Campos numéricos sem as setas de subir e descer (o valor se digita; as setas do teclado continuam valendo). */
 input[type='number']::-webkit-inner-spin-button,
 input[type='number']::-webkit-outer-spin-button {
-  cursor: pointer;
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 @layer base {
