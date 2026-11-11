@@ -72,8 +72,10 @@ export default function AboutView() {
             <Strong>Os preços iniciais são ilustrativos</Strong>, não cotações. Troque pelos seus.
           </li>
           <li>Não substitui um software de formulação nem a revisão de um nutricionista.</li>
-          <li>Não mostra, ainda, o balanço de oferta e exigência de cada nutriente da ração obtida.</li>
-          <li>Não exporta tabelas nem relatórios, e não usa o padrão NASEM (2021).</li>
+          <li>
+            A simulação da tela Vaca leiteira usa só o padrão <Strong>NRC (2001)</Strong>; o NASEM (2021) está no Exercício do
+            quadro.
+          </li>
           <li>
             O otimizador do RuFaS pode não convergir para certos preços. Nesse caso o cenário aparece como{' '}
             <Strong>falhou</Strong> ou com <Strong>leite perdido</Strong>, nunca como um resultado válido.
