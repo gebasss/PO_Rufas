@@ -22,6 +22,7 @@ import {
   YAxis
 } from 'recharts'
 
+import { niceScale, type NiceScale } from '@/lib/scale'
 import { cn } from '@/lib/utils'
 
 /** Cores dos gráficos: tudo apagado, só o dado de interesse em verde vivo (FSD de design, seção "Gráficos"). */
@@ -239,20 +240,26 @@ function SeriesTip({
   payload,
   label,
   series,
-  format
+  format,
+  totalLabel
 }: {
   active?: boolean
   payload?: { dataKey?: string; value?: number }[]
   label?: string | number
   series: SeriesSpec[]
   format?: (value: number) => string
+  /** Em áreas empilhadas: nome da linha com a soma das faixas (a linha de cima do gráfico). */
+  totalLabel?: string
 }) {
   if (!active || !payload?.length) return null
+
+  const total = totalLabel ? payload.reduce((sum, item) => sum + (typeof item.value === 'number' ? item.value : 0), 0) : null
 
   return (
     <div className='bg-popover text-popover-foreground border-border rounded-xl border px-3 py-2 text-xs'>
       <p className='text-muted-foreground mb-1'>{label}</p>
-      {payload.map(item => {
+      {/* Empilhado: a faixa de cima primeiro, na mesma ordem em que aparece no gráfico. */}
+      {(totalLabel ? [...payload].reverse() : payload).map(item => {
         const spec = series.find(s => s.key === item.dataKey)
 
         return (
@@ -263,8 +270,41 @@ function SeriesTip({
           </p>
         )
       })}
+      {total !== null && (
+        <p className='border-border mt-1 flex items-center gap-2 border-t pt-1 tabular-nums'>
+          <span className='text-muted-foreground'>{totalLabel}</span>
+          <span className='ml-auto pl-3 font-semibold'>{format ? format(total) : total}</span>
+        </p>
+      )}
     </div>
   )
+}
+
+/** Escala do eixo `side` a partir dos dados; nas áreas empilhadas o topo é a soma das faixas, não o maior valor de uma delas. */
+function axisScale(
+  data: Record<string, number | string | null | undefined>[],
+  series: SeriesSpec[],
+  side: 'left' | 'right',
+  stacked: boolean
+): NiceScale | null {
+  const onAxis = series.filter(s => (s.axis ?? 'left') === side)
+  const stack = stacked && side === 'left' ? onAxis.filter(s => s.kind !== 'line') : []
+  let min = Infinity
+  let max = -Infinity
+  const take = (value: unknown) => {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return
+
+    min = Math.min(min, value)
+    max = Math.max(max, value)
+  }
+
+  for (const row of data) {
+    if (stack.length) take(stack.reduce((sum, s) => sum + (Number(row[s.key]) || 0), 0))
+
+    for (const s of onAxis) if (!stack.includes(s)) take(row[s.key])
+  }
+
+  return niceScale(min, max, stack.length > 0)
 }
 
 /** Séries ao longo do tempo: áreas suaves (podem empilhar) e linhas, com eixo direito opcional. */
@@ -275,6 +315,8 @@ export function TimeSeries({
   stacked = false,
   format,
   rightFormat,
+  tooltipFormat,
+  totalLabel,
   markers,
   bands,
   height = 260,
@@ -286,6 +328,10 @@ export function TimeSeries({
   stacked?: boolean
   format?: (value: number) => string
   rightFormat?: (value: number) => string
+  /** Formato dos números do balão (padrão: o mesmo do eixo); útil quando o eixo arredonda mais que o balão. */
+  tooltipFormat?: (value: number) => string
+  /** Com `stacked`: mostra no balão uma linha com a soma de todas as faixas, com este nome. */
+  totalLabel?: string
   /** Linhas verticais tracejadas em valores do eixo X (marcos como PEV e parto); valores fora dos dados são ignorados. */
   markers?: { x: number; label: string; color: string }[]
   /** Faixas verticais suaves entre dois valores do eixo X (por exemplo, a gestação). */
@@ -295,6 +341,8 @@ export function TimeSeries({
 }) {
   const id = useId().replace(/:/g, '')
   const hasRight = series.some(s => s.axis === 'right')
+  const left = axisScale(data, series, 'left', stacked)
+  const right = hasRight ? axisScale(data, series, 'right', false) : null
 
   return (
     <div className={cn('w-full', className)} style={{ height }}>
@@ -310,11 +358,11 @@ export function TimeSeries({
           </defs>
           <CartesianGrid stroke={CHART.grid} vertical={false} />
           <XAxis dataKey={xKey} {...AXIS} minTickGap={28} />
-          <YAxis yAxisId='left' {...AXIS} width={52} domain={stacked ? [0, 'auto'] : ['auto', 'auto']} tickFormatter={value => (format ?? String)(Number(value))} />
+          <YAxis yAxisId='left' {...AXIS} width={52} domain={left?.domain ?? (stacked ? [0, 'auto'] : ['auto', 'auto'])} ticks={left?.ticks} tickFormatter={value => (format ?? String)(Number(value))} />
           {hasRight && (
-            <YAxis yAxisId='right' orientation='right' {...AXIS} width={48} domain={['auto', 'auto']} tickFormatter={value => (rightFormat ?? String)(Number(value))} />
+            <YAxis yAxisId='right' orientation='right' {...AXIS} width={48} domain={right?.domain ?? ['auto', 'auto']} ticks={right?.ticks} tickFormatter={value => (rightFormat ?? String)(Number(value))} />
           )}
-          <Tooltip cursor={{ stroke: CHART.tick, strokeDasharray: '3 3' }} content={<SeriesTip series={series} format={format} />} />
+          <Tooltip cursor={{ stroke: CHART.tick, strokeDasharray: '3 3' }} content={<SeriesTip series={series} format={tooltipFormat ?? format} totalLabel={stacked ? totalLabel : undefined} />} />
           {bands?.map(band => (
             <ReferenceArea key={`${band.x1}-${band.x2}`} yAxisId='left' x1={band.x1} x2={band.x2} fill={band.color} fillOpacity={0.08} ifOverflow='hidden' />
           ))}

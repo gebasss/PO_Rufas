@@ -21,6 +21,10 @@ import ChecksCard, { ChecksAlert } from '@/views/cow/ChecksCard'
 
 const seriesColor = (index: number) => `var(--chart-${(index % 8) + 1})`
 
+/** O gráfico empilhado mostra no máximo este número de faixas; os alimentos menores se somam em "Outros". */
+const MAX_RATION_BANDS = 8
+const OTHERS_COLOR = 'var(--chart-dim)'
+
 /** Acima disso o eixo do balanço corta a barra (o rótulo continua mostrando o valor real). */
 const BALANCE_CLIP = 150
 
@@ -91,15 +95,26 @@ export default function Results({ sim, stale = false, base = null, onSetBase }: 
 
   const milkData = sim.daily.day.map((day, i) => ({ day, milk: sim.daily.milk_kg[i], cows: sim.daily.milking_cows[i] }))
   const costData = sim.intervals.day.map((day, i) => ({ day: `dia ${day}`, cost: sim.intervals.cost_per_cow_day[i] }))
+  // Tabela: todos os alimentos. Gráfico: até 8 faixas (as de maior consumo médio) e o resto somado em "Outros".
   const rationSeries = feedIds.map((id, i) => ({
     key: `f${id}`,
     label: shortName(labelById[id] ?? String(id), 30),
     color: seriesColor(i)
   }))
+  const grouped = feedIds.length > MAX_RATION_BANDS
+  const bandIds = grouped ? feedIds.slice(0, MAX_RATION_BANDS - 1) : feedIds
+  const otherIds = grouped ? feedIds.slice(MAX_RATION_BANDS - 1) : []
+  const bandSeries: SeriesSpec[] = [
+    ...rationSeries.slice(0, bandIds.length),
+    ...(grouped ? [{ key: 'others', label: `Outros (${otherIds.length} alimentos)`, color: OTHERS_COLOR }] : [])
+  ]
   const rationData = sim.intervals.day.map((day, i) => ({
     day: `dia ${day}`,
-    ...Object.fromEntries(feedIds.map(id => [`f${id}`, sim.intervals.ration[i][String(id)] ?? 0]))
+    ...Object.fromEntries(feedIds.map(id => [`f${id}`, sim.intervals.ration[i][String(id)] ?? 0])),
+    others: otherIds.reduce((sum, id) => sum + (sim.intervals.ration[i][String(id)] ?? 0), 0)
   }))
+  /** Cor do alimento no gráfico e na tabela de composição (cinza para os que entram em "Outros"). */
+  const colorOf = (id: number) => (otherIds.includes(id) ? OTHERS_COLOR : seriesColor(Math.max(feedIds.indexOf(id), 0)))
 
   const requirementData = sim.intervals.day.map((day, i) => ({
     day: `dia ${day}`,
@@ -153,7 +168,7 @@ export default function Results({ sim, stale = false, base = null, onSetBase }: 
             <TableCell className='max-w-56 truncate' title={labelById[Number(id)]}>
               <span
                 className='mr-2 inline-block size-2.5 rounded-full align-middle'
-                style={{ backgroundColor: seriesColor(Math.max(feedIds.indexOf(Number(id)), 0)) }}
+                style={{ backgroundColor: colorOf(Number(id)) }}
               />
               {shortName(labelById[Number(id)] ?? id, 34)}
             </TableCell>
@@ -354,11 +369,20 @@ export default function Results({ sim, stale = false, base = null, onSetBase }: 
           <TabsPanel value='ration'>
             <ChartCard
               title='Ração ao longo do tempo'
-              description='kg de matéria seca por vaca por dia, a cada 30 dias de simulação (formulada pelo otimizador do RuFaS).'
+              description='kg de matéria seca por vaca por dia, a cada 30 dias de simulação (formulada pelo otimizador do RuFaS). Cada faixa é um alimento e sua espessura é a quantidade; a linha de cima é o consumo total.'
               chart={
                 <>
-                  <TimeSeries data={rationData} xKey='day' series={rationSeries} stacked format={value => nf(value, 0)} height={300} />
-                  <SeriesLegend series={rationSeries} />
+                  <TimeSeries
+                    data={rationData}
+                    xKey='day'
+                    series={bandSeries}
+                    stacked
+                    format={value => nf(value, 0)}
+                    tooltipFormat={value => nf(value, 2)}
+                    totalLabel='Total da ração'
+                    height={300}
+                  />
+                  <SeriesLegend series={bandSeries} />
                 </>
               }
               table={rationTimeTable}

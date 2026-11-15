@@ -433,7 +433,7 @@ Recharts, por meio do wrapper `chart.tsx` do shadcn, usando as cores `--chart-1`
 
 | Gráfico | Tipo | Regras |
 |---|---|---|
-| Ração por intervalo | Barras empilhadas | Uma cor por alimento; o de maior quantidade média recebe `chart-1`; legenda embaixo com nomes curtos |
+| Ração por intervalo | Áreas empilhadas | Uma cor por alimento; o de maior quantidade média recebe `chart-1`; no máximo 8 faixas (acima disso, os menores somam-se em "Outros", em cinza); a espessura da faixa é a quantidade e a linha de cima é o total; o balão lista de cima para baixo, com 2 casas decimais e o total; legenda embaixo com nomes curtos |
 | Exigências | Linhas, dois eixos | NEL e DMI no eixo esquerdo (Mcal e kg), proteína metabolizável no direito (g); eixo com `domain` automático |
 | Leite do rebanho | Linhas, dois eixos | Leite sólido; vacas em lactação tracejado |
 | Curva de lactação | Linhas com marcos e faixa de referência | Eixo X numérico (dias); marcos em verde (PEV), âmbar (secagem) e vermelho (parto) |
@@ -444,7 +444,8 @@ Recharts, por meio do wrapper `chart.tsx` do shadcn, usando as cores `--chart-1`
 Regras gerais: eixo com unidade ou título quando a unidade não é óbvia; dica (_tooltip_) com valores ao passar o
 mouse; legenda só quando há mais de uma série; cor nunca é o único canal (os marcos da curva também têm rótulo de
 texto e as células de calor mostram o número); barras sempre começam em zero; as linhas usam escala automática, por
-isso o eixo mostra a unidade e a variação deve ser lida com atenção.
+isso o eixo mostra a unidade e a variação deve ser lida com atenção. Os traços do eixo vão de 1, 2 ou 5 vezes uma
+potência de 10 (0, 10, 20, 30...), calculados em `web/src/lib/scale.ts`; nada de degraus como 9, 18, 27.
 
 ## Padrões de Interação e Conteúdo
 
