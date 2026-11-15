@@ -253,7 +253,7 @@ aplicacao RuFaS/
 ### 6.6 Premissas e limites
 
 - **Objetivo:** responder "posso confiar neste número?".
-- **Resultado esperado:** quatro blocos de texto (funcionamento, premissas, limites, créditos).
+- **Resultado esperado:** cinco blocos de texto (funcionamento, premissas, como ler os resultados, limites, créditos).
 
 ### 6.7 Reaproveitamento por cache
 
@@ -505,12 +505,13 @@ Estimativa: pontos = `n^k` (grade, k = fatores marcados) ou `n` (latin); simula�
 
 ### 10.7 Tela 5: Premissas e limites (`/sobre`)
 
-Quatro cartões de texto, em duas colunas a partir de 1.280 px:
+Cinco cartões de texto, em duas colunas a partir de 1.280 px (o terceiro ocupa as duas):
 
-1. **Como o sistema funciona** — "Do cenário à margem."
-2. **O que o modelo assume**
-3. **O que ele não faz** — inclui "Os preços iniciais são ilustrativos, não cotações. Troque pelos seus.", ausência de balanço de nutrientes, de exportação e do NASEM, e a possibilidade de o otimizador não convergir ("falhou" ou "leite perdido", nunca resultado válido).
-4. **Créditos e licenças** — RuFaS v1.0.6 (GPLv3, sem modificações), NRC 2001, template AdminCN (MIT).
+1. **Como o sistema funciona** — "Do cenário à margem." Cobre as cinco telas (Ruminante Singular, Vaca leiteira, Sensibilidade, Curva de lactação e Execuções), a margem, o limite de 100 simulações da sensibilidade e que tudo roda localmente (`runs/`).
+2. **O que o modelo assume** — leite pela curva de Wood do RuFaS; tetos padrão de inclusão (0,6 kg minerais, 0,9 kg gorduras, 1 kg para alimentos com 60% ou mais de PB); só farelo de arroz na biblioteca NRC; 1 ou 2 anos, 100 vacas (60 a 500), semente fixa; uma única ração para as vacas em lactação.
+3. **Como ler os resultados** — versão curta: estados Atende / No limite (folga ≤ 0,5%) / Violada / Indisponível e Viável / Inviável / Viável incompleta; restrições aproximadas e a aba Linearização; a dieta ótima pode usar até 30% a mais de consumo; margem, leite perdido, verificações V1 a V5 e balanço; variação em US$ (tamanho) × Spearman (direção). Aponta para `docs/GUIA_RUMINANTE_SINGULAR.docx`.
+4. **O que ele não faz** — preços ilustrativos; não substitui software de formulação nem nutricionista, sem comparação com referência profissional; NASEM só no Ruminante Singular; energia do NASEM exige metano e N urinário; o otimizador do RuFaS pode não convergir ("falhou" ou "leite perdido", nunca resultado válido); tempo e memória por simulação e o mínimo de 60 vacas; limiares V1 a V5, tolerância e a leitura de PEV + gestação em avaliação com o professor.
+5. **Créditos e licenças** — RuFaS v1.0.6 (GPLv3, sem modificações), NRC 2001, NASEM 2021 (National Academies Press, doi:10.17226/25806), template AdminCN (MIT). O rodapé de todas as telas cita NRC (2001) e NASEM (2021).
 
 ### 10.8 Identidade visual consolidada
 
