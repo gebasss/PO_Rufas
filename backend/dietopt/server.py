@@ -28,7 +28,7 @@ from .ration_checks import composition, consistency_checks, summarize
 from .rufas_adapter import PROJECT_ROOT, Scenario
 from .scenarios import DEFAULT_MILK_PRICE, DEFAULT_PRICES, Economics, evaluate
 from .scenario_files import pack as pack_scenario, unpack as unpack_scenario
-from .sensitivity import Factor, run_sensitivity
+from .sensitivity import Factor, run_sensitivity, sensitivity_limits
 from .standards import get_standard
 
 FRONTEND = PROJECT_ROOT / "frontend"
@@ -191,6 +191,7 @@ def sensitivity_work(job: Job) -> dict[str, Any]:
         n=int(job.params.get("n", 2)),
         workers=int(job.params.get("workers", 2)),
         on_progress=progress,
+        should_cancel=lambda: job.cancel_requested,
     ) | {"feeds": [{"id": int(i), "label": feed_label(i, scenario.nutrient_standard)} for i in job.params["feeds"]]}
 
 
@@ -243,7 +244,7 @@ class Handler(BaseHTTPRequestHandler):
                     )
                 )
             if path == "/api/defaults":
-                return self._json({"milk_price": DEFAULT_MILK_PRICE, "prices": DEFAULT_PRICES, "herd": herd_limits()})
+                return self._json({"milk_price": DEFAULT_MILK_PRICE, "prices": DEFAULT_PRICES, "herd": herd_limits(), "sensitivity": sensitivity_limits()})
             if path == "/api/lactation":
                 return self._json(
                     {

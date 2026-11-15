@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import Link from 'next/link'
 
@@ -16,8 +16,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { api, runJob } from '@/lib/api'
+import { api, cancelJob, JobCancelledError, runJob } from '@/lib/api'
 import { DEFAULT_HERD, herdProblem, secondsPerSimulation } from '@/lib/herd'
+import { DEFAULT_SENS_LIMITS, maxLevels, sensitivityPlan, sensitivityProblem } from '@/lib/sensitivity'
 import type { RunMeta, SensFactor, SensFactorState as FactorState, SensResult } from '@/lib/types'
 import { useApp } from '@/providers/AppProvider'
 import { simulationBody } from '@/views/CowView'
@@ -33,7 +34,8 @@ const messageOf = (error: unknown) => (error instanceof Error ? error.message : 
 const showResults = () => document.getElementById('resultados')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
 export default function SensitivityView() {
-  const { connection, defaults, selected, feedById, params, sens, setSens, sensKey, setSensKey, sensSetup, setSensSetup, trackTask } = useApp()
+  const { connection, defaults, selected, feedById, params, sim, sens, setSens, sensKey, setSensKey, sensSetup, setSensSetup, trackTask } = useApp()
+  const limits = defaults?.sensitivity ?? DEFAULT_SENS_LIMITS
   const { overrides, method, levels } = sensSetup
   const setOverrides = (change: (previous: Record<string, FactorState>) => Record<string, FactorState>) =>
     setSensSetup(s => ({ ...s, overrides: change(s.overrides) }))
@@ -43,6 +45,8 @@ export default function SensitivityView() {
   const [progress, setProgress] = useState({ done: 0, total: 0, status: 'queued' })
   const [error, setError] = useState<string | null>(null)
   const [base, setBase] = useState<RunMeta | null>(null)
+  const [cancelling, setCancelling] = useState(false)
+  const jobId = useRef<string | null>(null)
 
   // simulação-base (D3): linha de referência dos gráficos e delta da melhor margem
   const loadBase = useCallback(() => {
@@ -56,11 +60,19 @@ export default function SensitivityView() {
     if (connection === 'online') loadBase()
   }, [connection, loadBase])
 
+  // Fatores ligados de início: os dois alimentos que mais pesam no custo (kg da última simulação × preço); sem simulação,
+  // os dois de maior preço. O usuário muda isso à vontade.
+  const heaviest = useMemo(() => {
+    const weights = Object.entries(selected).map(([id, s]) => ({ id, weight: (sim ? (sim.average_ration[id] ?? 0) : 1) * s.price }))
+
+    return new Set(weights.sort((a, b) => b.weight - a.weight).slice(0, 2).map(w => w.id))
+  }, [selected, sim])
+
   const rows = useMemo(() => {
     const list = Object.entries(selected).map(([id, s]) => ({
       key: id,
       label: feedById[Number(id)] ? feedTitle(feedById[Number(id)]) : id,
-      defaults: { on: ['138', '44'].includes(id), low: +(s.price * 0.5).toFixed(3), high: +(s.price * 1.5).toFixed(3) }
+      defaults: { on: heaviest.has(id), low: +(s.price * 0.5).toFixed(3), high: +(s.price * 1.5).toFixed(3) }
     }))
 
     list.push({
@@ -70,7 +82,7 @@ export default function SensitivityView() {
     })
 
     return list
-  }, [selected, feedById, params.milkPrice])
+  }, [selected, feedById, params.milkPrice, heaviest])
 
   const stateOf = (key: string, defaults: FactorState) => overrides[key] ?? defaults
   const patch = (key: string, defaults: FactorState, change: Partial<FactorState>) =>
@@ -80,10 +92,15 @@ export default function SensitivityView() {
     .filter(r => stateOf(r.key, r.defaults).on)
     .map(r => ({ key: r.key, label: r.label, low: finite(stateOf(r.key, r.defaults).low), high: finite(stateOf(r.key, r.defaults).high) }))
 
-  const n = Math.max(2, Math.min(12, finite(levels, 2)))
+  const top = maxLevels(method, limits)
+  const levelsProblem =
+    Number.isInteger(levels) && levels >= limits.min_levels && levels <= top
+      ? null
+      : `Use um número inteiro de ${limits.min_levels} a ${top} ${method === 'grid' ? 'níveis' : 'amostras'}.`
+  const n = Math.max(limits.min_levels, Math.min(top, Math.round(finite(levels, limits.min_levels))))
   const feedFactors = factors.filter(f => f.key !== MILK).length
-  const points = factors.length ? (method === 'grid' ? n ** factors.length : n) : 0
-  const sims = factors.length ? (method === 'grid' ? n ** feedFactors : n) : 0
+  const plan = sensitivityPlan(feedFactors, factors.length, method, n)
+  const sizeProblem = levelsProblem ? null : sensitivityProblem(plan, limits)
 
   const body = useMemo(
     () => ({ ...simulationBody(selected, params), factors, method, n }),
@@ -95,41 +112,71 @@ export default function SensitivityView() {
   const stale = sens !== null && sensKey !== null && sensKey !== bodyKey
   const state: RunState = running ? 'running' : error ? 'error' : sens && !stale ? 'done' : 'idle'
   const herdError = herdProblem(params.cowNum, defaults?.herd ?? DEFAULT_HERD)
-  const blocked = !factors.length || connection !== 'online' || Object.keys(selected).length < 3 || herdError !== null
+  const blocked = !factors.length || connection !== 'online' || Object.keys(selected).length < 3 || herdError !== null || levelsProblem !== null || sizeProblem !== null
 
   const run = async () => {
     setRunning(true)
+    setCancelling(false)
     setError(null)
     setProgress({ done: 0, total: 0, status: 'queued' })
 
     const task = trackTask('Análise de sensibilidade')
 
     try {
-      const result = await runJob<SensResult>('sensitivity', body, (done, total, status) => {
-        setProgress({ done, total, status })
-        task.update(done, total)
-      })
+      const result = await runJob<SensResult>(
+        'sensitivity',
+        body,
+        (done, total, status) => {
+          setProgress({ done, total, status })
+          task.update(done, total)
+        },
+        { onStart: id => (jobId.current = id) }
+      )
 
       setSens(result)
       setSensKey(bodyKey)
       toast.success('Análise concluída.')
     } catch (e) {
-      setError(messageOf(e))
-      toast.error(messageOf(e))
+      if (e instanceof JobCancelledError) {
+        toast.info('Análise cancelada.')
+      } else {
+        setError(messageOf(e))
+        toast.error(messageOf(e))
+      }
     } finally {
       task.end()
+      jobId.current = null
+      setCancelling(false)
       setRunning(false)
     }
   }
 
+  const cancel = () => {
+    if (!jobId.current) return
+
+    setCancelling(true)
+    cancelJob(jobId.current).catch(e => {
+      setCancelling(false)
+      toast.error(messageOf(e))
+    })
+  }
+
   const runButton = (
     <div className='space-y-2'>
-      <p className='text-muted-foreground text-xs' aria-live='polite'>
-        {factors.length
-          ? `${points} cenários, até ${sims} simulações do RuFaS (cerca de ${Math.max(1, Math.ceil((sims * secondsPerSimulation(params.cowNum)) / 60))} min).`
-          : 'Marque ao menos um fator.'}{' '}
-        Rebanho de {params.cowNum} vacas, como na tela Vaca leiteira.
-      </p>
+      {sizeProblem ? (
+        <p className='text-destructive text-xs' role='alert'>
+          {sizeProblem}
+        </p>
+      ) : levelsProblem ? (
+        <p className='text-muted-foreground text-xs'>Corrija o número de níveis para ver a estimativa.</p>
+      ) : (
+        <p className='text-muted-foreground text-xs' aria-live='polite'>
+          {factors.length
+            ? `${plan.scenarios} cenários, até ${plan.simulations} simulações do RuFaS (cerca de ${Math.max(1, Math.ceil((plan.simulations * secondsPerSimulation(params.cowNum)) / 60))} min).`
+            : 'Marque ao menos um fator.'}{' '}
+          Rebanho de {params.cowNum} vacas, como na tela Vaca leiteira.
+        </p>
+      )}
       {herdError && (
         <p className='text-destructive text-xs' role='alert'>
           {herdError} Ajuste na tela Vaca leiteira.
@@ -144,6 +191,8 @@ export default function SensitivityView() {
         disabled={blocked}
         onRun={run}
         onView={showResults}
+        onCancel={cancel}
+        cancelling={cancelling}
       />
     </div>
   )
@@ -209,7 +258,18 @@ export default function SensitivityView() {
               </div>
               <div className='space-y-1.5'>
                 <Label>Níveis / amostras</Label>
-                <NumberInput step={1} min={2} value={levels} onChange={setLevels} aria-label='Níveis ou amostras' />
+                <NumberInput
+                  step={1}
+                  min={limits.min_levels}
+                  value={levels}
+                  onChange={setLevels}
+                  aria-label='Níveis ou amostras'
+                  aria-invalid={levelsProblem !== null}
+                  aria-describedby='sens-levels-hint'
+                />
+                <p id='sens-levels-hint' className={levelsProblem ? 'text-destructive text-xs' : 'text-muted-foreground text-xs'} role={levelsProblem ? 'alert' : undefined}>
+                  {levelsProblem ?? `De ${limits.min_levels} a ${top}.`}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -229,7 +289,7 @@ export default function SensitivityView() {
 
           {sens ? (
             <div id='resultados' className='scroll-mt-24'>
-              <SensResults result={sens} stale={stale} base={base} years={params.years} />
+              <SensResults result={sens} stale={stale} base={base} years={params.years} cowNum={params.cowNum} />
             </div>
           ) : running ? (
             <ResultsSkeleton />

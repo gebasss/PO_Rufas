@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsList, TabsPanel, TabsTab } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { DEFAULT_HERD } from '@/lib/herd'
 import { shortDate } from '@/lib/history'
 import { nf, shortName, usd } from '@/lib/format'
 import type { RunMeta, SensResult } from '@/lib/types'
@@ -24,12 +25,17 @@ interface Props {
   base?: RunMeta | null
   /** Período simulado, para só comparar com a base quando ele é o mesmo (a margem cresce com os anos). */
   years?: number
+  /** Vacas do rebanho, para só comparar com a base quando o tamanho é o mesmo (a margem cresce com o rebanho). */
+  cowNum?: number
 }
 
 /** Números do eixo vertical em milhares ("450 mil"), mais curtos que o rótulo com US$. */
 const thousands = (value: number) => `${nf(value / 1000, 0)} mil`
 
 const signed = (value: number) => `${value > 0 ? '+' : ''}${nf(value, 2)}`
+
+/** US$ com sinal explícito ("+US$ 470.000", "−US$ 13.000"). */
+const signedUsd = (value: number) => `${value > 0 ? '+' : value < 0 ? '−' : ''}${usd(Math.abs(value), 0)}`
 
 /** Contagem de cenários por faixa de margem (raiz do número de cenários, de 3 a 12 faixas). */
 function histogram(values: number[]) {
@@ -44,7 +50,7 @@ function histogram(values: number[]) {
   return counts
 }
 
-export default function SensResults({ result, stale = false, base = null, years }: Props) {
+export default function SensResults({ result, stale = false, base = null, years, cowNum }: Props) {
   const names = useMemo(() => Object.fromEntries(result.feeds.map(f => [String(f.id), shortName(f.label, 26)])), [result.feeds])
   const factorColumns = result.columns.filter(c => c !== 'Res')
   const okRows = result.rows.filter(r => r.Res !== null)
@@ -53,7 +59,18 @@ export default function SensResults({ result, stale = false, base = null, years 
   const worst = okRows.reduce<(typeof okRows)[number] | null>((a, r) => (a === null || (r.Res as number) < (a.Res as number) ? r : a), null)
   const [factor, setFactor] = useState(factorColumns[0] ?? '')
 
-  const baseMargin = base && typeof base.summary.margem === 'number' && (years === undefined || base.summary.years === years) ? base.summary.margem : null
+  // A margem da base só é comparável com o mesmo período e o mesmo número de vacas (as simulações antigas, sem o
+  // número de vacas no resumo, tinham o rebanho padrão).
+  const baseHerd = Number(base?.summary.cow_num ?? DEFAULT_HERD.default)
+  const sameYears = years === undefined || base?.summary.years === years
+  const sameHerd = cowNum === undefined || baseHerd === cowNum
+  const baseMargin = base && typeof base.summary.margem === 'number' && sameYears && sameHerd ? base.summary.margem : null
+  const baseNote =
+    base && !sameHerd
+      ? ` A simulação-base tem ${baseHerd} vacas e esta análise, ${cowNum}: a margem não é comparada.`
+      : base && !sameYears
+        ? ' A simulação-base cobre outro período: a margem não é comparada.'
+        : ''
   const bestDelta = best && baseMargin ? (((best.Res as number) - baseMargin) / Math.abs(baseMargin)) * 100 : undefined
 
   const bars = okRows.map(r => ({ name: r.cenario, value: r.Res as number }))
@@ -66,6 +83,12 @@ export default function SensResults({ result, stale = false, base = null, years 
     .map(e => ({ name: shortName(e.fator, 26), value: e.spearman as number }))
     .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
   const topEffect = effects[0]
+  // Variação da margem (US$) do mínimo ao máximo de cada fator; análises antigas não têm.
+  const swings = result.effects
+    .filter(e => typeof e.swing === 'number')
+    .map(e => ({ name: shortName(e.fator, 26), value: e.swing as number, pct: e.swing_pct ?? null }))
+    .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
+  const topSwing = swings[0]
 
   const scatter = okRows.map(r => ({ name: r.cenario, x: Number(r[factor]), y: r.Res as number })).filter(p => Number.isFinite(p.x))
   const bestRation = best?.ration
@@ -192,6 +215,7 @@ export default function SensResults({ result, stale = false, base = null, years 
                     <>
                       US$ sobre o custo de alimentação; o cenário ótimo em verde vivo
                       {baseMargin !== null && base ? ` e a linha tracejada é a simulação-base (${shortDate(base.created)})` : ''}.
+                      {baseNote}
                     </>
                   }
                   chart={
@@ -262,9 +286,44 @@ export default function SensResults({ result, stale = false, base = null, years 
           </TabsPanel>
 
           <TabsPanel value='factors'>
+            {swings.length > 0 && (
+              <ChartCard
+                title='Quanto a margem muda em cada fator'
+                description='Variação da margem, em US$, quando o fator vai do mínimo ao máximo da faixa (declive da reta ajustada aos cenários). É o tamanho do efeito. Verde: subir o fator aumenta a margem; vermelho: reduz.'
+                chart={<DivergingBars data={swings} format={signedUsd} height={Math.max(200, swings.length * 44 + 30)} />}
+                table={
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Fator</TableHead>
+                        <TableHead className='text-right'>Variação da margem (US$)</TableHead>
+                        <TableHead className='text-right'>% da margem média</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {swings.map(row => (
+                        <TableRow key={row.name}>
+                          <TableCell>{row.name}</TableCell>
+                          <TableCell className='text-right tabular-nums'>{signedUsd(row.value)}</TableCell>
+                          <TableCell className='text-right tabular-nums'>{row.pct === null ? '—' : `${signed(row.pct)}%`}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                }
+                footer={
+                  topSwing ? (
+                    <p className='text-muted-foreground text-xs'>
+                      O fator que mais mexe na margem é <strong>{topSwing.name}</strong> ({signedUsd(topSwing.value)}).
+                      {/leite/i.test(topSwing.name) ? ' O preço do leite domina porque o leite simulado quase não muda com o preço dos alimentos: ele só multiplica a receita.' : ''}
+                    </p>
+                  ) : null
+                }
+              />
+            )}
             <ChartCard
-              title='Efeito de cada fator sobre a margem'
-              description='Correlação de Spearman entre o fator e a margem (−1 a +1), do maior para o menor efeito. Verde: subir o fator aumenta a margem; vermelho: reduz.'
+              title='Direção do efeito (correlação de Spearman)'
+              description='Correlação de Spearman entre o fator e a margem (−1 a +1). Mostra a direção e a consistência do efeito, não o tamanho: um fator pode ter correlação forte e mexer pouco na margem. Verde: subir o fator aumenta a margem; vermelho: reduz.'
               chart={
                 effects.length > 0 ? (
                   <DivergingBars data={effects} format={signed} domain={[-1, 1]} height={Math.max(200, effects.length * 44 + 30)} />

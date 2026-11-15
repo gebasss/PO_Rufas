@@ -239,8 +239,8 @@ O exercício simples (PL de arroz e milho com tabela de cenários) saiu do siste
 | ID | Requisito | Prior. | Situação | Aceite |
 |---|---|---|---|---|
 | RF-16 | O usuário deve poder escolher fatores (preços de alimentos selecionados e preço do leite) com faixa de variação. | M | Atendido | Faixa padrão de ±50% nos alimentos e ±20% no leite. |
-| RF-17 | O sistema deve gerar cenários por grade ou por hipercubo latino e informar a estimativa de simulações e de tempo. | M | Atendido | Estimativa exibida antes de rodar. |
-| RF-18 | O sistema deve apresentar a tabela de cenários no formato do quadro (fatores + `Res`), a ração de cada cenário, o efeito (correlação de Spearman) de cada fator e um gráfico de margem por cenário. | M | Atendido | Tabela, gráfico de efeitos e gráfico de margem. |
+| RF-17 | O sistema deve gerar cenários por grade ou por hipercubo latino e informar a estimativa de simulações e de tempo. | M | Atendido | Estimativa exibida antes de rodar. Análises com mais de 100 simulações do RuFaS são recusadas na tela e no servidor; é possível cancelar uma análise em andamento. |
+| RF-18 | O sistema deve apresentar a tabela de cenários no formato do quadro (fatores + `Res`), a ração de cada cenário, o efeito de cada fator (variação da margem em US$ do mínimo ao máximo da faixa e correlação de Spearman) e um gráfico de margem por cenário. | M | Atendido | Tabela, gráficos de efeitos e gráfico de margem. A comparação com a simulação-base só vale com o mesmo período e o mesmo número de vacas. |
 
 #### 5.2.5 Requisitos previstos e premissas, importantes para o usuário profissional
 
@@ -314,7 +314,7 @@ registrada na seção 15.
 | RN-11 | A simulação exige ao menos **3 alimentos** selecionados (um volumoso, um concentrado e um mineral); a interface avisa antes de enviar. | Vaca |
 | RN-12 | A semente aleatória é **fixa (42)**: mesma entrada, mesmo resultado. | Vaca, Sensibilidade |
 | RN-13 | No máximo **2 simulações** rodam ao mesmo tempo e **um job** por vez, por causa do consumo de memória (~1,2 GB cada). | Servidor |
-| RN-14 | A sensibilidade usa faixa padrão de **±50%** nos alimentos e **±20%** no leite. Grade gera `n^k` cenários; hipercubo latino gera `n`. O **efeito** de um fator é a correlação de Spearman com a margem. A estimativa de simulações e de tempo é mostrada antes de rodar. | Sensibilidade |
+| RN-14 | A sensibilidade usa faixa padrão de **±50%** nos alimentos e **±20%** no leite. Grade gera `n^k` cenários; hipercubo latino gera `n`. O **efeito** de um fator é mostrado de duas formas: a variação da margem em US$ do mínimo ao máximo da faixa (tamanho) e a correlação de Spearman com a margem (direção). A grade aceita até 12 níveis, o hipercubo latino até 100 amostras e a análise, até 100 simulações. A estimativa de simulações e de tempo é mostrada antes de rodar. | Sensibilidade |
 | RN-15 | A curva de lactação é a de **Wood por paridade**; o próximo parto ≈ PEV + gestação e a secagem ocorre antes dele. Valores iniciais do quadro: PEV 60 dias e gestação 270 dias. | Curva de lactação |
 | RN-16 | O **preço-sombra** de um nutriente é a variação do custo ótimo por unidade adicional do seu limite mínimo ativo. | Ruminante Singular |
 | RN-17 | Os preços iniciais são **ilustrativos** e rotulados como tal na interface, no rodapé e no README (P4). | Todas as telas |

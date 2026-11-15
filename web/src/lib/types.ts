@@ -29,10 +29,21 @@ export interface HerdLimits {
   warn: number
 }
 
+/** Tamanho máximo da análise de sensibilidade (`backend/dietopt/sensitivity.py`). */
+export interface SensitivityLimits {
+  min_levels: number
+  /** Níveis por fator na grade. */
+  max_levels: number
+  /** Amostras do hipercubo latino. */
+  max_samples: number
+  max_simulations: number
+}
+
 export interface Defaults {
   milk_price: number
   prices: Record<string, number>
   herd: HerdLimits
+  sensitivity: SensitivityLimits
 }
 
 /** Alimento escolhido para a ração: preço (US$/kg MS) e limites (kg MS/vaca/dia). */
@@ -452,7 +463,8 @@ export interface SensRow {
 export interface SensResult {
   columns: string[]
   rows: SensRow[]
-  effects: { fator: string; spearman: number | null }[]
+  /** `swing` (US$) e `swing_pct` só existem em análises feitas depois da variação em dólares. */
+  effects: { fator: string; spearman: number | null; swing?: number | null; swing_pct?: number | null }[]
   feeds: { id: number; label: string }[]
 }
 /** Um fator da sensibilidade na tela: ligado ou não e a faixa de variação. */
