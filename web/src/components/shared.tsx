@@ -131,6 +131,7 @@ export function NumberInput({
   onChange,
   step = 0.01,
   min,
+  max,
   className,
   ...rest
 }: {
@@ -138,6 +139,7 @@ export function NumberInput({
   onChange: (value: number) => void
   step?: number
   min?: number
+  max?: number
   className?: string
   'aria-label'?: string
   'aria-invalid'?: boolean
@@ -152,6 +154,7 @@ export function NumberInput({
       inputMode='decimal'
       step={step}
       min={min}
+      max={max}
       value={Number.isFinite(value) ? value : ''}
       onChange={e => onChange(e.target.value === '' ? Number.NaN : Number(e.target.value))}
       className={cn('h-8 text-right tabular-nums', className)}
