@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangleIcon, CheckIcon, LoaderCircleIcon, PlayIcon, RotateCcwIcon } from 'lucide-react'
+import { AlertTriangleIcon, CheckIcon, LoaderCircleIcon, PlayIcon, RotateCcwIcon, XIcon } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -20,32 +20,47 @@ interface Props {
   onRun: () => void
   /** No estado concluído o botão principal leva aos resultados. */
   onView?: () => void
+  /** Se informado, o estado executando mostra o botão Cancelar (a tarefa para no próximo lote). */
+  onCancel?: () => void
+  /** O cancelamento já foi pedido e a tarefa ainda está terminando o lote em andamento. */
+  cancelling?: boolean
 }
 
 /**
  * Botão Executar com os quatro estados do fluxo: pronto (claro), executando (barra de progresso no próprio botão),
  * concluído (esmeralda, leva aos resultados) e erro (vermelho, tentar de novo).
  */
-export default function RunButton({ state, progress, label, unit = 'passos', error, disabled, onRun, onView }: Props) {
+export default function RunButton({ state, progress, label, unit = 'passos', error, disabled, onRun, onView, onCancel, cancelling = false }: Props) {
   const percent = progress && progress.total > 0 ? Math.round((100 * progress.done) / progress.total) : null
 
   return (
     <div className='space-y-2'>
       {state === 'running' ? (
-        <div
-          className='bg-muted border-border relative flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-xl border text-sm font-medium'
-          role='status'
-          aria-live='polite'
-        >
-          <span
-            className='bg-brand/25 absolute inset-y-0 left-0 transition-[width] duration-500'
-            style={{ width: `${percent ?? 8}%` }}
-            aria-hidden
-          />
-          <LoaderCircleIcon className='relative size-4 animate-spin' />
-          <span className='relative'>
-            {percent === null ? 'Na fila…' : `Executando… ${progress?.done} de ${progress?.total} ${unit}`}
-          </span>
+        <div className='flex gap-2'>
+          <div
+            className='bg-muted border-border relative flex h-12 min-w-0 flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl border text-sm font-medium'
+            role='status'
+            aria-live='polite'
+          >
+            <span
+              className='bg-brand/25 absolute inset-y-0 left-0 transition-[width] duration-500'
+              style={{ width: `${percent ?? 8}%` }}
+              aria-hidden
+            />
+            <LoaderCircleIcon className='relative size-4 animate-spin' />
+            <span className='relative truncate'>
+              {cancelling
+                ? 'Cancelando… termina o lote em andamento'
+                : percent === null
+                  ? 'Na fila…'
+                  : `Executando… ${progress?.done} de ${progress?.total} ${unit}`}
+            </span>
+          </div>
+          {onCancel && (
+            <Button variant='outline' size='lg' className='h-12' onClick={onCancel} disabled={cancelling}>
+              <XIcon /> Cancelar
+            </Button>
+          )}
         </div>
       ) : state === 'done' ? (
         <div className='flex gap-2'>

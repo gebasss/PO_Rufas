@@ -240,7 +240,7 @@ aplicacao RuFaS/
 
 - **Objetivo:** ver como a margem reage a preços de alimentos e do leite.
 - **Ações permitidas:** marcar fatores e informar faixas; escolher método (grade ou hipercubo latino) e níveis; rodar.
-- **Resultado esperado:** tabela de cenários, efeito de Spearman de cada fator e margem por cenário.
+- **Resultado esperado:** tabela de cenários, variação da margem em US$ e correlação de Spearman de cada fator e margem por cenário.
 - **Regras:** seção 15.2.
 
 ### 6.5 Curva de lactação
@@ -484,21 +484,24 @@ Título: "Sensibilidade (RuFaS)". Painel "Fatores" à esquerda; resultados à di
 
 | Componente | Comportamento |
 |---|---|
-| Lista de fatores | Uma linha por alimento selecionado na tela da vaca e uma para "Preço do leite (US$/kg)": caixa de seleção, nome, **De** e **Até**. Padrões: marcados apenas farelo de arroz (138), milho (44), se selecionados, e o leite; alimentos de ±50% do preço atual (De = 0,5×, Até = 1,5×); leite de ±20% (0,8× e 1,2×) |
+| Lista de fatores | Uma linha por alimento selecionado na tela da vaca e uma para "Preço do leite (US$/kg)": caixa de seleção, nome, **De** e **Até**. Padrões: marcados os dois alimentos que mais pesam no custo (kg da última simulação × preço; sem simulação, os dois de maior preço) e o leite; alimentos de ±50% do preço atual (De = 0,5×, Até = 1,5×); leite de ±20% (0,8× e 1,2×) |
 | Método | "Grade (todas as combinações)" ou "Hipercubo latino" |
-| Níveis / amostras | Campo numérico, padrão 3; efetivo limitado a 2–12 |
-| Estimativa | "N cenários, até M simulações do RuFaS (cerca de K min)." ou "Marque ao menos um fator." |
-| Botão **Rodar sensibilidade** | "Rodando…" durante a execução; desabilitado sem fatores marcados, sem conexão ou com menos de 3 alimentos selecionados; barra de progresso |
+| Níveis / amostras | Campo numérico inteiro, padrão 3; grade de 2 a 12 níveis e hipercubo latino de 2 a 100 amostras. Fora disso, a mensagem aparece sob o campo e o botão fica desabilitado |
+| Estimativa | "N cenários, até M simulações do RuFaS (cerca de K min)." ou "Marque ao menos um fator.". Com mais de 100 simulações, em vez da estimativa aparece "Esta análise exigiria N simulações do RuFaS; o limite é 100. Reduza os níveis ou os fatores." e o botão fica desabilitado |
+| Botão **Rodar sensibilidade** | "Rodando…" durante a execução; desabilitado sem fatores marcados, sem conexão, com menos de 3 alimentos selecionados, com níveis inválidos ou acima do limite de simulações; barra de progresso e botão **Cancelar** (a tarefa para antes do próximo lote de simulações; cancelar não grava execução no histórico) |
 
 Resultados (antes: ícone e "Defina os fatores e rode a análise."):
 
 | Bloco | Conteúdo |
 |---|---|
 | **Tabela de cenários** | Colunas: `Sn`, uma por fator, "Res (US$)" (mapa de calor), "US$/vaca/dia", "Leite perdido" (em âmbar, "−x,xx", ou traço), "Ração (kg MS/vaca/dia)" (até 4 alimentos de maior quantidade). Cenário falho: "falhou" em vermelho em `Res` (a causa na dica) e o erro na coluna da ração |
-| **Efeito sobre a margem** | Barras horizontais de Spearman (−1 a +1), verde para efeito positivo e vermelho para negativo; fatores sem efeito calculável ficam de fora |
+| **Quanto a margem muda em cada fator** | Barras horizontais com a variação da margem, em US$, do mínimo ao máximo da faixa de cada fator (`swing`); verde para efeito positivo e vermelho para negativo; tabela com US$ e % da margem média. Não aparece em análises antigas, que não têm `swing` |
+| **Direção do efeito (Spearman)** | Barras horizontais de Spearman (−1 a +1), verde para efeito positivo e vermelho para negativo; fatores sem efeito calculável ficam de fora. Mostra direção e consistência, não o tamanho |
 | **Margem por cenário** | Barras de `Res` por `Sn`, só cenários válidos |
 
-Estimativa: pontos = `n^k` (grade, k = fatores marcados) ou `n` (latin); simulações = `n^(fatores de alimento)` (grade) ou `n` (latin); tempo = `⌈simulações × 17 s ÷ 60⌉` minutos, no mínimo 1 (D2).
+A comparação com a simulação-base (variação da melhor margem e linha tracejada) só vale com o mesmo período e o mesmo número de vacas (resumos antigos sem `cow_num` valem como o rebanho padrão); caso contrário, a descrição do gráfico explica por que não há comparação.
+
+Estimativa: pontos = `n^k` (grade, k = fatores marcados) ou `n` (latin); simulações = `n^(fatores de alimento)` (grade), ou `n` (latin, com ao menos um fator de alimento; só o leite = 1); tempo = `⌈simulações × 17 s ÷ 60⌉` minutos, no mínimo 1 (D2).
 
 ### 10.7 Tela 5: Premissas e limites (`/sobre`)
 
@@ -562,12 +565,13 @@ Servidor HTTP em `http://127.0.0.1:8000` (porta e endereço configuráveis por `
 | Método e rota | Corpo | Resposta de sucesso |
 |---|---|---|
 | `GET /api/feeds` | — | 200: lista ordenada por (tipo, nome) com `id`, `name`, `description`, `kind`, `category`, `dm`, `cp`, `ndf`, `ee`, `tdn`, `calcium`, `phosphorus`, `default_price`, `nel` (3 casas), `default_max` |
-| `GET /api/defaults` | — | 200: `{ milk_price, prices }`, com `prices` indexado por id (texto) |
+| `GET /api/defaults` | — | 200: `{ milk_price, prices, herd, sensitivity }`, com `prices` indexado por id (texto) e `sensitivity` = `{ min_levels, max_levels, max_samples, max_simulations }` |
 | `GET /api/lactation` | — | 200: `{ curves, wood, milestones }`; `curves` = paridade → 330 valores diários; `milestones` = `{ pev: 60, proximo_parto: 330, secagem: 270 }` |
 | `GET /api/jobs` | — | 200: lista de tarefas sem resultado, da mais recente para a mais antiga |
 | `GET /api/jobs/<id>` | — | 200: tarefa com `result`; 404 `{"error": "job não encontrado"}` |
 | `POST /api/jobs/simulate` | `{ feeds: [ids], prices?, limits?, milk_price?, years?, max_milk_reduction?, seed?, cow_num? }` | 202: tarefa (`id`, `kind`, `status`, `done`, `total`, `error`, `created`, `finished`), sem resultado |
-| `POST /api/jobs/sensitivity` | O mesmo corpo de simulação mais `{ factors: [{ key, label, low, high }], method?, n?, workers? }` | 202: tarefa, sem resultado |
+| `POST /api/jobs/sensitivity` | O mesmo corpo de simulação mais `{ factors: [{ key, label, low, high }], method?, n?, workers? }` | 202: tarefa, sem resultado. A tarefa termina em `error` ("A análise exigiria N simulações do RuFaS; o limite é 100…") se o tamanho passa dos limites da seção 15.2, e em `cancelled` se for cancelada |
+| `POST /api/jobs/<id>/cancel` | — | 200: tarefa; a sensibilidade para antes do próximo lote |
 | qualquer outro `POST` | — | 404 `{"error": "rota não encontrada"}` |
 | `GET` fora da API | — | Arquivo de `frontend/` ou 404 em texto "nao encontrado" |
 
@@ -584,7 +588,7 @@ Servidor HTTP em `http://127.0.0.1:8000` (porta e endereço configuráveis por `
 | `lactation` | `curves`, `wood`, `wood_from_rufas`, `milestones` |
 | `average_ration` | id → kg MS/vaca/dia |
 
-**Resultado de `sensitivity`:** `columns` (rótulos dos fatores + `Res`), `rows` (ver 15.2), `effects` (`[{ fator, spearman }]`), `feeds` (`[{ id, label }]` dos alimentos selecionados).
+**Resultado de `sensitivity`:** `columns` (rótulos dos fatores + `Res`), `rows` (ver 15.2), `effects` (`[{ fator, spearman, swing, swing_pct }]`), `feeds` (`[{ id, label }]` dos alimentos selecionados).
 
 ### 11.3 Códigos de erro
 
@@ -693,7 +697,7 @@ Retirado em 11/11/2026 (o exercício simples de arroz e milho deixou de fazer pa
   1. Abrir a tela 4; marcar fatores e ajustar faixas; escolher método e níveis; conferir a estimativa.
   2. Acionar **Rodar sensibilidade**; acompanhar "x de y simulações do RuFaS concluídas".
   3. Ao terminar: aviso "Análise concluída." e resultados (seção 10.6).
-- **Resultado esperado:** tabela `S1…SN` com `Res`, efeito de Spearman e margem por cenário.
+- **Resultado esperado:** tabela `S1…SN` com `Res`, variação da margem em US$, efeito de Spearman e margem por cenário.
 - **Erros possíveis:** cenário que falha aparece como "falhou" sem derrubar a análise; falha geral da tarefa (aviso "Falha na análise" ou a primeira linha do erro).
 - **Logs:** `runs/web_<id>_sNNN/console.log` por simulação.
 
@@ -779,7 +783,7 @@ Seção 12.1. Resumo: sucesso = código 0 + linha de resumo; falha nunca vira re
 
 - Simular exige pelo menos 3 alimentos selecionados.
 - Sensibilidade: botão desabilitado sem fatores marcados, sem conexão ou com menos de 3 alimentos.
-- Níveis/amostras da sensibilidade limitados a 2–12.
+- Níveis da sensibilidade: inteiros de 2 a 12 (grade) ou de 2 a 100 amostras (hipercubo latino); no máximo 100 simulações do RuFaS por análise. O servidor revalida tudo (`check_plan`) antes de montar os cenários.
 - Campos numéricos aceitam vazio durante a edição; antes de enviar, valores inválidos são trocados pelo padrão (`finite()`).
 - Nenhuma validação bloqueia a digitação; a validação final está no servidor, que é mínima (D4).
 
@@ -818,9 +822,10 @@ Arredondamentos da linha resumida: `leite_kg` inteiro; `receita` e `custo_alimen
 ### 15.2 Sensibilidade (`run_sensitivity`)
 
 - **Fatores:** `Factor { key, label, low, high }`; `key` é o id do alimento (preço, exige simulação) ou `milk_price` (só altera a receita).
+- **Limites (`check_plan`, antes de montar qualquer cenário):** método `grid` ou `latin`; ao menos um fator, sem repetição; níveis de 2 a 12 (`grid`) ou amostras de 2 a 100 (`latin`); no máximo 100 simulações do RuFaS (`MAX_SIMULATIONS`). Sem isso, 8 fatores com 12 níveis seriam 430 milhões de cenários na memória. Violação = `ValueError` com a mensagem da tela.
 - **Pontos:** `grid` gera `max(n, 2)` níveis igualmente espaçados por fator e o produto cartesiano (`n^k` pontos); `latin` gera `n` amostras, uma por estrato de cada fator (semente 42).
 - **Simulações únicas:** pontos com os mesmos preços de alimento (arredondados a 4 casas) compartilham uma única simulação; fatores de leite não geram simulação. Cenários nomeados `<nome>_s001`, `_s002`…
-- **Execução:** em lotes de `workers` simulações; o progresso é "feitas de total". Cada simulação passa pelo cache.
+- **Execução:** em lotes de `workers` simulações; o progresso é "feitas de total". Cada simulação passa pelo cache. Antes de cada lote o servidor confere o pedido de cancelamento e, se houver, levanta `Cancelled` (a tarefa termina `cancelled`).
 - **Linha `Sn`:**
 
 | Campo | Conteúdo |
@@ -833,7 +838,8 @@ Arredondamentos da linha resumida: `leite_kg` inteiro; `receita` e `custo_alimen
 | (falha) | `Res = null` e `erro` com o motivo |
 
 - **Efeito de cada fator:** correlação de postos de Spearman entre o fator e `Res`, só com as linhas válidas (3 casas). Fica `null` com menos de 3 linhas válidas ou se o fator ou `Res` não variam.
-- **Interpretação:** +1 = margem cresce com o fator; −1 = cai.
+- **Interpretação:** +1 = margem cresce com o fator; −1 = cai. É direção e consistência, não tamanho: um fator que muda a margem em 0,1% pode ter −1.
+- **Variação da margem (`swing`, US$; `swing_pct`, % da margem média):** declive da reta de mínimos quadrados de `Res` sobre o fator vezes a amplitude do fator (máximo − mínimo dos valores testados), só com as linhas válidas (2 casas). Na grade, os níveis são balanceados e o declive isola o efeito de cada fator; no hipercubo latino é uma estimativa. `null` com menos de 2 linhas válidas ou se o fator não varia.
 - **Estimativa na tela:** seção 10.6.
 
 ### 15.3 Curva de lactação (`lactation.py`)
