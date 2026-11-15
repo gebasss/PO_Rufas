@@ -285,7 +285,8 @@ function axisScale(
   data: Record<string, number | string | null | undefined>[],
   series: SeriesSpec[],
   side: 'left' | 'right',
-  stacked: boolean
+  stacked: boolean,
+  zeroBased = false
 ): NiceScale | null {
   const onAxis = series.filter(s => (s.axis ?? 'left') === side)
   const stack = stacked && side === 'left' ? onAxis.filter(s => s.kind !== 'line') : []
@@ -304,7 +305,7 @@ function axisScale(
     for (const s of onAxis) if (!stack.includes(s)) take(row[s.key])
   }
 
-  return niceScale(min, max, stack.length > 0)
+  return niceScale(min, max, stack.length > 0 || zeroBased)
 }
 
 /** Séries ao longo do tempo: áreas suaves (podem empilhar) e linhas, com eixo direito opcional. */
@@ -317,6 +318,8 @@ export function TimeSeries({
   rightFormat,
   tooltipFormat,
   totalLabel,
+  xTicks,
+  zeroBased = false,
   markers,
   bands,
   height = 260,
@@ -330,6 +333,10 @@ export function TimeSeries({
   rightFormat?: (value: number) => string
   /** Formato dos números do balão (padrão: o mesmo do eixo); útil quando o eixo arredonda mais que o balão. */
   tooltipFormat?: (value: number) => string
+  /** Valores do eixo X que recebem rótulo (por exemplo, 30, 60, 90 dias); sem isto o Recharts escolhe sozinho. */
+  xTicks?: (number | string)[]
+  /** Eixo esquerdo começando em zero também nas linhas (as áreas empilhadas já começam). */
+  zeroBased?: boolean
   /** Com `stacked`: mostra no balão uma linha com a soma de todas as faixas, com este nome. */
   totalLabel?: string
   /** Linhas verticais tracejadas em valores do eixo X (marcos como PEV e parto); valores fora dos dados são ignorados. */
@@ -341,7 +348,7 @@ export function TimeSeries({
 }) {
   const id = useId().replace(/:/g, '')
   const hasRight = series.some(s => s.axis === 'right')
-  const left = axisScale(data, series, 'left', stacked)
+  const left = axisScale(data, series, 'left', stacked, zeroBased)
   const right = hasRight ? axisScale(data, series, 'right', false) : null
 
   return (
@@ -357,7 +364,7 @@ export function TimeSeries({
             ))}
           </defs>
           <CartesianGrid stroke={CHART.grid} vertical={false} />
-          <XAxis dataKey={xKey} {...AXIS} minTickGap={28} />
+          <XAxis dataKey={xKey} {...AXIS} minTickGap={28} ticks={xTicks} />
           <YAxis yAxisId='left' {...AXIS} width={52} domain={left?.domain ?? (stacked ? [0, 'auto'] : ['auto', 'auto'])} ticks={left?.ticks} tickFormatter={value => (format ?? String)(Number(value))} />
           {hasRight && (
             <YAxis yAxisId='right' orientation='right' {...AXIS} width={48} domain={right?.domain ?? ['auto', 'auto']} ticks={right?.ticks} tickFormatter={value => (rightFormat ?? String)(Number(value))} />

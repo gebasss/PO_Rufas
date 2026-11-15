@@ -247,7 +247,7 @@ aplicacao RuFaS/
 
 - **Objetivo:** reproduzir o gráfico do quadro (produção × dias, PEV, gestação).
 - **Ações permitidas:** editar PEV, gestação e dias de secagem.
-- **Resultado esperado:** curvas de Wood por paridade com marcos, pico e produção em 305 dias.
+- **Resultado esperado:** curvas de Wood por paridade com marcos, pico, produção em 305 dias e produção até a secagem.
 - **Regras:** seção 15.3.
 
 ### 6.6 Premissas e limites
@@ -471,11 +471,12 @@ A busca casa o texto (sem diferença de maiúsculas) com o título do alimento o
 | Bloco | Conteúdo |
 |---|---|
 | Cabeçalho | Selo no topo: "parâmetros calibrados pela simulação RuFaS" (verde) ou "parâmetros de referência" |
-| Campos | **PEV (dias)** (padrão 60, mínimo 0), **Gestação (dias)** (270, mínimo 200), **Secagem antes do parto (dias)** (60, mínimo 0) |
+| Campos | **PEV (dias)** (padrão 60; 0 a 200), **Gestação (dias)** (270; 200 a 300), **Secagem antes do parto (dias)** (60; 0 a 120). Inteiros; o texto sob o campo mostra o limite e, fora dele, a mensagem em vermelho (`web/src/lib/cycle.ts`). Os limites só evitam valores sem sentido; não vêm da literatura nem do RuFaS |
 | Gráfico | Uma curva por paridade ("1ª lactação", "2ª lactação", "3ª ou mais"); eixos "dias em lactação" e "kg/vaca/dia"; faixa sombreada do PEV ao parto rotulada "gestação N d"; linhas tracejadas "PEV (N d)", "secagem (N d)" e "parto (N d)"; dica "dia N" |
-| Resumo | Um cartão por paridade: pico em kg e "pico no dia N · x,x t em 305 dias" |
+| Resumo | Um cartão por paridade: pico em kg e "pico no dia N · x,x t em 305 dias · y,y t até a secagem" |
+| Produção acumulada | "Produção acumulada até a secagem (dia N)": a soma diária desde o parto até o dia da secagem; a tabela traz o total de 305 dias (referência usual) e o total até a secagem |
 
-Regras: PEV + gestação = dia do parto; secagem = parto − dias de secagem; eixo X vai até o maior entre 330 e parto + 15. Sem simulação, usa os parâmetros de `/api/lactation`; após uma simulação, usa os da simulação (`wood_from_rufas`). A descrição da página informa: "Rode uma simulação na aba Vaca leiteira para usar os parâmetros calibrados pelo RuFaS." quando não calibrado.
+Regras: PEV + gestação = dia do parto; secagem = parto − dias de secagem; eixo X vai até o maior entre 330 e parto + 15, com rótulos de 30 em 30 dias; o eixo de kg começa em zero. Com algum campo fora do limite, a curva e o acumulado aparecem sem marcos (acumulado em 305 dias). A curva diária segue depois da secagem só para mostrar o modelo. Sem simulação, usa os parâmetros de `/api/lactation`; após uma simulação, usa os da simulação (`wood_from_rufas`). A descrição da página informa: "Rode uma simulação na aba Vaca leiteira para usar os parâmetros calibrados pelo RuFaS." quando não calibrado.
 
 ### 10.6 Tela 4: Sensibilidade (`/sensibilidade`)
 
@@ -840,7 +841,7 @@ Arredondamentos da linha resumida: `leite_kg` inteiro; `receita` e `custo_alimen
 - `y(t) = l · t^m · e^(−n·t)`, kg de leite por vaca por dia, para `t = 1…330` no servidor (e até o maior entre 330 e parto + 15 na tela).
 - Parâmetros `l`, `m`, `n` por paridade (1, 2 e 3 ou mais) vêm do RuFaS (`LactationCurve`); sem simulação, valem os de `DEFAULT_WOOD` (média base do RuFaS `l = 19,9`, `m = 0,247`, `n = 0,003376` mais o ajuste de paridade, sem os ajustes de ano, região e ordenha).
 - **Marcos:** `proximo_parto = PEV + gestação`; `secagem = proximo_parto − dias de secagem`. Padrão do quadro: PEV 60, gestação 270, secagem 60 dias antes do parto (parto no dia 330, secagem no dia 270).
-- **Pico:** dia e valor do máximo nos 305 primeiros dias (na tela). **Produção em 305 dias:** soma dos 305 primeiros valores diários, mostrada em toneladas.
+- **Pico:** dia e valor do máximo nos 305 primeiros dias (na tela). **Produção em 305 dias:** soma dos 305 primeiros valores diários, mostrada em toneladas. **Produção até a secagem:** soma dos valores diários do dia 1 ao dia da secagem.
 
 ### 15.4 Cenários de referência
 

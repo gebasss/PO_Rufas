@@ -1,7 +1,7 @@
 # Documento de Requisitos do Produto (PRD)
 
 **Produto:** Dieta Ótima com RuFaS
-**Versão do documento:** 0.16 (rascunho para avaliação)
+**Versão do documento:** 0.17 (rascunho para avaliação)
 **Data:** 02/11/2026
 **Status:** Versão web implementada; documento em revisão
 **Autor(es):** _[a preencher]_
@@ -231,7 +231,7 @@ O exercício simples (PL de arroz e milho com tabela de cenários) saiu do siste
 
 | ID | Requisito | Prior. | Situação | Aceite |
 |---|---|---|---|---|
-| RF-14 | O sistema deve desenhar a curva de Wood por paridade (1ª, 2ª, 3ª ou mais) com PEV, gestação e secagem ajustáveis. | M | Atendido | Marcos e faixa de gestação desenhados; pico e produção em 305 dias por paridade. |
+| RF-14 | O sistema deve desenhar a curva de Wood por paridade (1ª, 2ª, 3ª ou mais) com PEV, gestação e secagem ajustáveis. | M | Atendido | Marcos e faixa de gestação desenhados; pico e produção em 305 dias e até a secagem, por paridade. Campos fora dos limites (PEV 0 a 200, gestação 200 a 300, secagem 0 a 120 dias, inteiros) mostram a mensagem no campo e a curva fica sem marcos. |
 | RF-15 | A curva deve usar os parâmetros calibrados pela última simulação do RuFaS e indicar a origem dos parâmetros. | S | Atendido | Selo "calibrados pela simulação RuFaS" ou "de referência". |
 
 #### 5.2.4 Análise de sensibilidade
@@ -404,8 +404,8 @@ registrada na seção 15.
 
 1. Abrir _Curva de lactação_.
 2. Ajustar PEV, gestação e dias de secagem.
-3. Ler as curvas por paridade, os marcos (parto, PEV, secagem), o pico e a produção em 305 dias. O selo indica se os
-   parâmetros vêm da última simulação ou são de referência.
+3. Ler as curvas por paridade, os marcos (parto, PEV, secagem), o pico, a produção em 305 dias e a produção até a
+   secagem. O selo indica se os parâmetros vêm da última simulação ou são de referência.
 
 **F5. Consultar premissas e limites** (todos)
 
@@ -916,3 +916,4 @@ próprio RuFaS.
 | 0.14 | 03/11/2026 | _[a preencher]_ | Etapa E8e: exportação de CSV e relatório HTML dos resultados (RF-20). |
 | 0.15 | 03/11/2026 | _[a preencher]_ | Etapa E8f: salvar e abrir cenários em arquivo JSON versionado (RF-21). |
 | 0.16 | 11/11/2026 | _[a preencher]_ | Retirado o exercício simples (PL de arroz e milho) da tela Ruminante Singular: RF-01 a RF-04 e RF-23, M1, RN-18, HU1 e L10 retirados; a tela passa a ser só a avaliação de dietas (RF-28 a RF-30). |
+| 0.17 | 15/11/2026 | _[a preencher]_ | Curva de lactação (RF-14): campos com limites e mensagem, produção acumulada até a secagem, eixo dos dias em 30, 60, 90 e eixo de kg a partir de zero. |
