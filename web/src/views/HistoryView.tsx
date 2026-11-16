@@ -13,6 +13,7 @@ import { cowScenarioOf, KIND_PAGE, moduleScenarioOf } from '@/lib/history'
 import { useApp } from '@/providers/AppProvider'
 import RunDetail from '@/views/history/RunDetail'
 import RunsTable from '@/views/history/RunsTable'
+import StoragePanel from '@/views/history/StoragePanel'
 import { moduleStateFromScenario } from '@/views/module/model'
 
 const message = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback).split('\n')[0]
@@ -61,12 +62,15 @@ export default function HistoryView() {
     <>
       <PageHeader
         title='Execuções'
-        description='O histórico de simulações, análises de sensibilidade, avaliações de dietas e dietas ótimas, guardado no servidor. Marque uma simulação com a estrela para usá-la como cenário-base dos indicadores.'
+        description='O histórico de simulações, análises de sensibilidade, avaliações de dietas e dietas ótimas, guardado no servidor. Dê um nome e uma nota às execuções para achá-las depois. Só as simulações têm a estrela de cenário-base, a referência dos indicadores da Vaca leiteira e da Sensibilidade.'
       />
       {id ? (
         <RunDetail id={id} onBack={back} onDuplicate={duplicate} onExport={exportRun} onDeleted={back} />
       ) : (
-        <RunsTable onView={open} onDuplicate={duplicate} onExport={exportRun} />
+        <div className='space-y-6'>
+          <RunsTable onView={open} onDuplicate={duplicate} onExport={exportRun} />
+          <StoragePanel />
+        </div>
       )}
     </>
   )

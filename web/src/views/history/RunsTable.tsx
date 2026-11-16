@@ -2,7 +2,20 @@
 
 import { useCallback, useEffect, useState } from 'react'
 
-import { CheckCircle2Icon, ChevronLeftIcon, ChevronRightIcon, CopyIcon, DownloadIcon, EyeIcon, HistoryIcon, SearchIcon, StarIcon, Trash2Icon, XCircleIcon } from 'lucide-react'
+import {
+  CheckCircle2Icon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CopyIcon,
+  DownloadIcon,
+  EyeIcon,
+  HistoryIcon,
+  PencilIcon,
+  SearchIcon,
+  StarIcon,
+  Trash2Icon,
+  XCircleIcon
+} from 'lucide-react'
 import { toast } from 'sonner'
 
 import { EmptyState } from '@/components/EmptyState'
@@ -14,9 +27,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { api } from '@/lib/api'
-import { KIND_LABEL, shortDate, summaryLine } from '@/lib/history'
+import { KIND_LABEL, runLabel, shortDate, summaryLine } from '@/lib/history'
 import type { RunKind, RunMeta, RunPage } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import RunNameDialog from '@/views/history/RunNameDialog'
 
 const KIND_STYLE: Record<RunKind, string> = {
   simulation: 'bg-brand/12 text-brand',
@@ -73,6 +87,7 @@ export default function RunsTable({ onView, onDuplicate, onExport }: Props) {
   const [data, setData] = useState<RunPage | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [reload, setReload] = useState(0)
+  const [editing, setEditing] = useState<RunMeta | null>(null)
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -114,7 +129,7 @@ export default function RunsTable({ onView, onDuplicate, onExport }: Props) {
   }, [])
 
   const remove = useCallback(async (run: RunMeta) => {
-    if (!window.confirm(`Excluir "${run.title}" (${shortDate(run.created)})? Isso não pode ser desfeito.`)) return
+    if (!window.confirm(`Excluir "${runLabel(run)}" (${shortDate(run.created)})? Isso não pode ser desfeito.`)) return
 
     try {
       await api.deleteHistory(run.id)
@@ -137,7 +152,7 @@ export default function RunsTable({ onView, onDuplicate, onExport }: Props) {
         steps={[
           'Rode uma simulação, uma análise de sensibilidade, uma avaliação de dietas ou a dieta ótima.',
           'Cada execução fica guardada aqui, com os parâmetros e o resultado.',
-          'Marque uma simulação com a estrela para usá-la como cenário-base nos indicadores.'
+          'Marque uma simulação com a estrela para usá-la como cenário-base nos indicadores. Dê um nome e escreva uma nota para achá-la depois.'
         ]}
       />
     )
@@ -156,7 +171,7 @@ export default function RunsTable({ onView, onDuplicate, onExport }: Props) {
               type='search'
               value={query}
               onChange={e => setQuery(e.target.value)}
-              placeholder='Buscar por título, tipo, dieta ou código…'
+              placeholder='Buscar por nome, nota, título, tipo, dieta ou código…'
               aria-label='Buscar execuções'
               className='pl-9'
             />
@@ -214,22 +229,27 @@ export default function RunsTable({ onView, onDuplicate, onExport }: Props) {
               {data.items.map(run => (
                 <TableRow key={run.id}>
                   <TableCell>
-                    <Button
-                      variant='ghost'
-                      size='icon-sm'
-                      disabled={run.status !== 'done'}
-                      aria-pressed={run.is_base}
-                      aria-label={run.is_base ? 'Cenário-base: clique para desmarcar' : 'Marcar como cenário-base'}
-                      title={run.is_base ? 'Cenário-base (clique para desmarcar)' : 'Marcar como cenário-base'}
-                      onClick={() => toggleBase(run)}
-                    >
-                      <StarIcon className={cn(run.is_base && 'fill-warning text-warning')} />
-                    </Button>
+                    {/* só a base das simulações é usada pelas telas; nas outras execuções a estrela aparece só para desmarcar uma base antiga */}
+                    {(run.kind === 'simulation' || run.is_base) && (
+                      <Button
+                        variant='ghost'
+                        size='icon-sm'
+                        disabled={run.status !== 'done'}
+                        aria-pressed={run.is_base}
+                        aria-label={run.is_base ? 'Cenário-base: clique para desmarcar' : 'Marcar como cenário-base'}
+                        title={run.is_base ? 'Cenário-base (clique para desmarcar)' : 'Marcar como cenário-base: referência dos indicadores da Vaca leiteira e da Sensibilidade'}
+                        onClick={() => toggleBase(run)}
+                      >
+                        <StarIcon className={cn(run.is_base && 'fill-warning text-warning')} />
+                      </Button>
+                    )}
                   </TableCell>
                   <TableCell className='whitespace-normal'>
                     <button type='button' className='text-left font-medium underline-offset-4 hover:underline' onClick={() => onView(run.id)}>
-                      {run.title}
+                      {runLabel(run)}
                     </button>
+                    {run.name?.trim() && <span className='text-muted-foreground block text-xs'>{run.title}</span>}
+                    {run.note?.trim() && <span className='text-muted-foreground mt-0.5 line-clamp-2 block text-xs italic'>{run.note}</span>}
                     <span className='text-muted-foreground block text-xs'>{run.id}</span>
                   </TableCell>
                   <TableCell>
@@ -244,6 +264,9 @@ export default function RunsTable({ onView, onDuplicate, onExport }: Props) {
                     <div className='flex justify-end gap-0.5'>
                       <Button variant='ghost' size='icon-sm' aria-label='Ver detalhe' title='Ver detalhe' onClick={() => onView(run.id)}>
                         <EyeIcon />
+                      </Button>
+                      <Button variant='ghost' size='icon-sm' aria-label='Nome e nota' title='Nome e nota' onClick={() => setEditing(run)}>
+                        <PencilIcon />
                       </Button>
                       <Button variant='ghost' size='icon-sm' aria-label='Duplicar: abrir os parâmetros na tela' title='Duplicar: abrir os parâmetros na tela' onClick={() => onDuplicate(run.id)}>
                         <CopyIcon />
@@ -293,6 +316,7 @@ export default function RunsTable({ onView, onDuplicate, onExport }: Props) {
           </div>
         )}
       </CardContent>
+      <RunNameDialog run={editing} onClose={() => setEditing(null)} onSaved={() => setReload(n => n + 1)} />
     </Card>
   )
 }

@@ -1597,15 +1597,29 @@ arquivo inválido ou de versão mais nova, BOM e migração.
 parâmetros e exportar, sem depender de captura de tela.
 
 **O que é uma execução.** Qualquer uma destas, num histórico único (a tabela traz o tipo numa coluna): **simulação** do RuFaS,
-**sensibilidade**, **avaliação de dietas** e **dieta ótima**. As tarefas que falham também entram (estado "Falhou", com o
-motivo); cancelar não é execução. Uma simulação que vem do cache do RuFaS também é gravada.
+**sensibilidade**, **avaliação de dietas** e **dieta ótima**. As tarefas que falham no RuFaS também entram (estado "Falhou", com o
+motivo); cancelar não é execução, e um pedido recusado na validação (parâmetros inválidos, por exemplo uma sensibilidade acima do
+limite de 100 simulações, `ValueError`) também não: ele só devolve o erro. Uma simulação que vem do cache do RuFaS também é gravada.
+
+**Nome e nota.** Cada execução aceita um **nome** (até 80 caracteres, numa linha) e uma **nota** (até 500, com parágrafos), editáveis
+a qualquer momento. O nome aparece no lugar do título automático (que passa para a linha de baixo) e a nota na tabela e no detalhe;
+os dois entram na busca. Execuções gravadas antes continuam listadas, sem nome nem nota.
 
 **Armazenamento** (`backend/dietopt/history.py`). Arquivos em `runs/_history` (pasta local, fora do git): `<id>.json` (parâmetros
 e resultado completos) e `<id>.meta.json` (título, tipo, estado e um resumo pequeno), para listar sem abrir os resultados grandes.
 O identificador é `AAAAMMDD-HHMMSS-nnnn` e cresce com a ordem de gravação; a escrita é atômica (arquivo temporário e troca).
-O histórico guarda no máximo 200 execuções e apaga as mais antigas que não sejam o cenário-base.
+O histórico guarda no máximo 200 execuções e apaga as mais antigas que não sejam o cenário-base. O resumo da sensibilidade traz
+também o período e o número de vacas (e o título os mostra, o rebanho só quando difere de 100).
 
-**Cenário-base.** Uma execução **concluída** por tipo pode ser marcada com a estrela; marcar outra do mesmo tipo troca a base.
+**Pastas de saída do RuFaS.** Cada simulação deixa uma pasta `runs/web_<tarefa>` (uma por cenário na sensibilidade, cerca de 2,6 MB
+cada) com as entradas, os logs e as saídas brutas. Elas não são necessárias para abrir uma execução (o resultado completo está no
+histórico, e o cache `runs/_cache` acelera a repetição do mesmo cenário), mas o limite de 200 execuções não as apaga. A tela
+Execuções mostra quantas há e quanto ocupam, e o botão **Limpar arquivos antigos** (com confirmação) apaga todas as `web_*`; recusa
+se houver simulação na fila ou rodando. Não toca no histórico, em `_cache` nem em outras pastas de `runs/`.
+
+**Cenário-base.** Uma **simulação concluída** pode ser marcada com a estrela; marcar outra troca a base. Só a base de simulação é
+usada pelas telas, por isso a estrela só aparece nas simulações (as demais execuções só a mostram se uma versão anterior marcou
+uma base, para poder desmarcá-la), e o servidor recusa marcar outro tipo.
 Na tela Vaca leiteira, cada indicador mostra a variação em % em relação à simulação-base (receita e margem: subir é bom; custos:
 descer é bom); sem base, a tela explica como defini-la, e na própria base não há variação.
 
@@ -1613,10 +1627,13 @@ descer é bom); sem base, a tela explica como defini-la, e na própria base não
 
 | Rota | Corpo | Resposta |
 |---|---|---|
-| `GET /api/history?kind=&status=&q=&page=&per_page=` | | `{ items, total, page, per_page, pages }`; `items` são metadados (sem o resultado), da mais recente para a mais antiga; a busca `q` olha título, tipo, nome das dietas e código |
+| `GET /api/history?kind=&status=&q=&page=&per_page=` | | `{ items, total, page, per_page, pages }`; `items` são metadados (sem o resultado), da mais recente para a mais antiga; a busca `q` olha título, tipo, nome das dietas, nome, nota e código |
 | `GET /api/history/<id>` | | execução completa: metadados, `params` e `result` |
 | `GET /api/history/base?kind=` | | metadados da base do tipo, ou `null` |
-| `POST /api/history/<id>/base` | `{ value }` | metadados atualizados |
+| `POST /api/history/<id>/base` | `{ value }` | metadados atualizados; `value: true` só vale para simulação concluída |
+| `POST /api/history/<id>/update` | `{ name?, note? }` | metadados atualizados; ausente mantém, texto vazio apaga |
+| `GET /api/history/storage` | | `{ folders, folders_bytes, history_bytes }` |
+| `POST /api/history/cleanup` | `{}` | `{ removed, failed, freed_bytes }`; erro se houver tarefa em andamento |
 | `POST /api/history/<id>/delete` | `{}` | `{ ok: true }` |
 
 `kind`: `simulation`, `sensitivity`, `evaluation` ou `optimization`; `status`: `done` ou `error`; `per_page` de 1 a 100. O resultado
@@ -1624,21 +1641,27 @@ das tarefas e da avaliação de dietas passa a trazer `run_id`. Identificador in
 formato da seção 11.3.
 
 **Tela Execuções** (`/execucoes`, item no grupo Análise). Tabela com busca, filtro por tipo e por estado, linhas por página (10, 25
-ou 50), estrela do cenário-base, tipo e estado em pills (ícone e texto), resultado principal em uma linha, data e as ações: **ver**,
-**duplicar** (abre os parâmetros na tela de origem, para editar e executar de novo), **exportar** (JSON com parâmetros e resultado)
-e **excluir** (com confirmação), mais a paginação. Sem execuções, mostra o estado vazio com os passos.
+ou 50), estrela do cenário-base (só nas simulações), nome ou título, nota, tipo e estado em pills (ícone e texto), resultado principal em
+uma linha, data e as ações: **ver**, **nome e nota** (janela de edição), **duplicar** (abre os parâmetros na tela de origem, para editar e executar de novo), **exportar** (JSON com parâmetros e resultado)
+e **excluir** (com confirmação), mais a paginação. Abaixo da tabela, o painel de espaço em disco com o botão de limpeza. Sem
+execuções, mostra o estado vazio com os passos.
 
 **Detalhe** (`/execucoes/?id=<id>`). Parâmetros usados à esquerda (valores gerais, fatores, exigências, vaca, alimentos com preço e
 limites, dietas) e os resultados à direita: a simulação reaproveita os resultados da tela Vaca leiteira (abas, gráficos e
 exportação), a sensibilidade reaproveita a tabela e os gráficos de cenários, e a avaliação de dietas e a dieta ótima mostram o
-ranking ou a ração. Uma execução que falhou mostra o motivo.
+ranking ou a ração. Os alimentos aparecem com o nome e a descrição, na biblioteca do padrão da execução (os códigos de NRC e NASEM
+são diferentes; sem isso, "Corn, Yellow" aparecia duas vezes, grão e silagem). A nota, se houver, aparece em destaque. Uma execução
+que falhou mostra o motivo.
 
-**Não feito.** Renomear ou comentar execuções, comparar duas execuções lado a lado, limpar o histórico de uma vez e o delta dos
-indicadores das demais telas (Sensibilidade, Avaliar dietas), que seguem nas etapas D4 e D5.
+**Não feito.** O detalhe completo da avaliação de dietas e da dieta ótima (mapa de restrições, linearização e comparação com o
+RuFaS; hoje só ranking e ração, e **duplicar** reabre a tela para ver o resto), comparar duas execuções lado a lado, limpar o
+histórico de uma vez e o delta dos indicadores da tela Avaliar dietas, que segue na etapa D5.
 
-**Aceite.** `tests/test_history.py`: gravação e resumo de cada tipo, listagem com filtros, busca e paginação, base única por tipo e só
-para execução concluída, exclusão, identificador inválido, retenção que preserva a base, falha gravada com o motivo, cancelamento
-ignorado e arquivo corrompido fora da lista.
+**Aceite.** `tests/test_history.py`: gravação e resumo de cada tipo, listagem com filtros, busca e paginação, base só de
+simulação concluída (outros tipos recusados; base antiga pode ser desmarcada), nome e nota (edição, limites, busca e execuções
+antigas), exclusão, identificador inválido, retenção que preserva a base, falha gravada com o motivo, cancelamento e pedido
+recusado na validação fora do histórico, arquivo corrompido fora da lista e limpeza das pastas `web_*` (só elas, com a contagem do
+espaço).
 
 ### A.13 RF-13: tamanho do rebanho (implementado em 10/11/2026, etapa E8g)
 

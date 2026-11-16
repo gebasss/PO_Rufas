@@ -2,9 +2,10 @@
 
 import { useEffect, useState, type ReactNode } from 'react'
 
-import { ArrowLeftIcon, CopyIcon, DownloadIcon, StarIcon, Trash2Icon } from 'lucide-react'
+import { ArrowLeftIcon, CopyIcon, DownloadIcon, PencilIcon, StarIcon, Trash2Icon } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { feedTitle } from '@/components/FeedPicker'
 import { KpiCard } from '@/components/shared'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -12,16 +13,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { api } from '@/lib/api'
-import { KIND_LABEL, shortDate } from '@/lib/history'
+import { KIND_LABEL, runLabel, shortDate } from '@/lib/history'
 import { nf, shortName, signedPct, usd } from '@/lib/format'
-import type { ModuleEvaluation, ModuleOptimization, RunFull, SensResult, SimResult } from '@/lib/types'
+import type { Feed, ModuleEvaluation, ModuleOptimization, NutrientStandard, RunFull, SensResult, SimResult } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { useApp } from '@/providers/AppProvider'
 import Results from '@/views/cow/Results'
+import RunNameDialog from '@/views/history/RunNameDialog'
 import { KindPill, StatusPill } from '@/views/history/RunsTable'
+import { useFeedLibrary } from '@/views/module/useFeedLibrary'
 import SensResults from '@/views/sensitivity/Results'
 
 type Params = Record<string, unknown>
+
+/** Padrão nutricional da execução: simulações e sensibilidades usam a NRC; avaliação e dieta ótima gravam o escolhido. */
+const standardOf = (run: RunFull): NutrientStandard => ((run.params as Params).standard === 'NASEM' ? 'NASEM' : 'NRC')
+
+/** Nome do alimento, com a descrição, na biblioteca do padrão da execução (os identificadores dos dois padrões são diferentes). */
+const feedName = (library: Record<number, Feed>, id: string | number) => (library[Number(id)] ? feedTitle(library[Number(id)]) : `Alimento ${id}`)
 
 function KeyValue({ items }: { items: [string, ReactNode][] }) {
   return (
@@ -39,8 +47,7 @@ function KeyValue({ items }: { items: [string, ReactNode][] }) {
 const METHOD_LABEL: Record<string, string> = { grid: 'Grade (todas as combinações)', latin: 'Hipercubo latino' }
 
 /** Parâmetros usados na execução, em listas legíveis (o JSON completo está na exportação). */
-function ParamsCard({ run }: { run: RunFull }) {
-  const { feedById } = useApp()
+function ParamsCard({ run, library }: { run: RunFull; library: Record<number, Feed> }) {
   const params = run.params as Params
   const prices = (params.prices ?? {}) as Record<string, number>
   const limits = (params.limits ?? {}) as Record<string, [number, number]>
@@ -50,7 +57,6 @@ function ParamsCard({ run }: { run: RunFull }) {
   const override = Object.entries((params.requirements_override ?? {}) as Record<string, number>)
   const diets = (params.diets ?? []) as { name: string; amounts: Record<string, number> }[]
   const isModule = run.kind === 'evaluation' || run.kind === 'optimization'
-  const nameOf = (id: string) => shortName(feedById[Number(id)]?.name ?? `Alimento ${id}`, 28)
 
   const general: [string, ReactNode][] = isModule
     ? [
@@ -129,7 +135,7 @@ function ParamsCard({ run }: { run: RunFull }) {
             <TableBody>
               {ids.map(id => (
                 <TableRow key={id}>
-                  <TableCell className='max-w-44 truncate'>{nameOf(id)}</TableCell>
+                  <TableCell className='whitespace-normal'>{feedName(library, id)}</TableCell>
                   <TableCell className='text-right tabular-nums'>{nf(prices[id], 3)}</TableCell>
                   <TableCell className='text-right tabular-nums'>{nf(limits[id]?.[0], 1)}</TableCell>
                   <TableCell className='text-right tabular-nums'>{nf(limits[id]?.[1], 1)}</TableCell>
@@ -193,8 +199,7 @@ function EvaluationResult({ result }: { result: ModuleEvaluation }) {
   )
 }
 
-function OptimizationResult({ result }: { result: ModuleOptimization }) {
-  const { feedById } = useApp()
+function OptimizationResult({ result, library }: { result: ModuleOptimization; library: Record<number, Feed> }) {
   const diet = result.diet
 
   if (!diet) {
@@ -237,7 +242,7 @@ function OptimizationResult({ result }: { result: ModuleOptimization }) {
             <TableBody>
               {rows.map(([id, kg]) => (
                 <TableRow key={id}>
-                  <TableCell>{shortName(feedById[Number(id)]?.name ?? `Alimento ${id}`, 40)}</TableCell>
+                  <TableCell className='whitespace-normal'>{feedName(library, id)}</TableCell>
                   <TableCell className='text-right tabular-nums'>{nf(kg, 2)}</TableCell>
                   <TableCell className='text-right tabular-nums'>{nf((100 * kg) / diet.scalars.dmi, 1)}%</TableCell>
                 </TableRow>
@@ -263,6 +268,8 @@ export default function RunDetail({ id, onBack, onDuplicate, onExport, onDeleted
   const [run, setRun] = useState<RunFull | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [reload, setReload] = useState(0)
+  const [editing, setEditing] = useState(false)
+  const { byId: library } = useFeedLibrary(run ? standardOf(run) : 'NRC', run !== null)
 
   useEffect(() => {
     let cancelled = false
@@ -289,7 +296,7 @@ export default function RunDetail({ id, onBack, onDuplicate, onExport, onDeleted
   }
 
   const remove = async () => {
-    if (!run || !window.confirm(`Excluir "${run.title}"? Isso não pode ser desfeito.`)) return
+    if (!run || !window.confirm(`Excluir "${runLabel(run)}"? Isso não pode ser desfeito.`)) return
 
     try {
       await api.deleteHistory(run.id)
@@ -333,18 +340,24 @@ export default function RunDetail({ id, onBack, onDuplicate, onExport, onDeleted
           </Button>
           <div className='min-w-0'>
             <div className='flex flex-wrap items-center gap-2'>
-              <h2 className='truncate text-xl font-bold tracking-tight'>{run.title}</h2>
+              <h2 className='truncate text-xl font-bold tracking-tight'>{runLabel(run)}</h2>
               <KindPill kind={run.kind} />
               <StatusPill status={run.status} />
             </div>
             <p className='text-muted-foreground text-xs'>
-              {KIND_LABEL[run.kind]} · {shortDate(run.created)} · {run.id}
+              {run.name?.trim() ? `${run.title} · ` : `${KIND_LABEL[run.kind]} · `}
+              {shortDate(run.created)} · {run.id}
             </p>
           </div>
         </div>
         <div className='flex flex-wrap items-center gap-2'>
-          <Button variant='outline' size='sm' disabled={run.status !== 'done'} aria-pressed={run.is_base} onClick={toggleBase}>
-            <StarIcon className={cn(run.is_base && 'fill-warning text-warning')} /> {run.is_base ? 'Cenário-base' : 'Marcar como base'}
+          {(run.kind === 'simulation' || run.is_base) && (
+            <Button variant='outline' size='sm' disabled={run.status !== 'done'} aria-pressed={run.is_base} onClick={toggleBase}>
+              <StarIcon className={cn(run.is_base && 'fill-warning text-warning')} /> {run.is_base ? 'Cenário-base' : 'Marcar como base'}
+            </Button>
+          )}
+          <Button variant='outline' size='sm' onClick={() => setEditing(true)}>
+            <PencilIcon /> Nome e nota
           </Button>
           <Button variant='outline' size='sm' onClick={() => onDuplicate(run.id)}>
             <CopyIcon /> Duplicar
@@ -358,8 +371,15 @@ export default function RunDetail({ id, onBack, onDuplicate, onExport, onDeleted
         </div>
       </div>
 
+      {run.note?.trim() && (
+        <Alert>
+          <AlertTitle>Nota</AlertTitle>
+          <AlertDescription className='whitespace-pre-wrap'>{run.note}</AlertDescription>
+        </Alert>
+      )}
+
       <div className='grid items-start gap-6 xl:grid-cols-[24rem_minmax(0,1fr)]'>
-        <ParamsCard run={run} />
+        <ParamsCard run={run} library={library} />
         <div className='min-w-0'>
           {run.status === 'error' || run.result === null ? (
             <Alert variant='destructive'>
@@ -373,10 +393,11 @@ export default function RunDetail({ id, onBack, onDuplicate, onExport, onDeleted
           ) : run.kind === 'evaluation' ? (
             <EvaluationResult result={run.result as ModuleEvaluation} />
           ) : (
-            <OptimizationResult result={run.result as ModuleOptimization} />
+            <OptimizationResult result={run.result as ModuleOptimization} library={library} />
           )}
         </div>
       </div>
+      <RunNameDialog run={editing ? run : null} onClose={() => setEditing(false)} onSaved={() => setReload(n => n + 1)} />
     </div>
   )
 }

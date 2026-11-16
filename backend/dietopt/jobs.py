@@ -84,5 +84,9 @@ class JobManager:
             job.cancel_requested = True
         return job
 
+    def busy(self) -> bool:
+        """Há tarefa na fila ou rodando (as pastas de saída dela estão em uso)."""
+        return any(j.status in ("queued", "running") for j in list(self._jobs.values()))
+
     def list(self) -> list[dict[str, Any]]:
         return [j.public(include_result=False) for j in sorted(self._jobs.values(), key=lambda j: -j.created)]
