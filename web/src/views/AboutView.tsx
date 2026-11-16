@@ -77,7 +77,7 @@ export default function AboutView() {
           </li>
         </Section>
 
-        <Section title='Como ler os resultados' description='O essencial; o guia de uso (docs/GUIA_RUMINANTE_SINGULAR.docx) detalha cada botão.' className='xl:col-span-2'>
+        <Section title='Como ler os resultados' description='O essencial; o guia de uso (docs/guias/GUIA_RUMINANTE_SINGULAR.docx) detalha cada botão.' className='xl:col-span-2'>
           <li>
             <Strong>Ruminante Singular, cada restrição:</Strong> <Strong>Atende</Strong>; <Strong>No limite</Strong> (folga de até
             0,5% da exigência); <Strong>Violada</Strong>; ou <Strong>Indisponível</Strong> (falta um dado). A dieta é{' '}

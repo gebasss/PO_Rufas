@@ -43,7 +43,8 @@ export default function PriceImport({ standard, selectedIds, onApply }: Props) {
     try {
       const result = await api.importPrices(standard, await file.text(), Number.isFinite(fx) ? fx : null)
       const chosen = new Set(selectedIds)
-      const prices = Object.fromEntries(result.items.filter(i => chosen.has(i.id)).map(i => [i.id, i.price]))
+      // 4 casas decimais bastam para US$/kg de MS (o campo da tela não fica com dízima da conversão)
+      const prices = Object.fromEntries(result.items.filter(i => chosen.has(i.id)).map(i => [i.id, Math.round(i.price * 1e4) / 1e4]))
 
       onApply(prices)
       setReport({ file: file.name, result, applied: Object.keys(prices).length })
