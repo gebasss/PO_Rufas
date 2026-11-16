@@ -41,8 +41,12 @@ def test_grava_dois_arquivos_e_devolve_os_metadados_com_resumo():
 
 
 def test_resumo_de_cada_tipo():
-    sens = history.record("sensitivity", {"factors": [{}, {}], "method": "grid"}, SENS_RESULT)["summary"]
+    sens_meta = history.record("sensitivity", {"factors": [{}, {}], "method": "grid", "years": 2, "cow_num": 200}, SENS_RESULT)
+    sens = sens_meta["summary"]
     assert (sens["n_scenarios"], sens["n_ok"], sens["best"], sens["worst"], sens["n_factors"]) == (3, 2, 30.0, 10.0, 2)
+    assert (sens["years"], sens["cow_num"]) == (2, 200) and sens_meta["title"].endswith("3 cenários · 2 fatores · 2 anos · 200 vacas")
+    padrao = history.record("sensitivity", {"factors": [{}], "method": "grid"}, SENS_RESULT)
+    assert padrao["title"].endswith("1 fatores · 1 ano") and padrao["summary"]["cow_num"] == 100  # sem o rebanho padrão no título
     avaliacao = history.record("evaluation", {}, EVAL_RESULT)["summary"]
     assert (avaliacao["n_diets"], avaliacao["n_feasible"], avaliacao["best"], avaliacao["best_cost"]) == (2, 1, "B", 4.0)
     otima = {"standard": "NRC", "category": "LAC_COW", "status": "ok", "diet": {"cost": 3.8}, "rufas": {"lp_gap_pct": 0.01}, "feed_ids": [1, 2]}
@@ -65,20 +69,85 @@ def test_lista_do_mais_recente_filtra_por_tipo_estado_e_texto_e_pagina():
     assert len(pagina["items"]) == 1 and pagina["pages"] == 3 and all("search" not in i for i in pagina["items"])
 
 
-def test_so_uma_base_por_tipo_e_so_execucao_concluida_pode_ser_base():
+def test_so_uma_simulacao_concluida_pode_ser_a_base():
     a, b = (history.record("simulation", SIM_PARAMS, SIM_RESULT) for _ in range(2))
-    avaliacao = history.record("evaluation", {}, EVAL_RESULT)
     history.set_base(a["id"])
-    history.set_base(avaliacao["id"])
-    assert history.base_run("simulation")["id"] == a["id"] and history.base_run("evaluation")["id"] == avaliacao["id"]
-    history.set_base(b["id"])  # troca a base da simulação; a da avaliação fica
-    assert history.base_run("simulation")["id"] == b["id"] and history.base_run("evaluation")["id"] == avaliacao["id"]
+    assert history.base_run("simulation")["id"] == a["id"]
+    history.set_base(b["id"])  # troca a base
+    assert history.base_run("simulation")["id"] == b["id"]
     assert history.get_run(a["id"])["is_base"] is False and history.get_run(b["id"])["is_base"] is True
     history.set_base(b["id"], False)
-    assert history.base_run("simulation") is None and history.base_run("sensitivity") is None
+    assert history.base_run("simulation") is None
     falha = history.record("simulation", SIM_PARAMS, None, "Erro")
     with pytest.raises(ValueError, match="concluída"):
         history.set_base(falha["id"])
+
+
+def test_as_outras_execucoes_nao_usam_base_mas_uma_base_antiga_pode_ser_desmarcada():
+    for kind, result in (("evaluation", EVAL_RESULT), ("sensitivity", SENS_RESULT)):
+        meta = history.record(kind, {}, result)
+        with pytest.raises(ValueError, match="Só uma simulação"):
+            history.set_base(meta["id"])
+        assert history.base_run(kind) is None
+    antiga = history.record("evaluation", {}, EVAL_RESULT)
+    path = history.HISTORY_DIR / f"{antiga['id']}.meta.json"
+    path.write_text(json.dumps({**antiga, "is_base": True}), encoding="utf-8")  # base marcada por uma versão anterior
+    assert history.base_run("evaluation")["id"] == antiga["id"]
+    assert history.set_base(antiga["id"], False)["is_base"] is False and history.base_run("evaluation") is None
+
+
+def test_nome_e_nota_aparecem_na_lista_entram_na_busca_e_tem_limite():
+    meta = history.record("simulation", SIM_PARAMS, SIM_RESULT)
+    assert meta["name"] == "" and meta["note"] == "" and "search_base" not in history.get_run(meta["id"])
+    novo = history.update_run(meta["id"], "  Farelo  mais\n caro ", "Teste com\nsoja a US$ 0,60")
+    assert novo["name"] == "Farelo mais caro" and novo["note"] == "Teste com\nsoja a US$ 0,60"
+    assert history.list_runs(query="farelo caro")["total"] == 1 and history.list_runs(query="SOJA")["total"] == 1
+    assert history.list_runs(query="3 alimentos")["total"] == 1  # a busca pelo título continua valendo
+    assert history.get_run(meta["id"])["name"] == "Farelo mais caro" and "search" not in history.list_runs()["items"][0]
+    assert history.update_run(meta["id"], note="")["name"] == "Farelo mais caro"  # None mantém; vazio apaga
+    assert history.list_runs(query="soja")["total"] == 0 and history.get_run(meta["id"])["note"] == ""
+    history.update_run(meta["id"], name="")
+    assert history.list_runs(query="farelo")["total"] == 0
+    for kwargs, motivo in (({"name": "x" * 81}, "80"), ({"note": "x" * 501}, "500"), ({"name": 3}, "texto")):
+        with pytest.raises(ValueError, match=motivo):
+            history.update_run(meta["id"], **kwargs)
+    with pytest.raises(ValueError, match="inválido"):
+        history.update_run("../x", "a")
+
+
+def test_execucao_gravada_antes_do_nome_continua_listada_e_editavel():
+    meta = history.record("simulation", SIM_PARAMS, SIM_RESULT)
+    for path in (history.HISTORY_DIR / f"{meta['id']}.meta.json", history.HISTORY_DIR / f"{meta['id']}.json"):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        for key in ("name", "note", "search_base"):
+            data.pop(key)
+        path.write_text(json.dumps(data), encoding="utf-8")
+    assert "name" not in history.list_runs()["items"][0]
+    history.update_run(meta["id"], "Antiga")
+    assert history.list_runs(query="antiga simulação")["total"] == 1
+
+
+def test_limpeza_apaga_so_as_pastas_web_e_conta_o_espaco(tmp_path, monkeypatch):
+    monkeypatch.setattr(history, "RUNS_DIR", tmp_path)
+    for nome, tamanho in (("web_139373ee57_s001", 100), ("web_139373ee57_s002", 50), ("web_1c83d70a6c", 10)):
+        (tmp_path / nome / "out").mkdir(parents=True)
+        (tmp_path / nome / "out" / "r.json").write_bytes(b"x" * tamanho)
+    for nome in ("e8_NRC", "sens_s001", "_cache", "web_nao_e_da_interface"):
+        (tmp_path / nome).mkdir()
+        (tmp_path / nome / "f.txt").write_text("fica", encoding="utf-8")
+    meta = history.record("simulation", SIM_PARAMS, SIM_RESULT)
+    relatorio = history.storage_report()
+    assert relatorio["folders"] == 3 and relatorio["folders_bytes"] == 160 and relatorio["history_bytes"] > 0
+    resultado = history.clean_folders()
+    assert resultado == {"removed": 3, "failed": 0, "freed_bytes": 160}
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["_cache", "_history", "e8_NRC", "sens_s001", "web_nao_e_da_interface"]
+    assert history.get_run(meta["id"])["result"] == SIM_RESULT  # o histórico não é tocado
+    assert history.storage_report()["folders"] == 0 and history.clean_folders()["removed"] == 0
+
+
+def test_limpeza_sem_pasta_runs_nao_falha(tmp_path, monkeypatch):
+    monkeypatch.setattr(history, "RUNS_DIR", tmp_path / "nao_existe")
+    assert history.storage_report()["folders"] == 0 and history.clean_folders() == {"removed": 0, "failed": 0, "freed_bytes": 0}
 
 
 def test_exclui_e_recusa_identificador_invalido_ou_inexistente():
@@ -130,6 +199,13 @@ def test_tarefa_envolvida_grava_o_resultado_com_run_id_a_falha_com_o_motivo_e_ig
     with pytest.raises(Cancelled):
         history.with_history("optimization", cancela)(job)
     assert history.list_runs()["total"] == total  # cancelar não é execução
+
+    def recusa(j):
+        raise ValueError("Esta análise exigiria 4.096 simulações do RuFaS; o limite é 100.")
+
+    with pytest.raises(ValueError):
+        history.with_history("sensitivity", recusa)(job)
+    assert history.list_runs()["total"] == total  # pedido recusado na validação também não é execução
 
 
 def test_arquivo_de_metadados_corrompido_fica_fora_da_lista():

@@ -1,7 +1,7 @@
 # Documento de Requisitos do Produto (PRD)
 
 **Produto:** Dieta Ótima com RuFaS
-**Versão do documento:** 0.19 (rascunho para avaliação)
+**Versão do documento:** 0.20 (rascunho para avaliação)
 **Data:** 02/11/2026
 **Status:** Versão web implementada; documento em revisão
 **Autor(es):** _[a preencher]_
@@ -919,3 +919,4 @@ próprio RuFaS.
 | 0.17 | 15/11/2026 | _[a preencher]_ | Curva de lactação (RF-14): campos com limites e mensagem, produção acumulada até a secagem, eixo dos dias em 30, 60, 90 e eixo de kg a partir de zero. |
 | 0.18 | 15/11/2026 | _[a preencher]_ | Sensibilidade (RF-16 a RF-18, RN-14): limite de 100 simulações por análise, botão Cancelar, comparação com a base só com o mesmo período e rebanho, variação da margem em US$ por fator e fatores iniciais pelo peso no custo. |
 | 0.19 | 15/11/2026 | _[a preencher]_ | Premissas e limites (RF-25): tela reescrita com as cinco telas, seção curta "Como ler os resultados", tetos padrão de inclusão, limites do Ruminante Singular e do RuFaS, e NASEM 2021 nos créditos e no rodapé. |
+| 0.20 | 15/11/2026 | _[a preencher]_ | Execuções (histórico, FSD A.12): nome e nota por execução, estrela de cenário-base só nas simulações, alimentos com nome e descrição na biblioteca do padrão no detalhe, botão para limpar as pastas de simulação (`runs/web_*`) com o espaço ocupado, pedidos recusados na validação fora do histórico e período e rebanho no resumo da sensibilidade. |

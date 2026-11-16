@@ -16,6 +16,16 @@ export const KIND_PAGE: Record<RunKind, string> = {
   optimization: '/'
 }
 
+/** Nome dado pelo usuário ou, sem ele, o título automático. */
+export const runLabel = (run: Pick<RunMeta, 'name' | 'title'>) => run.name?.trim() || run.title
+
+/** Tamanho em KB, MB ou GB, com vírgula decimal. */
+export function bytesLabel(bytes: number) {
+  if (bytes < 1024 * 1024) return `${nf(bytes / 1024, 0)} KB`
+
+  return bytes < 1024 ** 3 ? `${nf(bytes / 1024 ** 2, 1)} MB` : `${nf(bytes / 1024 ** 3, 2)} GB`
+}
+
 const num = (value: unknown) => (typeof value === 'number' ? value : null)
 
 /** Uma linha com o resultado principal da execução, para a tabela. */

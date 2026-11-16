@@ -303,6 +303,20 @@ export interface RunMeta {
   /** Resumo pequeno para a tabela (margem, melhor custo, ...). */
   summary: Record<string, number | string | null>
   is_base: boolean
+  /** Nome e nota do usuário; ausentes nas execuções gravadas antes de existirem. */
+  name?: string
+  note?: string
+}
+/** Espaço das pastas de saída do RuFaS (`runs/web_*`) e do histórico. */
+export interface HistoryStorage {
+  folders: number
+  folders_bytes: number
+  history_bytes: number
+}
+export interface HistoryCleanup {
+  removed: number
+  failed: number
+  freed_bytes: number
 }
 export interface RunPage {
   items: RunMeta[]

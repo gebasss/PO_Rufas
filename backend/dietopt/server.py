@@ -19,7 +19,7 @@ from . import lactation
 from .exports import export_file
 from .feeds import FeedInfo, feed_library
 from .herd import DEFAULT_COWS, herd_limits, parse_cow_num
-from .history import base_run, delete_run, get_run, list_runs, record, set_base, with_history
+from .history import base_run, clean_folders, delete_run, get_run, list_runs, record, set_base, storage_report, update_run, with_history
 from .jobs import Job, JobManager
 from .module.api import compare_payload, defaults_payload, evaluate_payload, optimize_payload, requirements_payload
 from .prices import import_prices
@@ -262,6 +262,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(
                     list_runs(one("kind") or None, one("status") or None, one("q"), int(one("page", "1")), int(one("per_page", "10")))
                 )
+            if path == "/api/history/storage":
+                return self._json(storage_report())
             if path == "/api/history/base":
                 return self._json(base_run(parse_qs(url.query).get("kind", [""])[0]))
             if path.startswith("/api/history/"):
@@ -302,6 +304,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(JOBS.submit("sensitivity", body, with_history("sensitivity", sensitivity_work)).public(include_result=False), 202)
             if path == "/api/jobs/optimize":
                 return self._json(JOBS.submit("optimize", body, with_history("optimization", optimize_work)).public(include_result=False), 202)
+            if path == "/api/history/cleanup":
+                if JOBS.busy():
+                    raise ValueError("Há uma simulação em andamento: espere terminar (ou cancele) antes de limpar os arquivos.")
+                return self._json(clean_folders())
+            if path.startswith("/api/history/") and path.endswith("/update"):
+                return self._json(update_run(path.split("/")[-2], body.get("name"), body.get("note")))
             if path.startswith("/api/history/") and path.endswith("/delete"):
                 delete_run(path.split("/")[-2])
                 return self._json({"ok": True})

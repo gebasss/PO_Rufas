@@ -1,6 +1,8 @@
 import type {
   Defaults,
   Feed,
+  HistoryCleanup,
+  HistoryStorage,
   Job,
   LactationInfo,
   ModuleComparison,
@@ -56,6 +58,9 @@ export const api = {
   historyBase: (kind: RunKind) => request<RunMeta | null>(`/api/history/base?kind=${kind}`),
   setHistoryBase: (id: string, value: boolean) => request<RunMeta>(`/api/history/${id}/base`, { value }),
   deleteHistory: (id: string) => request<{ ok: true }>(`/api/history/${id}/delete`, {}),
+  updateHistory: (id: string, changes: { name?: string; note?: string }) => request<RunMeta>(`/api/history/${id}/update`, changes),
+  historyStorage: () => request<HistoryStorage>('/api/history/storage'),
+  cleanHistoryFolders: () => request<HistoryCleanup>('/api/history/cleanup', {}),
   saveScenario: (kind: 'cow' | 'module', data: unknown) =>
     request<{ filename: string; mime: string; content: string }>('/api/scenario/save', { kind, data }),
   loadScenario: <T>(text: string) => request<ScenarioLoad<T>>('/api/scenario/load', { text }),
