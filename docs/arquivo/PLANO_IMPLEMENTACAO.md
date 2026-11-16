@@ -1,5 +1,9 @@
 # Plano de implementação: módulo "Ruminante Singular" ampliado e complementos
 
+> **Documento arquivado em 16/11/2026.** Todas as etapas deste plano foram concluídas (E1 a E8, exceto E8c e E8h, que dependem do
+> professor, e a retirada do exercício simples, R1). Ele fica aqui como **registro histórico** de como o módulo ampliado foi
+> construído; **não orienta trabalho futuro**. O estado atual está no [PRD](../PRD.md) (situação de cada requisito) e no [FSD](../FSD.md).
+
 **Versão 0.18 (11/11/2026).** Este plano ordena o que será codificado depois da fase de documentação. Ele não altera o
 comportamento do sistema; as regras estão nos documentos citados e este arquivo só as sequencia.
 

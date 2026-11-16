@@ -62,11 +62,11 @@ Este documento é autossuficiente. Quando o comportamento da implementação atu
 |---|---|
 | `FSD.md` (este) | Fonte principal e autossuficiente. Em caso de divergência com qualquer outro documento, este prevalece. |
 | `PRD.md` | Requisitos do produto, personas, métricas e questões em aberto. Fonte dos requisitos pendentes. |
-| `DESIGN.md` | Referência visual complementar. O conteúdo visual relevante está consolidado na seção 10 deste FSD. |
+| `DESIGN.md` | **Fonte única da linguagem visual** (tokens, componentes, gráficos por saída, estados, acessibilidade). A seção 10 deste FSD diz o que cada tela deve mostrar e remete ao DESIGN para o visual. |
 | `DOMINIO.md` | Regras de negócio e mapeamento regra → arquivo → função → teste. Referência técnica de baixo nível. Inclui a seção 8, de fontes científicas. |
 | `LINEARIZACAO.md` | Estudo da linearização das equações do otimizador do RuFaS (fórmulas, técnicas, verificação do erro). Base técnica do Anexo B. |
 | `nasem2021_notas/` (local, não versionada) | Notas técnicas do livro NASEM 2021 (tradução PT-BR), usadas como referência científica do Anexo A. O código R do modelo oficial prevalece sobre o texto do livro. |
-| `DECISOES_TECNICAS.md` | Decisões técnicas já tomadas, alertas e pendências. |
+| `arquivo/DECISOES_TECNICAS.md` | Registro histórico (arquivado em 16/11/2026). As decisões técnicas e seus motivos estão nas seções 3.1 e 3.2 deste FSD; alertas e pendências, nas seções 21.3 e 27. |
 | `README.md` | Instruções de instalação e uso. |
 
 O repositório contém também a implementação de referência que este FSD descreve (`backend/dietopt/`, `web/src/`). Ela é útil para consulta, mas **não** é fonte de verdade onde divergir do FSD: os pontos de divergência estão na seção 26.
@@ -87,7 +87,7 @@ O repositório contém também a implementação de referência que este FSD des
 | Ferramentas de build da interface | Node 20.9 ou superior e npm (observado: Node 24.18, npm 11.16); só para quem altera a interface |
 | Dados de referência | Tabelas CSV e JSON do RuFaS (`NRC_comp.csv`, `user_feeds.csv`, exemplo `freestall`) e constantes do código |
 | Instalação e execução | `scripts/setup.ps1` (PowerShell), `scripts/fetch_wheels.py`, `scripts/build-web.ps1`, `iniciar.bat` |
-| Testes automatizados | `pytest`, 71 testes em `backend/tests/` |
+| Testes automatizados | `pytest`, 261 testes em `backend/tests/` |
 | Banco de dados, ORM, framework web de backend, autenticação | Nenhum |
 
 **Padrão arquitetural:** ponte local em três camadas. O navegador (site estático) comunica-se por HTTP/JSON com um servidor Python em loopback, que delega a simulação a um processo filho do RuFaS e a leitura de seus arquivos de saída.
@@ -104,6 +104,43 @@ O repositório contém também a implementação de referência que este FSD des
 
 **Uso de bibliotecas:** nenhuma funcionalidade depende de internet em tempo de uso. A internet só é necessária durante a instalação (clone do RuFaS e pacotes) e para recompilar a interface (pacotes npm).
 
+### 3.1 Decisões técnicas e seus motivos
+
+Decisões já tomadas e implementadas, com o motivo registrado quando houve. Mudar qualquer uma delas é uma decisão nova, não um detalhe de implementação.
+
+| Decisão | Motivo ou consequência | Detalhe |
+|---|---|---|
+| Chamar o **RuFaS completo** como simulador, em subprocesso, e não reaproveitar só as suas fórmulas | Decisão do usuário: o resultado vem do simulador real, com as suas falhas e reduções de leite | 12.1 |
+| **Não modificar** o RuFaS (GPLv3, versão fixada v1.0.6); toda adaptação fica no adaptador, que escreve cópias editadas dos arquivos de entrada | Licença, versão fixa e isolamento de mudanças de versões futuras | 12.1, 21.5 |
+| A **ração é formulada pelo otimizador do próprio RuFaS** (SLSQP); o sistema informa só alimentos permitidos, preços e limites | O sistema não tem otimizador não linear próprio | 12.1 |
+| O **leite é o simulado pelo RuFaS** (curva de Wood, reduzida só quando a ração não atende às exigências) | Não há modelo próprio de resposta do leite à dieta (PRD, Q3) | 12.1, 27 |
+| Padrão nutricional **NRC 2001**; o NASEM 2021 é só referência; ids que só existem no NASEM no exemplo base são trocados (301 → 230, 302 → 167) | O RuFaS aplica a NRC; o NASEM como padrão de cálculo é o requisito RF-24, só especificado | 12.1, Anexo A.3 |
+| **Redução máxima de leite** de 5,0 kg/vaca/dia por padrão | A simulação degrada em vez de abortar quando a ração não atende | 12.1 |
+| **Semente 42** e versões fixadas (RuFaS, dependências, `package-lock.json`) | A mesma entrada dá o mesmo resultado | 14.4 |
+| **Caminhos relativos** a `vendor/RuFaS` | O validador do RuFaS rejeita caracteres acentuados e o caminho do projeto tem "Á" | 3, 12.1 |
+| **Sucesso** = código de saída 0 e a linha `Finished task: 1/1 with 0 error(s)` | O gerenciador de tarefas do RuFaS sai com 0 mesmo quando a tarefa falha; falha nunca vira resultado zero | 12.1 |
+| Interface como **site estático** servido pelo servidor Python (`http.server`), sem framework web de backend, ORM nem Node em tempo de uso | Execução local simples | 4, DESIGN (D1) |
+| Servidor só em `127.0.0.1` por padrão; sem login, perfis, auditoria nem banco de dados | Uso local e individual; a única barreira é escutar em loopback | 8, 21 |
+| Persistência por **arquivos** (`runs/`, `runs/_cache`, `runs/_history`) e `localStorage` do navegador | Sem banco de dados | 9, 14.6 |
+| **Uma tarefa por vez**, no máximo 2 simulações simultâneas | Cerca de 1,2 GB de RAM por simulação | 14.7 |
+| **Build da interface fora do OneDrive** (`%LOCALAPPDATA%\dietopt-web-build`) | Caminho com "Á" e centenas de MB de `node_modules` | 10, 13 (F10) |
+| **Python 3.12** em `.venv` | O RuFaS exige 3.12 ou 3.13; o Python 3.14 do sistema não é usado | 3 |
+| Resolução da dieta ótima por **programação linear** (HiGHS, via SciPy), com as equações do RuFaS linearizadas | Pedido do professor: o simulador e o otimizador do sistema devem ser lineares | 12.2, Anexo B, `LINEARIZACAO.md` |
+
+### 3.2 O que não deve ser inventado
+
+Itens que não existem e não devem ser assumidos, nem implementados sem decisão registrada:
+
+- Login, senha, perfis ou hierarquia de permissões; vários usuários ou várias fazendas numa mesma instalação; hospedagem em nuvem ou exposição do servidor à rede.
+- Banco de dados relacional, ORM ou persistência além dos arquivos e do `localStorage` descritos na seção 9.
+- Modificação do código do RuFaS (`vendor/RuFaS`).
+- Um modelo próprio de resposta do leite à dieta ou a otimização por fase da lactação (dependem de decisão do professor: PRD Q2 e Q3).
+- Um otimizador **não linear** próprio (por exemplo, um `SLSQP` do sistema): o otimizador do sistema é linear.
+- O NASEM 2021 como fonte do cálculo atual (é só referência; o cálculo é do RuFaS no padrão NRC) e a leitura automática de preços do CEPEA (PRD Q5).
+- CI/CD, ambiente de homologação ou fluxo de revisão formal: não existem; não presumir que existem.
+- Testes automatizados de integração com o RuFaS e de interface: não existem; só os do back-end.
+- Preços como cotações reais: os valores iniciais são ilustrativos.
+
 ---
 
 ## 4. Arquitetura do Sistema
@@ -112,7 +149,7 @@ O repositório contém também a implementação de referência que este FSD des
 
 | Componente | Local de execução | Responsabilidade |
 |---|---|---|
-| Interface web | Navegador | Cinco telas, estado compartilhado, chamadas à API, gráficos |
+| Interface web | Navegador | Seis telas, estado compartilhado, chamadas à API, gráficos |
 | Servidor local (`server.py`) | Processo Python de longa duração | API JSON, arquivos estáticos, montagem de cenários a partir das requisições |
 | Gerenciador de tarefas (`jobs.py`) | Threads do servidor | Executa simulações e sensibilidades em segundo plano, uma por vez |
 | Ruminante Singular (`module/`) | Servidor | Modelo linear das restrições, avaliação e comparação de dietas, dieta ótima por PL e preços-sombra |
@@ -181,7 +218,7 @@ aplicacao RuFaS/
       sensitivity.py          Sensibilidade e Spearman
       lactation.py            Curva de Wood e marcos
       feeds.py                Biblioteca NRC e tetos padrão
-    tests/                    71 testes (pytest)
+    tests/                    261 testes (pytest)
   web/                        Fontes da interface (Next.js)
     src/app, src/views, src/components, src/providers, src/hooks, src/lib
     package.json, package-lock.json, next.config.ts, LICENSE-TEMPLATE.md
@@ -192,7 +229,7 @@ aplicacao RuFaS/
   runs/                       Cenários, logs e cache (gerado)
   wheelhouse/                 Pacotes baixados com curl (gerado, se o pip falhar)
   .venv/                      Ambiente virtual Python 3.12 (gerado)
-  docs/                       PRD, DESIGN, DOMINIO, DECISOES_TECNICAS, FSD
+  docs/                       PRD, FSD, DESIGN, DOMINIO, LINEARIZACAO, guias/ (Word), arquivo/ (histórico)
 ```
 
 ### 5.2 Instalação
@@ -289,7 +326,7 @@ aplicacao RuFaS/
 | Modificar o código do RuFaS | O RuFaS é usado como está. |
 | Hospedagem em nuvem, vários usuários, várias fazendas | O sistema é local e individual. |
 | CI/CD, ambiente de homologação, fluxo de revisão do repositório Git | Não existem (seção 27). |
-| Testes automatizados de integração e de interface | Não existem; só os 71 testes do back-end. |
+| Testes automatizados de integração e de interface | Não existem; só os 261 testes do back-end. |
 
 ---
 
@@ -413,13 +450,13 @@ O sistema não coleta dados pessoais. O navegador guarda localmente a seleção 
 
 ## 10. Telas e Componentes de Interface
 
-O sistema tem **cinco telas**, todas dentro da mesma estrutura (barra lateral, cabeçalho, conteúdo, rodapé). Tema claro e escuro; verde como cor de marca; português do Brasil; números no formato brasileiro (vírgula decimal, ponto de milhar).
+O sistema tem **seis telas**, todas dentro da mesma estrutura (barra lateral, barra superior, conteúdo, rodapé). Tema escuro por padrão, com alternância para o claro; esmeralda como cor de destaque; português do Brasil; números no formato brasileiro (vírgula decimal, ponto de milhar). A linguagem visual (cores, tipografia, componentes, gráficos e acessibilidade) está no `DESIGN.md`, que é a fonte única; esta seção especifica o que cada tela mostra e faz.
 
 ### 10.1 Estrutura da página
 
-1. **Barra lateral recolhível:** marca "Dieta Ótima / com RuFaS"; grupo **Análise** (Ruminante Singular `/`, Vaca leiteira `/vaca`, Curva de lactação `/curva`, Sensibilidade `/sensibilidade`) e grupo **Projeto** (Premissas e limites `/sobre`); rodapé "RuFaS v1.0.6 · NRC 2001 · NASEM 2021". Largura 16 rem (aberta), 3 rem (ícones), 18 rem (gaveta no celular). Atalho `Ctrl/Cmd + B`. Abaixo de 1.280 px vira gaveta.
-2. **Cabeçalho fixo:** botão da barra lateral; *breadcrumb* "Dieta Ótima › <página>" (oculto em telas muito estreitas); selo de conexão; botão de tema.
-3. **Conteúdo:** título, descrição e blocos da tela, com largura máxima de 1.440 px e margens de 16 px (24 px a partir de 640 px).
+1. **Barra lateral flutuante e recolhível:** marca "Dieta Ótima / com RuFaS"; grupo **Análise** (Ruminante Singular `/`, Vaca leiteira `/vaca`, Curva de lactação `/curva`, Sensibilidade `/sensibilidade`, Execuções `/execucoes`) e grupo **Projeto** (Premissas e limites `/sobre`); rodapé "RuFaS v1.0.6 · NRC 2001 · NASEM 2021". Largura 16 rem (aberta), 3 rem (ícones), 18 rem (gaveta no celular). Atalho `Ctrl/Cmd + B`. Abaixo de 1.280 px vira gaveta.
+2. **Barra superior em pílula, fixa no topo:** botão da barra lateral; nome da tela atual; busca `Ctrl K` / `⌘K` (paleta de comandos para ir a qualquer tela); menu **Tarefas** (simulações e otimizações em andamento, com progresso); botão de tema; selo de conexão.
+3. **Conteúdo:** título, descrição e blocos da tela, com largura máxima de 1.440 px e margens de 12 px (24 px a partir de 640 px).
 4. **Rodapé:** "Simulador: RuFaS v1.0.6 (GPLv3) · Exigências e composição: NRC (2001) · Preços ilustrativos, não são cotações." e "Interface adaptada do template AdminCN (shadcn/studio, licença MIT)."
 
 ### 10.2 Selo de conexão
@@ -427,14 +464,14 @@ O sistema tem **cinco telas**, todas dentro da mesma estrutura (barra lateral, c
 | Estado | Texto | Estilo |
 |---|---|---|
 | Conectando | "conectando…" | Contorno |
-| Conectado | "conectado · N alimentos NRC" | Contorno verde |
+| Conectado | "conectado · N alimentos NRC" (a contagem some em telas estreitas) | Contorno verde |
 | Sem conexão | "sem conexão com o servidor" | Destrutivo |
 
 Sem conexão, os botões de execução ficam desabilitados.
 
 ### 10.3 Tela 1: Ruminante Singular (`/`)
 
-Título: "Ruminante Singular". A tela é só a **avaliação de dietas de uma vaca real**: entradas em abas (Vaca, Dietas, Preços e limites), botão **Avaliar dietas** com quatro estados e resultados em abas (Ranking, Restrições, Linearização, Dieta ótima). A especificação está no Anexo B (B.2) e o desenho dos gráficos em `DESIGN_REPAGINACAO.md`, seção 11. O exercício simples que ocupava esta tela (PL de arroz e milho, solução e cenários `S1..SN`) foi retirado. Retirado em 11/11/2026 (o exercício simples de arroz e milho deixou de fazer parte do trabalho).
+Título: "Ruminante Singular". A tela é só a **avaliação de dietas de uma vaca real**: entradas em abas (Vaca, Dietas, Preços e limites), botão **Avaliar dietas** com quatro estados e resultados em abas (Ranking, Restrições, Linearização, Dieta ótima). A especificação está no Anexo B (B.2) e o desenho dos gráficos em `DESIGN.md` (seção Telas e _Gráficos por saída_). O exercício simples que ocupava esta tela (PL de arroz e milho, solução e cenários `S1..SN`) foi retirado. Retirado em 11/11/2026 (o exercício simples de arroz e milho deixou de fazer parte do trabalho).
 
 ### 10.4 Tela 2: Vaca leiteira (`/vaca`)
 
@@ -453,7 +490,7 @@ Título: "Vaca leiteira (RuFaS)". Painel lateral de 23 rem à esquerda; resultad
 
 A busca casa o texto (sem diferença de maiúsculas) com o título do alimento ou o tipo. O título é "nome — descrição", ou só o nome se a descrição for vazia.
 
-**Resultados** (após a primeira simulação; antes, um quadro com o ícone de trigo e o texto "Escolha os alimentos e clique em “Simular com o RuFaS”. Cada simulação leva de 30 a 60 segundos."):
+**Resultados** (após a primeira simulação; antes, um quadro com o ícone de trigo e o texto "Escolha os alimentos e clique em “Simular com o RuFaS”. Cada simulação leva cerca de 20 a 30 segundos (segundos, se o cenário já foi simulado)."):
 
 | Bloco | Conteúdo |
 |---|---|
@@ -472,7 +509,7 @@ A busca casa o texto (sem diferença de maiúsculas) com o título do alimento o
 |---|---|
 | Cabeçalho | Selo no topo: "parâmetros calibrados pela simulação RuFaS" (verde) ou "parâmetros de referência" |
 | Campos | **PEV (dias)** (padrão 60; 0 a 200), **Gestação (dias)** (270; 200 a 300), **Secagem antes do parto (dias)** (60; 0 a 120). Inteiros; o texto sob o campo mostra o limite e, fora dele, a mensagem em vermelho (`web/src/lib/cycle.ts`). Os limites só evitam valores sem sentido; não vêm da literatura nem do RuFaS |
-| Gráfico | Uma curva por paridade ("1ª lactação", "2ª lactação", "3ª ou mais"); eixos "dias em lactação" e "kg/vaca/dia"; faixa sombreada do PEV ao parto rotulada "gestação N d"; linhas tracejadas "PEV (N d)", "secagem (N d)" e "parto (N d)"; dica "dia N" |
+| Gráfico | Uma curva por paridade ("1ª lactação", "2ª lactação", "3ª ou mais"); eixos "dias em lactação" e "kg/vaca/dia"; faixa sombreada do PEV ao parto (a gestação, sem rótulo); linhas tracejadas rotuladas "PEV N d", "secagem N d" e "parto N d"; balão com o dia e o leite de cada paridade; eixos só com os números (sem títulos) |
 | Resumo | Um cartão por paridade: pico em kg e "pico no dia N · x,x t em 305 dias · y,y t até a secagem" |
 | Produção acumulada | "Produção acumulada até a secagem (dia N)": a soma diária desde o parto até o dia da secagem; a tabela traz o total de 305 dias (referência usual) e o total até a secagem |
 
@@ -509,43 +546,19 @@ Cinco cartões de texto, em duas colunas a partir de 1.280 px (o terceiro ocupa 
 
 1. **Como o sistema funciona** — "Do cenário à margem." Cobre as cinco telas (Ruminante Singular, Vaca leiteira, Sensibilidade, Curva de lactação e Execuções), a margem, o limite de 100 simulações da sensibilidade e que tudo roda localmente (`runs/`).
 2. **O que o modelo assume** — leite pela curva de Wood do RuFaS; tetos padrão de inclusão (0,6 kg minerais, 0,9 kg gorduras, 1 kg para alimentos com 60% ou mais de PB); só farelo de arroz na biblioteca NRC; 1 ou 2 anos, 100 vacas (60 a 500), semente fixa; uma única ração para as vacas em lactação.
-3. **Como ler os resultados** — versão curta: estados Atende / No limite (folga ≤ 0,5%) / Violada / Indisponível e Viável / Inviável / Viável incompleta; restrições aproximadas e a aba Linearização; a dieta ótima pode usar até 30% a mais de consumo; margem, leite perdido, verificações V1 a V5 e balanço; variação em US$ (tamanho) × Spearman (direção). Aponta para `docs/GUIA_RUMINANTE_SINGULAR.docx`.
+3. **Como ler os resultados** — versão curta: estados Atende / No limite (folga ≤ 0,5%) / Violada / Indisponível e Viável / Inviável / Viável incompleta; restrições aproximadas e a aba Linearização; a dieta ótima pode usar até 30% a mais de consumo; margem, leite perdido, verificações V1 a V5 e balanço; variação em US$ (tamanho) × Spearman (direção). Aponta para `docs/guias/GUIA_RUMINANTE_SINGULAR.docx`.
 4. **O que ele não faz** — preços ilustrativos; não substitui software de formulação nem nutricionista, sem comparação com referência profissional; NASEM só no Ruminante Singular; energia do NASEM exige metano e N urinário; o otimizador do RuFaS pode não convergir ("falhou" ou "leite perdido", nunca resultado válido); tempo e memória por simulação e o mínimo de 60 vacas; limiares V1 a V5, tolerância e a leitura de PEV + gestação em avaliação com o professor.
 5. **Créditos e licenças** — RuFaS v1.0.6 (GPLv3, sem modificações), NRC 2001, NASEM 2021 (National Academies Press, doi:10.17226/25806), template AdminCN (MIT). O rodapé de todas as telas cita NRC (2001) e NASEM (2021).
 
-### 10.8 Identidade visual consolidada
+### 10.8 Identidade visual
 
-**Paleta (claro / escuro, em `oklch`; hexadecimal aproximado):**
-
-| Papel | Claro | Escuro | Uso |
-|---|---|---|---|
-| Fundo | `oklch(1 0 0)` `#ffffff` | `oklch(0.145 0 0)` `#0a0a0a` | Página |
-| Texto | `oklch(0.145 0 0)` `#0a0a0a` | `oklch(0.985 0 0)` `#fafafa` | Texto principal |
-| Cartão | `oklch(1 0 0)` | `oklch(0.205 0 0)` `#171717` | Superfícies |
-| Primária (verde) | `oklch(0.46 0.1 160)` `#0c6944` | `oklch(0.72 0.15 160)` `#2fc183` | Ações, destaque, margem, item ativo |
-| Texto secundário | `oklch(0.556 0 0)` `#737373` | `oklch(0.708 0 0)` `#a1a1a1` | Descrições, dicas |
-| Destrutiva | `oklch(0.577 0.245 27.325)` `#e7000b` | `oklch(0.704 0.191 22.216)` `#ff6467` | Erro, inviável, falhou |
-| Aviso (fundo) | `oklch(0.72 0.15 70)` `#df911a` | `oklch(0.8 0.15 75)` `#f5ae39` | Indicador "leite perdido" |
-| Aviso (texto) | `oklch(0.5 0.12 65)` `#915200` | `oklch(0.82 0.13 80)` `#f0ba59` | Texto de aviso legível |
-| Gráficos 1 a 8 | verde, âmbar, azul, rosa-vermelho, violeta, turquesa, oliva, rosa | versões mais claras | Séries |
-
-**Tipografia:** Geist Sans. Título da página 24 px, peso 600; título de cartão 16 px, peso 500; texto de apoio e tabelas 14 px; rótulos e dicas 12 px (11 px em campos compactos); valor de indicador 24 px, peso 600; números com dígitos tabulares.
-
-**Forma e espaço:** raio base 10 px (cartões 14 px); espaço entre blocos 24 px; entre indicadores 12 px; padding de cartão 24 px (16 px nos indicadores); campo numérico com 32 px de altura. Hierarquia por camadas tonais e bordas de 1 px, sem sombras relevantes.
-
-**Botões:** variantes `default` (verde sólido), `outline`, `ghost` e `secondary`; altura 36 px, 32 px (`sm`). O botão de executar leva o ícone de play.
-
-**Mapa de calor (`Res`):** fundo de 8% a 40% da cor primária proporcional ao valor (o teto de 40% mantém o contraste de texto ≥ 4,5:1 no tema escuro). Na tela do exercício a escala é invertida (menor custo = mais intenso).
-
-**Estados:** sucesso (verde), erro (vermelho), aviso do modelo (âmbar), carregamento (barra de progresso). A cor nunca é o único canal: os estados também têm texto ou número.
-
-**Acessibilidade implementada:** idioma `pt-BR`; rótulos acessíveis em campos e botões de ícone; progresso anunciado (`role='status'`, `aria-live='polite'`); foco visível herdado do shadcn/Base UI; respeito ao tema do sistema.
+A identidade visual (paleta clara e escura, tipografia, formas e espaço, botões, selos, estados, mapa de calor, gráficos por saída, contraste medido e acessibilidade) está no [DESIGN.md](DESIGN.md), fonte única desse assunto. Para reimplementar, valem as regras de lá. Em resumo: tema escuro por padrão e claro equivalente; um único acento (esmeralda); botão primário claro no escuro; cartões de 20 px com borda de 1 px e sem sombra; estado nunca só em cor.
 
 ### 10.9 Regras de exibição
 
 - Antes da primeira conexão, a lista de alimentos está vazia e os botões de execução ficam desabilitados.
 - Valores numéricos ausentes ou inválidos aparecem como "—".
-- Resultados de simulação e de sensibilidade permanecem na tela até serem substituídos ou a página ser recarregada. **Não** indicam a que parâmetros correspondem (D1).
+- Resultados de simulação e de sensibilidade permanecem na tela até serem substituídos ou a página ser recarregada. Se os parâmetros mudam depois da execução, os resultados ficam esmaecidos com uma faixa de aviso e o botão volta a "Executar"; a execução fica registrada em Execuções.
 - Texto de cabeçalho e rótulos usam as grafias desta seção.
 
 ---
@@ -1009,7 +1022,7 @@ Implementar em `server.py` (`do_GET` ou `do_POST`), tipar a resposta em `lib/typ
 1. **Sem autenticação, validação de `Host`, de `Origin`/`Referer` ou limite de requisições.** Uma página aberta no navegador do mesmo computador pode enviar requisições ao servidor local (por exemplo, disparar simulações de ≈ 1,2 GB de RAM cada) e, em cenários de religação de DNS, tentar ler respostas. Os dados são de baixa sensibilidade; o consumo de recursos não.
 2. **`--host` permite expor o servidor à rede sem proteção alguma** (D5).
 3. **Sem limite de tamanho do corpo** das requisições nem validação de esquema.
-4. **Sem teto de cenários** na sensibilidade: uma grade com vários fatores de alimento e 12 níveis dispara `12^k` simulações, de 30 s cada em 2 paralelas.
+4. **Teto de 100 simulações por análise** na sensibilidade (PRD 0.18): acima disso o pedido é recusado; ainda assim uma análise no limite leva dezenas de minutos, de 30 s cada em 2 paralelas.
 5. **`localStorage`** guarda seleção, preços e parâmetros em texto simples.
 
 Qualquer rota nova herda essas ausências. Se o servidor for exposto à rede, é preciso antes acrescentar autenticação e limite de requisições, o que não existe hoje (seção 27).
@@ -1106,7 +1119,7 @@ O sistema é considerado implementado quando:
 
 | `test_module_evaluate.py` | Avaliação de dietas: oferta linear = oferta do RuFaS no ponto, erro fora do ponto, razões exatas, `min` da proteína, categorias, ordenação, replicações do RuFaS, entradas inválidas |
 
-Total: 71 testes passando. Integração real com o RuFaS e interface foram verificadas manualmente, **sem teste automatizado**.
+Total: 261 testes passando. Integração real com o RuFaS e interface foram verificadas manualmente, **sem teste automatizado**.
 
 ---
 
@@ -1133,7 +1146,7 @@ Não há atualização automática. A interface é recompilada com `scripts\buil
 
 ### 24.5 Controle de versão do código
 
-O projeto é um repositório Git (ramo `main`, remoto `origin` em `https://github.com/gebasss/PO_Rufas.git`, um commit `first commit` em 01/11/2026). O `.gitignore` exclui `.venv/`, `wheelhouse/`, `runs/` e caches. Não há fluxo de pull request, ramos protegidos nem CI/CD definidos. `vendor/RuFaS` é um clone Git do RuFaS na tag v1.0.6. Ver seção 27.
+O projeto é um repositório Git (ramo `main`, remoto `origin` em `https://github.com/gebasss/PO_Rufas.git`, com o primeiro commit em 01/11/2026). O trabalho é feito em ramos por assunto (`fix/…`, `docs/…`), integrados à `main` por pull request no GitHub. O `.gitignore` exclui `.venv/`, `wheelhouse/`, `runs/`, caches e as notas do NASEM (`docs/nasem2021_notas/`, por direitos autorais). Não há CI/CD, ramos protegidos nem revisão obrigatória definidos. `vendor/RuFaS` é um clone Git do RuFaS na tag v1.0.6. Ver seção 27.
 
 ### 24.6 Ambientes
 
@@ -1205,7 +1218,7 @@ Nenhum dos itens abaixo impede a manutenção da versão atual com base neste FS
 **Melhorias e limitações conhecidas**
 
 - Cada simulação leva de 30 a 37 s e usa ≈ 1,2 GB de RAM; uma tarefa por vez.
-- A sensibilidade não tem teto de cenários (seção 21.3).
+- A sensibilidade tem teto de 100 simulações por análise (seção 21.3) e botão Cancelar.
 - As tarefas ficam na memória do servidor e nunca são removidas; `runs/` cresce sem limite.
 - A conexão só é verificada ao carregar a página; o selo pode ficar "conectado" depois da queda do servidor.
 - A biblioteca NRC 2001 só tem farelo de arroz; o "arroz" do exercício é representado por ele.
@@ -1217,7 +1230,7 @@ Nenhum dos itens abaixo impede a manutenção da versão atual com base neste FS
 
 **Operação e infraestrutura**
 
-- O repositório Git existe, mas o fluxo de trabalho (ramos, pull requests, revisão) não foi definido.
+- O repositório Git usa ramos por assunto e pull requests, mas não há regra de revisão, ramos protegidos nem CI/CD definidos.
 - Não há CI/CD, ambiente de homologação nem testes automatizados de integração com o RuFaS ou de interface.
 - Não há limpeza de `runs/` nem invalidação do cache por versão do simulador.
 - Versão em linha de comando com relatório combinada como fase seguinte, sem decisão técnica registrada.
@@ -1237,7 +1250,7 @@ Não foram identificadas pendências que impeçam a manutenção da versão atua
 
 ## Anexo A. Especificação dos Requisitos Planejados RF-24, RF-26 e RF-27 (RF-27 implementado; RF-24 e RF-26 não)
 
-> **Status (03/11/2026):** o **RF-27** (A.4) está implementado, junto com o balanço nutricional (RF-19, A.4b); veja as notas "Implementado" nas seções A.4 e A.4b. Os demais itens deste anexo **ainda não existem** na interface e o texto abaixo, fora dessas notas, não descreve a interface atual. **Já implementados no back-end em 02/11/2026** (etapas E1 a E3 de `PLANO_IMPLEMENTACAO.md`): o padrão NASEM nos cenários e na biblioteca (A.3.2 e A.3.3), e as rotas `/api/module/defaults`, `/api/module/requirements` e `/api/module/evaluate` (B.3, B.6 e B.7). Foi escrito a partir de uma leitura do NASEM 2021 (notas em `docs/nasem2021_notas/`), do código do RuFaS v1.0.6 e dos resultados de simulação já guardados em `runs/_cache/`. Onde um fato do RuFaS ainda não foi verificado, o texto diz **"a verificar"**. Os limiares e as decisões marcados **(a confirmar)** dependem do professor ou da equipe (seção A.6).
+> **Status (03/11/2026):** o **RF-27** (A.4) está implementado, junto com o balanço nutricional (RF-19, A.4b); veja as notas "Implementado" nas seções A.4 e A.4b. Os demais itens deste anexo **ainda não existem** na interface e o texto abaixo, fora dessas notas, não descreve a interface atual. **Já implementados no back-end em 02/11/2026** (etapas E1 a E3 de `arquivo/PLANO_IMPLEMENTACAO.md`): o padrão NASEM nos cenários e na biblioteca (A.3.2 e A.3.3), e as rotas `/api/module/defaults`, `/api/module/requirements` e `/api/module/evaluate` (B.3, B.6 e B.7). Foi escrito a partir de uma leitura do NASEM 2021 (notas em `docs/nasem2021_notas/`), do código do RuFaS v1.0.6 e dos resultados de simulação já guardados em `runs/_cache/`. Onde um fato do RuFaS ainda não foi verificado, o texto diz **"a verificar"**. Os limiares e as decisões marcados **(a confirmar)** dependem do professor ou da equipe (seção A.6).
 
 ### A.1 Visão geral
 
@@ -1514,7 +1527,7 @@ ou de colunas, ou câmbio inválido, voltam como erro 500 no formato da seção 
 
 **Tela.** Botão **Importar preços (CSV)**, campo de câmbio e botão **Modelo** (baixa um CSV de exemplo), nos cartões de
 alimentos da tela Vaca leiteira e de **Preços e limites** do módulo Avaliar dietas. Só os alimentos já selecionados têm o preço
-trocado; os demais do arquivo aparecem como "fora da seleção" (não são adicionados). Depois da importação a tela mostra quantos
+trocado, arredondado a 4 casas decimais (US$/kg MS) para o campo não ficar com a dízima da conversão; os demais do arquivo aparecem como "fora da seleção" (não são adicionados). Depois da importação a tela mostra quantos
 preços foram aplicados, a conversão linha a linha e as linhas sem correspondência ou inválidas, cada uma com o motivo.
 
 **Não feito.** Leitura automática de indicadores do CEPEA, histórico de preços e mapeamento automático indicador × alimento.
@@ -1620,7 +1633,7 @@ se houver simulação na fila ou rodando. Não toca no histórico, em `_cache` n
 **Cenário-base.** Uma **simulação concluída** pode ser marcada com a estrela; marcar outra troca a base. Só a base de simulação é
 usada pelas telas, por isso a estrela só aparece nas simulações (as demais execuções só a mostram se uma versão anterior marcou
 uma base, para poder desmarcá-la), e o servidor recusa marcar outro tipo.
-Na tela Vaca leiteira, cada indicador mostra a variação em % em relação à simulação-base (receita e margem: subir é bom; custos:
+Na tela Vaca leiteira, cada indicador de total do rebanho mostra a variação em % em relação à simulação-base com o mesmo rebanho e o mesmo período (receita e margem: subir é bom; custos:
 descer é bom); sem base, a tela explica como defini-la, e na própria base não há variação.
 
 **API.**
@@ -1665,7 +1678,7 @@ espaço).
 
 ### A.13 RF-13: tamanho do rebanho (implementado em 10/11/2026, etapa E8g)
 
-**O que o usuário faz.** Na tela Vaca leiteira, o campo **Vacas no rebanho** (padrão 100, de 60 a 500) vale para a simulação e para a sensibilidade. Fora da faixa, ou não inteiro, o campo mostra o motivo e os botões Executar ficam desabilitados; o servidor repete a validação (erro 500 no formato da seção 11.3). Acima de 250 vacas a tela avisa o tempo e a memória de cada simulação. O número entra no arquivo de cenário (`params.cowNum`; arquivos antigos abrem com 100), no resumo e no título da execução no histórico (só quando difere de 100), na tela de detalhe e no relatório HTML. Os totais do rebanho (margem, receita, custo de alimentação, leite total) só são comparados com o cenário-base se os dois têm o mesmo número de vacas; os valores por vaca sempre são.
+**O que o usuário faz.** Na tela Vaca leiteira, o campo **Vacas no rebanho** (padrão 100, de 60 a 500) vale para a simulação e para a sensibilidade. Fora da faixa, ou não inteiro, o campo mostra o motivo e os botões Executar ficam desabilitados; o servidor repete a validação (erro 500 no formato da seção 11.3). Acima de 250 vacas a tela avisa o tempo e a memória de cada simulação. O número entra no arquivo de cenário (`params.cowNum`; arquivos antigos abrem com 100), no resumo e no título da execução no histórico (só quando difere de 100), na tela de detalhe e no relatório HTML. Os totais do rebanho (margem, receita, custo de alimentação, leite total) só são comparados com o cenário-base se os dois têm o mesmo número de vacas **e o mesmo período** (o período da simulação sai do número de dias da série diária; a base sem período no resumo vale como o mesmo); os valores por vaca sempre são. Quando não são comparáveis, o texto acima dos resultados diz o rebanho e o período de cada uma.
 
 **Por que não basta `cow_num`.** O exemplo `freestall` tem 100 vacas e, junto, bezerras, novilhas, uma reserva de reposição e um tamanho-alvo (`herd_num`): o RuFaS vende novilhas prenhes quando vacas e novilhas prenhes passam de 103% do alvo e compra reposição abaixo de 101%. Mudar só `cow_num` deixava o alvo em 100 e o RuFaS recompunha o rebanho. Além disso, cada lote tem um número fixo de baias (`number_of_stalls`) e o RuFaS recusa a simulação se o lote passa da lotação máxima (500 vacas falhou com "Number of stalls in calf pen"). O adaptador (`backend/dietopt/herd.py`, `scale_herd`) escala por `cow_num / 100`: o próprio `cow_num` e o `herd_num`, bezerras, novilhas I, II e III, a reposição (`replace_num`) e as baias de todos os lotes (arredondando para cima), com mínimo de 1. Informar 100 equivale a não informar (mesma chave de cache).
 

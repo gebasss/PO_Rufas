@@ -1,12 +1,17 @@
 # Linearização do simulador/otimizador: estudo e especificação
 
-**Versão:** 0.1 (rascunho para avaliação) · **Data:** 01/11/2026 · **Autor(es):** _[a preencher]_
-**Relacionado:** [PRD](PRD.md) · [FSD](FSD.md) · [DOMINIO](DOMINIO.md) · [DECISOES_TECNICAS](DECISOES_TECNICAS.md)
+**Versão:** 0.2 (rascunho para avaliação) · **Data:** 01/11/2026, revisto em 16/11/2026 · **Autor(es):** _[a preencher]_
+**Relacionado:** [PRD](PRD.md) · [FSD](FSD.md) · [DOMINIO](DOMINIO.md)
 
-> **Status:** estudo e especificação. **Nada aqui está implementado.** O texto descreve (a) como o RuFaS v1.0.6 calcula a
-> ração, lido diretamente no código de `vendor/RuFaS`, e (b) como esse cálculo será linearizado no módulo ampliado do
-> "Ruminante Singular". Onde um fato não foi verificado, o texto diz **"a verificar"**; onde a decisão é nossa e
-> ainda precisa de confirmação, diz **"(a confirmar)"**.
+> **Status (16/11/2026):** estudo e especificação, **com as duas fases do módulo já implementadas**: a avaliação e a comparação
+> de dietas (fase 1, etapas E3 a E6) e a dieta ótima por programação linear (fase 2, etapa E7), em `backend/dietopt/module/`; a
+> seção 7.6 conta como a fase 2 ficou. O texto descreve (a) como o RuFaS v1.0.6 calcula a ração, lido diretamente no código de
+> `vendor/RuFaS`, e (b) como esse cálculo foi linearizado no módulo "Ruminante Singular". As seções 1 a 6 e 10 são o estudo e
+> não mudaram; as seções 7 e 8 foram revistas.
+>
+> **Ainda não implementado:** o laço de redução de leite sobre LPs (7.6), a leitura automática de indicadores do CEPEA (7.2; há
+> importação de preços por CSV) e o que a seção 8 deixa em aberto com o professor. Onde um fato não foi verificado, o texto diz
+> **"a verificar"**; onde a decisão é nossa e ainda precisa de confirmação, diz **"(a confirmar)"**.
 
 ---
 
