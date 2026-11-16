@@ -1,14 +1,14 @@
 # Documento de Requisitos do Produto (PRD)
 
 **Produto:** Dieta Ótima com RuFaS
-**Versão do documento:** 0.20 (rascunho para avaliação)
+**Versão do documento:** 0.23 (rascunho para avaliação)
 **Data:** 02/11/2026
 **Status:** Versão web implementada; documento em revisão
 **Autor(es):** _[a preencher]_
 **Disciplina / Professor / Instituição:** Pesquisa Operacional · _[a preencher]_ · _[a preencher]_
 **Escopo deste documento:** somente a **aplicação web local**. A versão em linha de comando com relatório está fora
 deste PRD.
-**Documentos relacionados:** [DESIGN.md](DESIGN.md) (interface) · [DOMINIO.md](DOMINIO.md) (regras e fontes científicas) · [DECISOES_TECNICAS.md](DECISOES_TECNICAS.md) · [FSD.md](FSD.md) (especificação funcional; os Anexos A e B trazem os requisitos planejados) · [LINEARIZACAO.md](LINEARIZACAO.md) (estudo da linearização) · [PLANO_IMPLEMENTACAO.md](PLANO_IMPLEMENTACAO.md) (ordem de implementação) · [PERGUNTAS_PROFESSOR.md](PERGUNTAS_PROFESSOR.md) (decisões em aberto) · `nasem2021_notas/` (notas do NASEM 2021; pasta local, não versionada) · [README](../README.md) (instalação e uso)
+**Documentos relacionados:** [DESIGN.md](DESIGN.md) (interface) · [DOMINIO.md](DOMINIO.md) (regras e fontes científicas) · [FSD.md](FSD.md) (especificação funcional; os Anexos A e B trazem os requisitos planejados) · [LINEARIZACAO.md](LINEARIZACAO.md) (estudo da linearização) · [arquivo/](arquivo/) (registros históricos: plano de implementação, roteiro da repaginação e decisões técnicas, já incorporados) · [guias/](guias/) (guias de uso em Word, um por tela) · [PERGUNTAS_PROFESSOR.md](PERGUNTAS_PROFESSOR.md) (decisões em aberto) · `nasem2021_notas/` (notas do NASEM 2021; pasta local, não versionada) · [README](../README.md) (instalação e uso)
 
 ---
 
@@ -72,8 +72,8 @@ seções 5.2.5, 14 e 15.
 | Avaliador | Professor de Pesquisa Operacional |
 | Núcleo científico | RuFaS v1.0.6 (GPLv3, usado sem modificação), padrão NRC (2001) |
 | Núcleo de otimização | Programação linear (SciPy/HiGHS) para a dieta ótima do Ruminante Singular; otimizador SLSQP do próprio RuFaS para a ração da vaca |
-| Entrega principal | Cinco telas: Ruminante Singular, vaca leiteira, curva de lactação, sensibilidade, premissas e limites |
-| Estado | Implementado e testado (71 testes automatizados); validação científica pendente |
+| Entrega principal | Seis telas: Ruminante Singular, vaca leiteira, curva de lactação, sensibilidade, execuções, premissas e limites |
+| Estado | Implementado e testado (261 testes automatizados); validação científica pendente |
 
 ### 1.3 Proposta de valor
 
@@ -428,8 +428,8 @@ Navegador                         Servidor Python                     RuFaS
 
 ### 9.3 Telas e princípios de interface
 
-A aplicação tem **cinco telas**, acessadas por uma barra lateral (grupo _Análise_ com as quatro primeiras e grupo
-_Projeto_ com a quinta), que seguem o raciocínio do quadro do professor. O detalhamento visual está em
+A aplicação tem **seis telas**, acessadas por uma barra lateral (grupo _Análise_ com as cinco primeiras e grupo
+_Projeto_ com a sexta), que seguem o raciocínio do quadro do professor. O detalhamento visual está em
 [DESIGN.md](DESIGN.md).
 
 1. **Ruminante Singular:** avaliação de dietas montadas para uma vaca real, em abas (Ranking, Restrições, Linearização e
@@ -507,7 +507,7 @@ Formato _Dado / Quando / Então_. Apenas as histórias já atendidas.
 |---|---|---|
 | Unitário | dieta ótima por PL (ótimo e inviabilidade), amostragem (grade, hipercubo latino, Spearman), troca de ids NASEM→NRC, tetos padrão, resumo de falha, chave de cache, padrão NASEM no adaptador e na biblioteca, exigências da vaca pelas calculadoras do RuFaS | 219 testes passando (11/11/2026) |
 | Integração | Execução real do RuFaS por cenário, leitura de saídas, cache, falha e degradação com perda de leite | Executado manualmente; **sem teste automatizado** |
-| Interface | Uso das cinco telas no navegador, nos temas claro e escuro | Executado manualmente; **sem teste automatizado** |
+| Interface | Uso das seis telas no navegador, nos temas claro e escuro | Executado manualmente; **sem teste automatizado** |
 | Validação científica | Comparação com formulador de referência ou tabelas da NRC | **Pendente** (M6, RNF-10) |
 
 ---
@@ -584,7 +584,7 @@ uma dieta.
 | RNF-05 | Transparência | Falhas devem ser explícitas; o log de cada simulação deve ficar disponível em disco (`runs/<id>/console.log`). | Atendido |
 | RNF-06 | Reprodutibilidade | Versão do RuFaS fixada (v1.0.6), dependências fixadas e semente aleatória fixa (42). Mesma entrada, mesmo resultado. | Atendido |
 | RNF-07 | Segurança | O servidor escuta apenas em `127.0.0.1`, sem autenticação e sem dados pessoais. Não deve ser exposto a redes. | Atendido |
-| RNF-08 | Manutenibilidade | Código modular, RuFaS sem modificação, testes automatizados cobrindo PL, amostragem, adaptador e cache. | Atendido (71 testes) |
+| RNF-08 | Manutenibilidade | Código modular, RuFaS sem modificação, testes automatizados cobrindo PL, amostragem, adaptador e cache. | Atendido (261 testes) |
 | RNF-09 | Legal | O RuFaS é GPLv3. A distribuição conjunta deve respeitar a licença e preservar a atribuição. | Atendido (RuFaS não modificado) |
 | RNF-10 | Validade científica | Os resultados devem ser comparados com uma referência profissional antes de qualquer uso real. Premissas e limites do modelo devem estar documentados. | **Pendente** (limites documentados no README; comparação não feita) |
 | RNF-11 | Instalação | O ambiente deve ser reproduzível por script, mesmo onde o `pip` falha por TLS. | Atendido (`scripts/setup.ps1` com contorno via `curl`) |
@@ -611,7 +611,7 @@ Limitações conhecidas, para que ninguém leia mais certeza do que o sistema en
 | L11 | Cada simulação consome ~1,2 GB de RAM e leva 30 a 37 s; só um job roda por vez. | Análises grandes demoram; máquinas com pouca memória livre podem falhar. | RNF-02, R5 |
 | L12 | Testado apenas no Windows e em um computador; sem autenticação, uso local de um usuário. | Não foi verificado em outros sistemas nem exposto a rede. | RNF-03, RNF-07 |
 | L13 | Jobs ficam na memória do servidor; reiniciá-lo perde jobs em andamento e resultados não exportados. Os resultados em disco permanecem no cache. | Reiniciar durante uma análise obriga a rodar de novo (as simulações prontas voltam do cache). | Seção 8 |
-| L14 | Não há testes automatizados de integração com o RuFaS nem de interface; acessibilidade não foi auditada com leitor de tela; o contraste das cores dos gráficos não foi medido. | Regressões nessas camadas só são detectadas manualmente. | Seção 11.3, DESIGN |
+| L14 | Não há testes automatizados de integração com o RuFaS nem de interface; acessibilidade não foi auditada com leitor de tela; no tema claro, o esmeralda como texto pequeno e alguns selos ficam abaixo de 4,5:1 de contraste (DESIGN, seção Acessibilidade). | Regressões nessas camadas só são detectadas manualmente. | Seção 11.3, DESIGN |
 | L15 | A pasta `runs/` não é limpa automaticamente. | Ocupa disco com o uso prolongado. | Seção 8.3 |
 | L16 | O otimizador do RuFaS aceita ração com consumo até 30% acima do estimado (`DMI_CONSTRAINT_FRACTION`), e o erro típico da equação de consumo do NASEM é 12,1%. Nas simulações guardadas a ração ficou 3 a 8 kg acima do estimado, várias no teto. | Custo da ração e margem podem estar superestimados; a ração pode ser fisiologicamente irreal. | RF-27, R10, Q8, Q10 |
 | L17 | A NEL estimada exibida na lista de alimentos (`0,0245 × TDN − 0,12`) é do NRC e vale só para alimentos com TDN; para minerais (TDN 0) o código resulta em −0,12 Mcal/kg. | Valor sem sentido exibido para minerais; sem efeito no cálculo, que é do RuFaS. | FSD, D7 |
@@ -676,9 +676,9 @@ sobre o custo de alimentação ao longo da lactação, chamando o RuFaS v1.0.6 (
 
 **Para quem.** Nutricionista e produtor de leite; avaliada pelo professor de Pesquisa Operacional.
 
-**O que já faz.** Cinco telas: avalia dietas montadas para uma vaca real e sugere a ótima (Ruminante Singular),
+**O que já faz.** Seis telas: avalia dietas montadas para uma vaca real e sugere a ótima (Ruminante Singular),
 simula a vaca com ração, custo e margem, desenha a curva de lactação com PEV e gestação, roda análise de
-sensibilidade com tabela `S1..SN` e `Res`, e explica premissas e limites. Falhas e leite perdido ficam visíveis.
+sensibilidade com tabela `S1..SN` e `Res`, guarda o histórico de execuções e explica premissas e limites. Falhas e leite perdido ficam visíveis.
 
 **Estado (11/11/2026).** Dos 30 requisitos funcionais, 5 foram retirados com o exercício simples (RF-01 a RF-04 e RF-23); dos 25 restantes, 23 estão atendidos ou implementados, 1 é parcial (RF-24) e 1 está pendente (RF-26); dos 11 requisitos não funcionais, 10 atendidos e 1 pendente (validade científica, RNF-10). 219 testes automatizados passam.
 
@@ -691,7 +691,7 @@ por fase; ração que pode passar do consumo estimado em até 30% (limite do RuF
 2. Especificar e implementar o balanço nutricional (RF-19), o item de maior valor para o usuário profissional.
 3. Definir a referência de validação (Q4) e medir o desvio (M6), agora com o NASEM 2021 como referência científica adicional.
 4. Decidir RF-27, RF-24 e RF-26 (já especificados no FSD, Anexo A): verificações de consistência, padrão NASEM e arroz em grão, nessa ordem.
-5. **Prioridade do professor:** o módulo ampliado do Ruminante Singular (RF-28 e RF-29; FSD, Anexo B; `LINEARIZACAO.md`), com o modelo linear das equações do RuFaS e a comparação com o otimizador do RuFaS. A ordem das etapas está em `PLANO_IMPLEMENTACAO.md`; as decisões a levar ao professor estão em `PERGUNTAS_PROFESSOR.md` (a Q11 é a primeira).
+5. **Prioridade do professor:** o módulo ampliado do Ruminante Singular (RF-28 e RF-29; FSD, Anexo B; `LINEARIZACAO.md`), com o modelo linear das equações do RuFaS e a comparação com o otimizador do RuFaS. A ordem das etapas está em `arquivo/PLANO_IMPLEMENTACAO.md` (arquivado); as decisões a levar ao professor estão em `PERGUNTAS_PROFESSOR.md` (a Q11 é a primeira).
 6. Depois, a dieta ótima sugerida (RF-30, fase 2) e a versão em linha de comando com relatório.
 
 ---
@@ -769,7 +769,7 @@ por fase; ração que pode passar do consumo estimado em até 30% (limite do RuF
 | `backend/dietopt/lactation.py` | Curva de Wood e marcos reprodutivos. |
 | `backend/dietopt/feeds.py` | Biblioteca NRC 2001 e tetos padrão por tipo de alimento. |
 | `backend/dietopt/jobs.py`, `server.py` | Fila de jobs e API HTTP. |
-| `web/` e `frontend/` | Interface em cinco telas. As fontes (Next.js) ficam em `web/`; `scripts/build-web.ps1` compila e publica o site estático em `frontend/`, servido pelo servidor Python. Ver [DESIGN.md](DESIGN.md). |
+| `web/` e `frontend/` | Interface em seis telas. As fontes (Next.js) ficam em `web/`; `scripts/build-web.ps1` compila e publica o site estático em `frontend/`, servido pelo servidor Python. Ver [DESIGN.md](DESIGN.md). |
 
 ## Apêndice D: Rastreabilidade com o pedido do professor
 
@@ -920,3 +920,6 @@ próprio RuFaS.
 | 0.18 | 15/11/2026 | _[a preencher]_ | Sensibilidade (RF-16 a RF-18, RN-14): limite de 100 simulações por análise, botão Cancelar, comparação com a base só com o mesmo período e rebanho, variação da margem em US$ por fator e fatores iniciais pelo peso no custo. |
 | 0.19 | 15/11/2026 | _[a preencher]_ | Premissas e limites (RF-25): tela reescrita com as cinco telas, seção curta "Como ler os resultados", tetos padrão de inclusão, limites do Ruminante Singular e do RuFaS, e NASEM 2021 nos créditos e no rodapé. |
 | 0.20 | 15/11/2026 | _[a preencher]_ | Execuções (histórico, FSD A.12): nome e nota por execução, estrela de cenário-base só nas simulações, alimentos com nome e descrição na biblioteca do padrão no detalhe, botão para limpar as pastas de simulação (`runs/web_*`) com o espaço ocupado, pedidos recusados na validação fora do histórico e período e rebanho no resumo da sensibilidade. |
+| 0.21 | 16/11/2026 | _[a preencher]_ | Vaca leiteira (guias de uso em `docs/guias/`): variação dos totais em relação ao cenário-base só com o mesmo rebanho e o mesmo período, preço importado por CSV arredondado a 4 casas e texto do estado vazio com o tempo real da simulação (cerca de 20 a 30 s). |
+| 0.22 | 16/11/2026 | _[a preencher]_ | Organização dos documentos: `PLANO_IMPLEMENTACAO.md` e `DESIGN_REPAGINACAO.md` (concluídos) movidos para `docs/arquivo/`; capas de `LINEARIZACAO.md` e `DOMINIO.md` e o README atualizados com o estado atual (fases 1 e 2 implementadas; histórico, exportação, cenários, importação de preços, rebanho e NASEM no Ruminante Singular no DOMINIO); guias de uso em `docs/guias/`. |
+| 0.23 | 16/11/2026 | _[a preencher]_ | Consolidação dos documentos: `DESIGN.md` reescrito como fonte única da linguagem visual (tokens atuais, seis telas, componentes, gráficos por saída, decisões de produto da repaginação e contraste medido, com as lacunas do tema claro); `DECISOES_TECNICAS.md` arquivado, com as decisões e o que não inventar incorporados ao FSD (3.1 e 3.2); contagens de testes (261) e de telas (seis) corrigidas no PRD e no FSD; referências atualizadas. |

@@ -1,12 +1,19 @@
 # Dieta Ótima com RuFaS — Domínio e Regras de Negócio
 
 > Documento gerado a partir da leitura direta do código-fonte (`backend/dietopt/`, `web/src/`, `scripts/`,
-> `iniciar.bat`), em 12/10/2026. Reflete **exclusivamente o que está implementado e funcionando hoje**. Não contém
+> `iniciar.bat`) em 12/10/2026 e **revisto em 16/11/2026**. Reflete **o que está implementado e funcionando**. Não contém
 > histórico de decisões, propostas de mudança ou direções futuras: requisitos pendentes vivem no
 > [PRD](PRD.md), decisões visuais no [DESIGN](DESIGN.md) e instruções de uso no [README](../README.md).
 >
-> A seção 8 (acrescentada e revista em 01/11/2026) registra as fontes científicas (NRC 2001, NASEM 2021, RuFaS) e o que foi conferido contra elas. Os requisitos
-> planejados a partir dessa análise estão no [FSD](FSD.md), Anexo A, e não fazem parte do que está implementado.
+> **Cobertura.** As regras detalhadas (seções 4 e 5) são as da **simulação do RuFaS, da sensibilidade e da curva de lactação**,
+> que são as que o código calcula diretamente. O módulo **Ruminante Singular** (avaliação de dietas e dieta ótima), o
+> **histórico de execuções**, a **exportação**, o **arquivo de cenário**, a **importação de preços**, o **tamanho do rebanho**
+> e as **verificações e o balanço** da ração aparecem aqui só como componentes (seção 3) e na rastreabilidade (seção 7); as
+> regras deles estão no [FSD](FSD.md) (Anexo B e anexos A.4 a A.13) e na [LINEARIZACAO](LINEARIZACAO.md). Se este documento e o
+> FSD divergirem, vale o FSD (seção 26).
+>
+> A seção 8 (acrescentada e revista em 01/11/2026 e em 16/11/2026) registra as fontes científicas (NRC 2001, NASEM 2021, RuFaS) e o que
+> foi conferido contra elas.
 >
 > Escopo: apenas o que a equipe controla — a interface web, o servidor local e o adaptador que chama o RuFaS. O
 > **RuFaS** (v1.0.6, `vendor/RuFaS`, sem modificação) é tratado como sistema externo: uma "caixa" que recebe arquivos
@@ -38,7 +45,7 @@ nem multiestação — o servidor escuta em `127.0.0.1` (a própria máquina) e 
 
 | Componente | Arquivo(s) | Papel |
 |---|---|---|
-| Interface web (Next.js exportado como site estático) | `web/src/` → publicada em `frontend/` | Cinco telas, estado compartilhado, chamadas à API |
+| Interface web (Next.js exportado como site estático) | `web/src/` → publicada em `frontend/` | Seis telas (Ruminante Singular, Vaca leiteira, Curva de lactação, Sensibilidade, Execuções e Premissas e limites), estado compartilhado, chamadas à API |
 | Servidor local | `backend/dietopt/server.py` (porta 8000) | API JSON e arquivos estáticos; monta cenários a partir das requisições |
 | Gerenciador de tarefas | `backend/dietopt/jobs.py` | Executa simulações em segundo plano, uma tarefa por vez, com progresso |
 | Ruminante Singular (módulo) | `backend/dietopt/module/` | Modelo linear das restrições, avaliação e comparação de dietas e dieta ótima por PL (SciPy/HiGHS) com preços-sombra |
@@ -47,6 +54,11 @@ nem multiestação — o servidor escuta em `127.0.0.1` (a própria máquina) e 
 | Economia e cache | `backend/dietopt/scenarios.py` | Preços padrão, receita, custo, margem; cache por conteúdo do cenário |
 | Sensibilidade | `backend/dietopt/sensitivity.py` | Pontos (grade ou hipercubo latino), cenários S1..SN, efeitos de Spearman |
 | Curva de lactação | `backend/dietopt/lactation.py` | Curva de Wood e marcos (PEV, parto seguinte, secagem) |
+| Histórico de execuções | `backend/dietopt/history.py` | Grava cada simulação, sensibilidade, avaliação e dieta ótima em `runs/_history`; nome, nota, cenário-base, retenção (200) e limpeza das pastas de simulação |
+| Exportação e arquivo de cenário | `backend/dietopt/exports.py`, `scenario_files.py` | CSV e relatório HTML; cenário salvo e aberto em JSON versionado |
+| Importação de preços | `backend/dietopt/prices.py` | CSV com conversão para US$/kg de MS |
+| Tamanho do rebanho | `backend/dietopt/herd.py` | Escala o rebanho e as baias por `cow_num / 100` (60 a 500 vacas) |
+| Verificações e balanço da ração | `backend/dietopt/ration_checks.py`, `ration_balance.py` | Verificações V1 a V5 e balanço oferta × exigência da simulação |
 | Biblioteca de alimentos | `backend/dietopt/feeds.py` | Lê a biblioteca NRC 2001 do RuFaS; tetos padrão; NEL estimada |
 | Simulador externo | `vendor/RuFaS` (v1.0.6) | Simulação de fazenda leiteira; usado sem modificação |
 | Instalação e execução | `scripts/setup.ps1`, `scripts/fetch_wheels.py`, `scripts/build-web.ps1`, `iniciar.bat` | Ambiente Python, build da interface, início do servidor |
@@ -142,8 +154,10 @@ valor por fator, `leite_kg`, `receita`, `custo_alimentacao`, `custo_vaca_dia`, `
 - **Navegador (`localStorage`):** chave `dietopt.v1` com `selected` e `params` (restaurados ao abrir); `theme`
   (next-themes). Resultados de simulação e de sensibilidade ficam só na memória da página, assim como o estado do
   Ruminante Singular.
-- **Disco (`runs/`):** pasta de cada cenário (inclui `console.log` da execução) e o cache `runs/_cache/`. Nenhuma pasta
-  é apagada automaticamente; a pasta de um cenário é recriada se o mesmo nome for usado de novo.
+- **Disco (`runs/`):** pasta de cada simulação (`runs/web_…`, com `console.log`), o cache `runs/_cache/` e o histórico
+  `runs/_history/` (dois arquivos por execução). As pastas de simulação não são apagadas automaticamente: o botão **Limpar
+  arquivos antigos**, da tela Execuções, as apaga; o histórico guarda as 200 execuções mais recentes (menos a base) e o cache
+  não é apagado pelo sistema.
 - **Servidor (memória):** tarefas (`JobManager`), perdidas ao reiniciar.
 
 ## 5. Regras de negócio
@@ -243,8 +257,10 @@ abortar, e mostra o leite perdido.
 ### 5.10 Servidor e API (`server.py`)
 - Escuta em `127.0.0.1:8000` por padrão (`--host` e `--port` configuráveis). Não há autenticação, token, controle de
   origem nem limite de requisições: a proteção é só o endereço local. Não deve ser exposto à rede.
-- Rotas: `GET /api/feeds`, `/api/defaults`, `/api/lactation`, `/api/jobs`, `/api/jobs/<id>`; `POST /api/module/*`,
-  `/api/jobs/simulate`, `/api/jobs/sensitivity` (responde 202). `POST` em rota inexistente e
+- Rotas: `GET /api/feeds`, `/api/defaults`, `/api/lactation`, `/api/jobs`, `/api/jobs/<id>`, `/api/history`,
+  `/api/history/<id>`, `/api/history/base`, `/api/history/storage`; `POST /api/module/*`, `/api/jobs/simulate`,
+  `/api/jobs/sensitivity`, `/api/jobs/optimize` (respondem 202), `/api/jobs/<id>/cancel`, `/api/history/<id>/base|update|delete`,
+  `/api/history/cleanup`, `/api/export/<csv|report>/<tela>`, `/api/scenario/save|load` e `/api/prices/import`. `POST` em rota inexistente e
   tarefa desconhecida → 404 JSON; exceção → 500 JSON com `Tipo: mensagem`; `GET` fora da API tenta um arquivo
   estático e, se não houver, responde 404 em texto.
 - Respostas JSON trocam `NaN` e infinito por `null`. Todas as respostas levam `Cache-Control: no-store`.
@@ -274,11 +290,15 @@ abortar, e mostra o leite perdido.
 ## 6. Fora de escopo (explicitamente ausente do sistema atual)
 
 Esta ferramenta **não tem**: perfis de usuário, permissões, autenticação, banco de dados, auditoria, múltiplas
-fazendas ou rebanhos salvos, histórico de simulações, salvar ou carregar cenários, exportação (CSV ou relatório),
-importação de preços (CEPEA ou outra fonte), padrão NASEM 2021, balanço de nutrientes (oferta × exigência) da ração,
-ajuste do tamanho do rebanho pela interface, otimização por fase da lactação, modelo próprio de resposta do leite à
-dieta, linha de comando, nem hospedagem em nuvem. A ração é sempre formulada pelo otimizador do RuFaS; o sistema
-não a recalcula nem a altera.
+fazendas ou rebanhos salvos, leitura automática de cotações (CEPEA ou outra fonte; há importação de preços por CSV),
+o padrão NASEM 2021 na **simulação** das telas Vaca leiteira e Sensibilidade (ele existe só no Ruminante Singular),
+alimentos personalizados, otimização por fase da lactação, modelo próprio de resposta do leite à dieta, linha de comando,
+nem hospedagem em nuvem. Na simulação, a ração é sempre formulada pelo otimizador do RuFaS; o sistema não a recalcula
+nem a altera (a dieta ótima do Ruminante Singular é outro cálculo, por programação linear, comparado com o RuFaS).
+
+Já fazem parte do sistema, e **não** estão mais fora de escopo: o histórico de execuções, salvar e abrir cenários,
+exportação (CSV e relatório), importação de preços por CSV, o balanço de nutrientes e as verificações da ração, o ajuste
+do tamanho do rebanho pela interface e o padrão NASEM 2021 no Ruminante Singular.
 
 ## 7. Rastreabilidade (onde cada regra vive no código)
 
@@ -301,26 +321,31 @@ não a recalcula nem a altera.
 | Tarefas e concorrência (5.9) | `backend/dietopt/jobs.py` | `_RUN_LOCK`, `JobManager.submit`, `_run` | — |
 | Consulta de progresso (5.9) | `web/src/lib/api.ts` | `runJob` | — |
 | API e arquivos estáticos (5.10) | `backend/dietopt/server.py` | `Handler.do_GET`, `do_POST`, `do_HEAD`, `_static`, `clean` | — |
-| Curva de lactação e marcos (5.11) | `backend/dietopt/lactation.py` | `wood_yield`, `lactation_curve`, `milestones`, `peak`, `milk_305` | — |
+| Curva de lactação e marcos (5.11) | `backend/dietopt/lactation.py` | `wood_yield`, `lactation_curve`, `milestones`, `peak`, `milk_305` | `test_lactation.py` |
+| Histórico, base, nome e nota, limpeza (3) | `backend/dietopt/history.py` | `record`, `list_runs`, `set_base`, `update_run`, `clean_folders`, `with_history` | `test_history.py` |
+| Exportação e arquivo de cenário (3) | `backend/dietopt/exports.py`, `scenario_files.py` | `export_file`, `pack`, `unpack` | `test_exports.py`, `test_scenario_files.py` |
+| Importação de preços (3) | `backend/dietopt/prices.py` | `import_prices` | `test_prices.py` |
+| Tamanho do rebanho (3) | `backend/dietopt/herd.py` | `parse_cow_num`, `scale_herd` | `test_herd.py` |
+| Verificações e balanço da ração (3) | `backend/dietopt/ration_checks.py`, `ration_balance.py` | `consistency_checks`, `build_balance` | `test_ration_checks.py` |
 | Regras de seleção e padrões da tela (5.12) | `web/src/views/CowView.tsx`, `web/src/providers/AppProvider.tsx` | `run`, `simulationBody`, `priceOf`, `PRESET_BASE`, `PRESET_WIDE`, `STORAGE_KEY` | — |
 | Instalação e execução (3.1) | `scripts/`, `iniciar.bat` | `setup.ps1`, `fetch_wheels.py`, `build-web.ps1` | — |
 
-Os 71 testes automatizados ficam em `backend/tests/` e cobrem a coluna da direita; as demais regras foram verificadas
+Os testes automatizados (261 na revisão de 16/11/2026) ficam em `backend/tests/` e cobrem a coluna da direita; as demais regras foram verificadas
 manualmente (execução real do RuFaS e uso das telas), sem teste automatizado.
 
 ## 8. Fontes científicas e rastreabilidade das referências
 
 Esta seção registra **de onde vêm** os números e as equações do sistema e **o que foi conferido** contra as fontes.
-Descreve o estado de 01/11/2026. Os requisitos planejados a partir desta análise (padrão NASEM, alimentos
-personalizados e verificações de consistência) estão no [FSD](FSD.md), Anexo A, e não fazem parte do que está
-implementado.
+Descreve o estado de 01/11/2026, com a situação atualizada em 16/11/2026: o padrão NASEM (no Ruminante Singular) e as
+verificações de consistência foram implementados; os alimentos personalizados e o seletor NASEM na simulação ainda não
+(FSD, Anexo A).
 
 ### 8.1 Fontes
 
 | Fonte | Como foi usada | Onde está |
 |---|---|---|
 | **NRC (2001)**, *Nutrient Requirements of Dairy Cattle*, 7ª ed. | Padrão nutricional do sistema, aplicado **pelo RuFaS** (`nutrient_standard = "NRC"`). O PDF tem camada de texto. | `Downloads/NRC 2001.pdf` (fora do projeto) |
-| **NASEM (2021)**, 8ª ed. revisada, tradução da Santafé Agroinstituto (errata de 08/2022 incorporada) | **Somente referência**: o sistema não oferece o padrão NASEM. O PDF é uma digitalização sem texto; as notas foram feitas por OCR e auditadas | `docs/nasem2021_notas/` (local, não versionada) |
+| **NASEM (2021)**, 8ª ed. revisada, tradução da Santafé Agroinstituto (errata de 08/2022 incorporada) | **Padrão do Ruminante Singular** (calculado pelo RuFaS com `nutrient_standard = "NASEM"`) e referência para conferência; a simulação das telas Vaca leiteira e Sensibilidade usa só o NRC. O PDF é uma digitalização sem texto; as notas foram feitas por OCR e auditadas | `docs/nasem2021_notas/` (local, não versionada) |
 | **RuFaS v1.0.6** | Simulador; implementa as equações dos dois padrões e traz as bibliotecas de alimentos | `vendor/RuFaS` |
 
 O livro do NASEM afirma que, em caso de divergência entre o texto e o modelo, **prevalece o código R oficial** (p. 472).

@@ -73,13 +73,13 @@ tentativa, até o limite configurado); é assim que a dieta afeta o leite no mod
   brasileira), usadas como referência científica; a seção 8 de `docs/DOMINIO.md` resume o que foi conferido contra o RuFaS e o NRC.
 - [`docs/PERGUNTAS_PROFESSOR.md`](docs/PERGUNTAS_PROFESSOR.md): decisões em aberto que dependem do professor, com contexto, proposta e o que cada uma destrava.
 - [`docs/LINEARIZACAO.md`](docs/LINEARIZACAO.md): estudo e especificação da linearização do otimizador (equações do RuFaS,
-  técnicas, módulo ampliado do Ruminante Singular); nada implementado.
-- [`docs/PLANO_IMPLEMENTACAO.md`](docs/PLANO_IMPLEMENTACAO.md): ordem de implementação do módulo ampliado e dos complementos
-  (etapas, dependências, testes, riscos); nada implementado.
-- [`docs/DECISOES_TECNICAS.md`](docs/DECISOES_TECNICAS.md): Decisões técnicas já tomadas (stack, ambientes,
-  integração com o RuFaS, segurança), alertas e pendências antes do FSD.
-- [`docs/DESIGN.md`](docs/DESIGN.md): Documento de Design (origem e adaptação do template, arquitetura da interface,
-  tokens de design, especificação das telas, acessibilidade e decisões).
+  técnicas, módulo ampliado do Ruminante Singular); as duas fases do módulo estão implementadas.
+- [`docs/DESIGN.md`](docs/DESIGN.md): Documento de Design e fonte única da linguagem visual (princípios, tokens de cor, componentes,
+  gráficos por saída, telas, acessibilidade medida, origem no template e decisões).
+- [`docs/guias/`](docs/guias): guias de uso em Word (perguntas e respostas, com figuras), um por tela: Ruminante Singular, Vaca
+  leiteira, Curva de lactação, Sensibilidade e Execuções.
+- [`docs/arquivo/`](docs/arquivo): documentos históricos, já concluídos e incorporados aos vigentes, mantidos como registro: o plano de implementação do módulo
+  ampliado, o roteiro da repaginação visual (agora no `DESIGN.md`) e as decisões técnicas (agora nas seções 3.1 e 3.2 do `FSD.md`).
 
 ## Testes
 

@@ -247,7 +247,7 @@ export default function CowView() {
               title='Nenhuma simulação ainda'
               steps={[
                 'Escolha os alimentos (ou use o Conjunto base) e ajuste preços e limites.',
-                'Clique em Executar simulação: cada uma leva de 30 a 60 segundos.',
+                'Clique em Executar simulação: cada uma leva cerca de 20 a 30 segundos (segundos, se o cenário já foi simulado).',
                 'Analise os indicadores, a ração e a nutrição, e exporte o relatório.'
               ]}
             />

@@ -1,5 +1,10 @@
 # Sistema de design e roteiro da repaginação
 
+> **Documento arquivado em 16/11/2026, somente registro histórico.** As etapas D1 a D6 foram concluídas e as regras visuais que
+> continuam valendo (princípios, tokens, componentes, gráficos por saída, estados e decisões de produto) foram incorporadas ao
+> [DESIGN.md](../DESIGN.md), que é a **única fonte** da linguagem visual. Os valores deste arquivo refletem 03/11/2026 e podem
+> divergir do código atual; em caso de dúvida, vale o DESIGN.md.
+
 **Versão 0.6 (03/11/2026).** Define a linguagem visual do sistema (tokens, componentes, gráficos), registra as decisões de
 produto da repaginação e o roteiro por etapas. As etapas D1 (tokens, estrutura e componentes-base), D2 (tela Vaca leiteira), D3 (histórico de execuções), D4 (Sensibilidade), D5 (Avaliar dietas) e D6 (Ruminante Singular e Curva de lactação) estão implementadas (o exercício simples da D6 foi retirado em 11/11/2026; ver a seção 12); o roteiro está na seção 7. Código: `web/src/app/globals.css`, `web/src/components/`. Complementa o `DESIGN.md` (descrição detalhada do que existe).
 

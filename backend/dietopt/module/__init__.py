@@ -1,4 +1,4 @@
 """Módulo "Ruminante Singular" ampliado: exigências da vaca, restrições lineares e avaliação de dietas.
 
-Ver ``docs/FSD.md`` (Anexo B), ``docs/LINEARIZACAO.md`` e ``docs/PLANO_IMPLEMENTACAO.md``.
+Ver ``docs/FSD.md`` (Anexo B), ``docs/LINEARIZACAO.md`` e ``docs/arquivo/PLANO_IMPLEMENTACAO.md``.
 """

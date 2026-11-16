@@ -1,5 +1,7 @@
 # DECISÕES TÉCNICAS DO PROJETO
 
+> **Documento arquivado em 16/11/2026, somente registro histórico.** Foi escrito em 12/10/2026 como passagem de bastão antes do FSD ("Pronto para o FSD") e boa parte do que diz (9 rotas de API, 71 testes, ausência de exportação, de histórico e de módulo ampliado) está superada. As decisões técnicas e seus motivos, e a lista do que não deve ser inventado, foram incorporadas ao [FSD](../FSD.md), seções 3.1 e 3.2; os alertas de segurança estão no FSD 21.3, e as pendências, no FSD 27 e no PRD, seção 15.
+
 > Adaptado de um modelo pensado para um sistema a ser criado do zero. Aqui a
 > diferença é importante: o **Dieta Ótima com RuFaS já está implementado e
 > verificado** (protótipo acadêmico, ainda sem uso em produção) — este documento
@@ -25,8 +27,8 @@
 - `FSD.md`: recebido — especificação funcional do que está implementado, com o Anexo A para os
   requisitos planejados (RF-24, RF-26 e RF-27), ainda não implementados.
 - `LINEARIZACAO.md`: estudo e especificação da linearização das equações do otimizador do RuFaS e do módulo ampliado
-  do Ruminante Singular (pedido do professor). Nada implementado.
-- `PLANO_IMPLEMENTACAO.md`: ordem de implementação (etapas E0 a E8), dependências, testes e riscos. Nada implementado.
+  do Ruminante Singular (pedido do professor). As duas fases do módulo estão implementadas.
+- `arquivo/PLANO_IMPLEMENTACAO.md`: ordem de implementação (etapas E0 a E8), dependências, testes e riscos. Concluído e arquivado em 16/11/2026.
 - `nasem2021_notas/` (pasta **local, não versionada**, por direitos autorais, com o `00_INDICE.md`): notas técnicas do
   livro NASEM 2021 (tradução brasileira), feitas por OCR e auditadas. Referência científica complementar; ver `DOMINIO.md`, seção 8.
 - Materiais de origem, fora do repositório: o quadro do professor de Pesquisa

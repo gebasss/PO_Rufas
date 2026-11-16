@@ -37,8 +37,13 @@ interface Props {
   onSetBase?: () => void
 }
 
-/** Totais do rebanho: só se comparam com o cenário-base quando os dois têm o mesmo número de vacas. */
+/** Totais do rebanho: só se comparam com o cenário-base quando os dois têm o mesmo número de vacas e o mesmo período. */
 const HERD_TOTALS = new Set(['margem', 'receita', 'custo_alimentacao', 'leite_kg'])
+
+const DAYS_PER_YEAR = 365
+
+/** Período simulado em anos: pelo número de dias da série diária (vale também para execuções gravadas antes de o resumo trazer o período). */
+const yearsOf = (sim: SimResult) => Math.max(1, Math.round(sim.daily.day.length / DAYS_PER_YEAR))
 
 export default function Results({ sim, stale = false, base = null, onSetBase }: Props) {
   const s = sim.summary
@@ -46,9 +51,13 @@ export default function Results({ sim, stale = false, base = null, onSetBase }: 
   const herdSize = Number(s.cow_num ?? 100)
   const baseHerd = Number(base?.summary.cow_num ?? 100)
   const sameHerd = herdSize === baseHerd
+  const years = yearsOf(sim)
+  const baseYears = Number(base?.summary.years ?? years) // base sem período no resumo: não dá para conferir, vale como o mesmo
+  const samePeriod = years === baseYears
+  const comparableTotals = sameHerd && samePeriod
   /** Variação percentual em relação ao cenário-base (nada se não há base, se esta é a base ou se o valor não existe). */
   const delta = (key: string, current: number) => {
-    const reference = base && !isBase && (sameHerd || !HERD_TOTALS.has(key)) ? base.summary[key] : null
+    const reference = base && !isBase && (comparableTotals || !HERD_TOTALS.has(key)) ? base.summary[key] : null
 
     return typeof reference === 'number' && reference !== 0 ? ((current - reference) / Math.abs(reference)) * 100 : undefined
   }
@@ -266,7 +275,7 @@ export default function Results({ sim, stale = false, base = null, onSetBase }: 
               {isBase
                 ? 'Esta simulação é o cenário-base.'
                 : base
-                  ? `Variações em relação ao cenário-base: ${base.title} (${shortDate(base.created)}).${sameHerd ? '' : ` O base tem ${baseHerd} vacas e esta simulação, ${herdSize}: os totais do rebanho não são comparados.`}`
+                  ? `Variações em relação ao cenário-base: ${base.title} (${shortDate(base.created)}).${comparableTotals ? '' : ` O base tem ${baseHerd} vacas e ${baseYears} ${baseYears === 1 ? 'ano' : 'anos'}; esta simulação, ${herdSize} vacas e ${years} ${years === 1 ? 'ano' : 'anos'}: os totais do rebanho não são comparados.`}`
                   : 'Sem cenário-base: marque uma simulação com a estrela para ver as variações dos indicadores.'}
             </span>
           </div>
