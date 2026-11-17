@@ -1,0 +1,263 @@
+CONCLUSÕES PRÉVIAS
+Dieta Ótima com RuFaS (Pesquisa Operacional)
+Registro dos resultados encontrados, por data, com os comandos usados e as conclusões.
+Última atualização: 17/11/2026. Documento de trabalho, não é especificação: os requisitos estão no PRD e no FSD.
+
+Convenções
+- Todos os comandos rodam na raiz do projeto, no PowerShell ou no Git Bash do Windows.
+- "Back-end" = pasta backend; o Python é o do ambiente do projeto (.venv\Scripts\python).
+- Os valores são os medidos nas datas indicadas, com preços ilustrativos (não são cotações), RuFaS v1.0.6, padrão NRC 2001,
+  semente 42, 7 alimentos (ids 23, 44, 50, 110, 138, 167 e 230), 100 vacas e 1 ano, salvo onde dito o contrário.
+
+
+======================================================================================================================
+1. 03/11/2026 - Dieta ótima por programação linear (etapa E7) contra o SLSQP do RuFaS
+======================================================================================================================
+Origem: FSD, B.11, e LINEARIZACAO.md, 7.6 (resultado já registrado antes deste documento).
+
+Como foi obtido
+- Tela Ruminante Singular, cartão "Dieta ótima", resolução "normal", 5 sementes do RuFaS; equivale à rota
+  POST /api/jobs/optimize (corpo: a vaca, os alimentos, os preços, "resolution" e "seeds").
+- Testes: cd backend; ..\.venv\Scripts\python -m pytest tests\test_module_optimize.py -q
+
+Resultados
+- NRC, vaca em lactação: LP 3,8345 US$/dia contra 3,8342 do melhor SLSQP (+0,008%), cerca de 18 s.
+- NASEM, vaca em lactação: LP 3,08318 US$/dia, igual ao melhor SLSQP (0,000%), cerca de 11 s.
+- Nos escalares do melhor SLSQP, o LP reproduz o custo do SLSQP com erro relativo abaixo de 1e-6 (a fórmula do LP está certa).
+- O SLSQP não é estável: com seis alimentos, uma de cinco sementes parou em 3,8595 (ótimo local) e outra não convergiu.
+
+Conclusão da data: o LP empata com o melhor SLSQP e é independente do ponto inicial.
+
+
+======================================================================================================================
+2. 16/11/2026 - Documentação, guias de uso e acessibilidade
+======================================================================================================================
+
+2.1 Contraste das cores (WCAG 2.1)
+Comando: cálculo em Python da razão de contraste entre os tokens hexadecimais de web/src/app/globals.css (luminância relativa
+de cada cor; razão = (L_claro + 0,05) / (L_escuro + 0,05)); os selos usam a cor do texto sobre a cor de fundo misturada a 12%
+com a do cartão.
+
+Resultados (claro / escuro):
+- Texto sobre fundo 16,8 / 18,0; texto secundário sobre cartão 5,5 / 6,0.
+- Esmeralda ("brand") como texto sobre o cartão: 3,8 / 7,3. No tema claro fica abaixo de 4,5:1 para texto pequeno.
+- Selo "secondary" (texto esmeralda sobre esmeralda a 12%): 3,3 / 6,1. Selos "warning": 4,4 / 9,1; "destructive": 4,0 / 4,3.
+- Cores de gráfico sobre o cartão: no claro, chart-2 (âmbar) 3,2 e chart-7 (lima) 3,1, perto do mínimo de 3:1; chart-dim é apagada
+  de propósito (1,6 / 2,0).
+Conclusão: no tema escuro (o padrão) tudo passa; no claro há lacunas de acessibilidade, registradas no DESIGN.md (Acessibilidade).
+Nada foi corrigido no código.
+
+2.2 Defeitos achados ao documentar as telas (anotados, não corrigidos)
+- Sensibilidade: "Na fila..." nos primeiros 30 a 40 s, porque o total da tarefa só é preenchido após o primeiro lote.
+- Sensibilidade: botão desabilitado sem mensagem com menos de 3 alimentos; faixa De > Até não é validada; o relatório HTML traz só
+  o Spearman (não a variação em US$) e o CSV não traz os efeitos.
+- Execuções: a lista não lembra busca, filtros nem página ao voltar do detalhe; Duplicar substitui a tela de destino sem perguntar;
+  a busca casa substring ("silagem" não acha "silagens"); o detalhe de avaliação e dieta ótima é resumido (adiado pelo usuário).
+- Corrigidos na hora (PR 35): a variação dos totais em relação ao cenário-base ignorava o período; o preço importado por CSV não era
+  arredondado; o texto do estado vazio dizia 30 a 60 s (real: 20 a 30 s).
+
+2.3 Medidas de tempo e descobertas
+- Simulação de 2 anos: cerca de 1 minuto. 9 simulações (27 cenários) na sensibilidade: 144 s, cerca de 16 s por simulação com 2 em
+  paralelo.
+- Os parâmetros de Wood do RuFaS não mudam com preços, alimentos nem número de vacas.
+- Testes do back-end: 261 passando (comando: cd backend; ..\.venv\Scripts\python -m pytest tests -q).
+
+2.4 Documentos
+- Os documentos foram consolidados (DESIGN reescrito, DECISOES_TECNICAS incorporado ao FSD, históricos em docs/arquivo) e as
+  contagens de testes e de telas foram corrigidas no PRD e no FSD (PR 35).
+
+
+======================================================================================================================
+3. 17/11/2026 - Quais equações cada painel usa e comparação da ração linear (LP) com a do RuFaS (SLSQP)
+======================================================================================================================
+
+3.1 Pergunta: Vaca leiteira e Curva de lactação usam equações lineares?
+Comandos (leitura de código, sem executar nada):
+- Grep por "linprog|highs|SLSQP|RationOptimizer" em backend\dietopt; leitura de backend\dietopt\lactation.py,
+  backend\dietopt\rufas_adapter.py e vendor\RuFaS\RUFAS\biophysical\animal\ration\ration_optimizer.py.
+
+Resultado
+- Vaca leiteira: o botão Simular chama run_scenario (rufas_adapter.py), que roda o main.py do RuFaS em subprocesso. A ração é
+  formulada pelo otimizador do RuFaS, scipy.optimize.minimize(..., method="SLSQP") (ration_optimizer.py, linha 909), com objetivo
+  linear (soma de preço x quantidade) e restrições NÃO lineares (energia, proteína, consumo, fibra). O leite vem da curva de Wood.
+  O que o sistema acrescenta é a economia (receita, custo, margem), as verificações V1 a V5 e o balanço.
+- Curva de lactação: curva de Wood padrão, y = l * t^m * exp(-n*t) (lactation.py), não linear; os parâmetros vêm do RuFaS
+  (calibrados pela simulação) ou, sem simulação, dos valores de referência dele. Não há linearização.
+- Sensibilidade: sorteia cenários e calcula o Spearman; cada cenário roda o RuFaS completo, com SLSQP.
+- Só o Ruminante Singular tem o modelo linear e o LP (backend\dietopt\module\: linear.py, evaluate.py, optimize.py).
+Conclusão: fora do Ruminante Singular, o sistema roda as equações padrão do RuFaS.
+
+3.2 Limite do RuFaS: não dá para simular a ração do LP dentro dele
+Comando: leitura de vendor\RuFaS\RUFAS\biophysical\animal\ration\ration_manager.py (get_user_defined_ration) e de pen.py
+(use_user_defined_ration).
+Resultado: com ration.user_input verdadeiro, o RuFaS aceita só percentuais FIXOS da matéria seca, iguais em todos os intervalos, e
+calcula a quantidade como "consumo estimado x percentual". Não aceita uma ração por intervalo nem consumo diferente da estimativa.
+Conclusão: a ração do LP (que muda a cada intervalo e usa a folga de consumo) não cabe nesse formato sem alterar o RuFaS, que não
+é modificado (GPLv3). Por isso a comparação é feita sobre as exigências de cada intervalo, sem nova simulação.
+
+3.3 Primeira medição: INVÁLIDA (erro de procedimento, descartada)
+O que aconteceu: usei, para as exigências e a ração do SLSQP, o arquivo mais recente de runs\_cache (ordenado pela data de
+modificação). Era uma simulação de OUTRO cenário (outros preços e limites), mas calculei o custo e o LP com os preços do cenário
+pedido. A comparação ficou entre uma ração feita para outros preços e um LP calculado com os preços certos.
+Números errados que cheguei a informar e que NÃO valem: "LP 9,1% mais barato" (3,98 contra 4,38 US$/vaca/dia) e "ração fixa
+via user_input custa mais" (4,9 a 6,5 contra 4,2 a 4,7).
+Como foi descoberto: o resultado do servidor, que acha o cache pela chave do cenário, deu SLSQP 4,022 e LP 4,020. A chave certa
+(f5de543b47799407) não era a do arquivo mais recente (c7eeb81e42533d43).
+Lição: achar o cache sempre pela chave do cenário (cache_key em backend\dietopt\scenarios.py), nunca pela data do arquivo.
+
+3.4 Comparação correta: LP contra SLSQP em cada intervalo de uma simulação real
+Comandos
+- Servidor de teste em outra porta, sem tocar no histórico real:
+    cd backend
+    ..\.venv\Scripts\python -m dietopt.server --port 8011
+  (o servidor do usuário, na porta 8000, não foi tocado; para reaproveitar o cache, os parâmetros devem ser iguais aos da simulação).
+- Disparo da comparação (rota nova POST /api/jobs/lp-ration, mesmo corpo de /api/jobs/simulate) e consulta de GET /api/jobs/<id>
+  até status "done" (ver o apêndice A). Tempo: cerca de 130 s para 13 intervalos.
+- Código: backend\dietopt\module\pen_lp.py (compare_with_simulation). Para cada intervalo, o LP é resolvido sobre as exigências
+  médias do lote que o RuFaS usou (avg_rqmts_for_LAC_COW), com os mesmos alimentos, preços e limites, em duas variantes: consumo
+  livre (estimativa +/- 30%) e mesmo consumo (o do SLSQP). Cada ração do LP é conferida com as restrições originais do RuFaS
+  (tolerância relativa de 1e-5, a do próprio SLSQP). Resolução rápida da busca.
+
+Resultado (US$/vaca/dia, 13 intervalos, 365 dias)
+  Dia   SLSQP    LP mesmo consumo   LP consumo livre   Consumo do SLSQP (kg MS)
+    0   4,0234   4,0235             4,0238             33,49
+   30   4,3811   4,3820             4,3928             33,06
+   60   4,0808   4,0571             4,0519             32,48
+   90   4,0373   4,0375             4,0383             33,74
+  120   4,0626   4,0628             4,0634             34,42
+  150   4,0063   4,0070             4,0074             34,00
+  180   3,9592   3,9599             3,9607             33,51
+  210   3,9034   3,9036             3,9036             33,36
+  240   3,8870   3,8873             3,8891             32,61
+  270   3,8966   3,8974             3,8985             32,56
+  300   3,9914   3,9906             3,9901             32,91
+  330   4,0398   4,0385             4,0384             33,07
+  360   3,9828   3,9830             3,9830             32,16
+- Média ponderada pelos dias: SLSQP 4,0219; LP mesmo consumo 4,0201 (-0,04%); LP consumo livre 4,0210 (-0,02%).
+- Por intervalo: o LP de mesmo consumo ficou de -0,58% (dia 60) a +0,02%; o de consumo livre, de -0,71% (dia 60) a +0,27% (dia 30,
+  onde a busca rápida do LP parou acima do SLSQP).
+- Rebanho (cerca de 87 vacas em lactação): diferença de US$ 58 no ano a favor do LP de mesmo consumo e de US$ 31 a favor do de
+  consumo livre.
+- O SLSQP já usa, em média, 33,3 kg de MS por vaca contra 25,7 kg estimados (+29%, perto do teto de +30% que o RuFaS permite).
+- Conferência pelas restrições originais do RuFaS: todas atendidas; os dois casos que apareciam como violação (dmi_max, nos dias
+  30 e 240, na variante de mesmo consumo) eram arredondamento e passaram a ser aceitos pela tolerância de 1e-5.
+- Mesma tela, com os parâmetros padrão da interface (conjunto base): US$ 4,02 contra US$ 4,02 por vaca por dia, variação 0,0%.
+
+3.5 Variabilidade do SLSQP (ponto inicial aleatório) contra o LP
+Comando: script do apêndice B (usa backend\dietopt\module\optimize.run_rufas com 20 sementes) nos intervalos 0, 3, 6, 9 e 12 da
+simulação certa (cache f5de543b47799407).
+Resultado
+  Intervalo   LP rápido (tempo)  SLSQP da simulação   20 sementes: viáveis   mínimo / mediana / máximo
+  0           4,0238 (4,1 s)  4,0234               20/20                  4,0234 / 4,0234 / 4,0710
+  3           4,0383 (7,4 s)  4,0373               20/20                  4,0372 / 4,0373 / 4,0379
+  6           3,9607 (6,5 s)  3,9592               19/20                  3,9591 / 3,9591 / 4,0374
+  9           3,8985 (5,1 s)  3,8966               20/20                  3,8966 / 3,8966 / 3,9182
+  12          3,9830 (7,9 s)  3,9828               20/20                  3,9827 / 3,9827 / 3,9828
+- Em 100 execuções: 99 viáveis; a mediana coincide com o mínimo; a pior semente custou até 2,0% mais (intervalo 6) e uma não
+  ficou viável.
+- Tempo: SLSQP de 0,16 a 0,21 s por execução; LP (resolução rápida) de 4 a 8 s por problema. O LP é bem mais lento.
+- Na simulação da tela a semente é fixa (42), então o resultado do SLSQP é reproduzível; a variabilidade aparece se a semente mudar.
+
+3.6 Verificação da implementação
+Comandos
+- cd backend; ..\.venv\Scripts\python -m pytest tests\test_pen_lp.py -q   (11 passando, cerca de 25 s)
+- cd backend; ..\.venv\Scripts\python -m pytest tests -q                   (272 passando, cerca de 2 min 20 s)
+- powershell -ExecutionPolicy Bypass -File scripts\build-web.ps1          (recompila a interface em frontend\)
+- Conferência no navegador: aba "Ração linear" na tela Vaca leiteira, com progresso, cancelamento, indicadores, gráfico e tabelas.
+
+3.7 Experimento descartado
+A segunda medição daquele dia (LP com o consumo fixo na estimativa, em percentuais fixos, para testar o formato do user_input) usou
+o mesmo cache errado e foi descartada junto com a primeira (3.3). O que vale é só o fato verificado no código (3.2).
+
+
+======================================================================================================================
+4. Conclusões prévias
+======================================================================================================================
+1. Fora do Ruminante Singular, o sistema roda as equações padrão do RuFaS: Vaca leiteira usa o SLSQP não linear e a curva de
+   Wood; a Curva de lactação é a curva de Wood do RuFaS; a Sensibilidade repete simulações do RuFaS. O modelo linear existe só no
+   Ruminante Singular.
+2. No custo da ração, o método linear EMPATA com o SLSQP do RuFaS; não é melhor. Em uma simulação real de 1 ano a diferença foi de
+   -0,04% (4,0219 para 4,0201 US$/vaca/dia), cerca de US$ 58 por ano no rebanho. O SLSQP do RuFaS já chega perto do ótimo da ração
+   (em 100 execuções, a mediana igualou o mínimo). O resultado de 03/11/2026 (+0,008%) vai na mesma direção.
+3. O linear também não é mais rápido: 4 a 8 s por problema contra 0,2 s do SLSQP.
+4. A vantagem do método linear não está no custo, e sim em:
+   a) resultado que não depende do ponto inicial aleatório do SLSQP (pior semente +2,0%; 1 de 100 execuções inviável);
+   b) preços-sombra (quanto custa cada exigência e cada limite), que o RuFaS não fornece;
+   c) formulação linear, com o erro de linearização medido, como o professor pediu (a comparação é possível porque as equações
+      do RuFaS foram linearizadas, LINEARIZACAO.md).
+5. Para sustentar "melhor que o simulador" no trabalho, o argumento precisa ser um desses três (independência do ponto inicial,
+   preços-sombra, linearização validada), e não a economia no custo. Afirmar economia de custo não se sustenta nos dados.
+6. Limite do método de comparação: a ração do LP não pode ser simulada de volta no RuFaS sem alterá-lo (3.2); a comparação usa as
+   exigências que o RuFaS calculou e não re-simula o leite (o RuFaS só reduz o leite quando a ração não atende, e as rações do LP
+   atendem).
+7. Limites de validade: só padrão NRC (o NASEM exige metano e nitrogênio urinário do lote, que a simulação não informa); um
+   cenário (7 alimentos, preços ilustrativos, 100 vacas, 1 ano); resolução rápida da busca do LP (a normal custa 2,5 vezes mais e
+   mudou o custo em menos de 0,1% no teste). Outros alimentos, preços e rebanhos podem dar outro resultado.
+8. Erro de procedimento registrado (3.3): a primeira medição usou o cache do cenário errado e deu uma vantagem de 9,1% que não
+   existe. Os números inválidos não aparecem nos documentos do projeto; só neste registro.
+
+Próximos passos possíveis (não feitos)
+- Medir a mesma comparação em mais cenários (outros alimentos e preços, 2 anos, outros tamanhos de rebanho) para ver se o empate
+  se mantém.
+- Medir a variabilidade do SLSQP com mais intervalos e cenários, para quantificar a vantagem (a) do item 4.
+- Mostrar os preços-sombra na Vaca leiteira (hoje existem só no Ruminante Singular).
+- Atualizar o guia em Word da Vaca leiteira com a aba "Ração linear".
+
+
+======================================================================================================================
+Apêndice A. Disparo da comparação pela API (Python, sem dependências além da biblioteca padrão)
+======================================================================================================================
+import json, time, urllib.request
+PORT = 8011
+body = {
+    "feeds": [23, 44, 50, 110, 138, 167, 230],
+    "prices": {"23": 1.1, "44": 0.28, "50": 0.09, "110": 0.12, "138": 0.25, "167": 0.55, "230": 0.1},
+    "limits": {"23": [0, 1], "44": [0, 100], "50": [0, 100], "110": [0, 100], "138": [0, 100], "167": [0, 100], "230": [0, 0.6]},
+    "milk_price": 0.45, "years": 1, "max_milk_reduction": 5, "cow_num": 100,
+}
+def call(path, data=None):
+    req = urllib.request.Request(f"http://127.0.0.1:{PORT}{path}", data=None if data is None else json.dumps(data).encode(),
+                                 headers={"Content-Type": "application/json"})
+    return json.load(urllib.request.urlopen(req))
+job = call("/api/jobs/lp-ration", body)
+while True:
+    cur = call(f"/api/jobs/{job['id']}")
+    if cur["status"] in ("done", "error", "cancelled"):
+        break
+    time.sleep(3)
+print(cur["status"], cur["done"], cur["total"])
+print(json.dumps(cur["result"]["summary"], indent=1)[:2000])
+
+
+======================================================================================================================
+Apêndice B. Variabilidade do SLSQP em intervalos reais (rodar em backend, com o Python do projeto)
+======================================================================================================================
+import json, time, statistics
+from dietopt.module import optimize as opt
+from dietopt.module.pen_lp import REQUIREMENT_MAP, _cow
+from dietopt.module.requirements import compute_requirements
+from dietopt.scenarios import cache_key, with_defaults
+from dietopt.server import scenario_from
+
+body = {  # o mesmo corpo do apêndice A
+    "feeds": [23, 44, 50, 110, 138, 167, 230],
+    "prices": {"23": 1.1, "44": 0.28, "50": 0.09, "110": 0.12, "138": 0.25, "167": 0.55, "230": 0.1},
+    "limits": {"23": [0, 1], "44": [0, 100], "50": [0, 100], "110": [0, 100], "138": [0, 100], "167": [0, 100], "230": [0, 0.6]},
+    "milk_price": 0.45, "years": 1, "max_milk_reduction": 5, "cow_num": 100,
+}
+scenario, economics = scenario_from(body, "x")
+key = cache_key(with_defaults(scenario, economics))          # a chave certa do cache (nunca o arquivo mais recente)
+d = json.load(open(f"../runs/_cache/{key}.json"))
+feeds = [23, 44, 50, 110, 138, 167, 230]
+prices = {23: 1.1, 44: 0.28, 50: 0.09, 110: 0.12, 138: 0.25, 167: 0.55, 230: 0.1}
+limits = {23: (0.0, 1.0), 44: (0.0, 100.0), 50: (0.0, 100.0), 110: (0.0, 100.0), 138: (0.0, 100.0), 167: (0.0, 100.0), 230: (0.0, 0.6)}
+for t in (0, 3, 6, 9, 12):
+    req = d["requirements"][t]
+    cow = _cow(req)
+    required = compute_requirements("NRC", "LAC_COW", cow, {n: float(req[k]) for k, n in REQUIREMENT_MAP.items()}, "LAC_COW")
+    problem = opt.build_problem("NRC", "LAC_COW", "LAC_COW", cow, feeds, prices, limits, required)
+    best, _ = opt.search(problem, "rapida")                      # LP
+    runs = opt.run_rufas(problem, "LAC_COW", 20)                 # SLSQP do RuFaS, 20 sementes
+    comp = opt._comparison(problem, "LAC_COW", cow, runs, best, prices, limits)
+    costs = [r["cost"] for r in comp["runs"] if r["success"] and r["feasible"]]
+    print(t, round(best.cost, 4), comp["n_success"], "/", comp["n_runs"], min(costs), statistics.median(costs), max(costs))

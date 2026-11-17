@@ -87,7 +87,7 @@ O repositório contém também a implementação de referência que este FSD des
 | Ferramentas de build da interface | Node 20.9 ou superior e npm (observado: Node 24.18, npm 11.16); só para quem altera a interface |
 | Dados de referência | Tabelas CSV e JSON do RuFaS (`NRC_comp.csv`, `user_feeds.csv`, exemplo `freestall`) e constantes do código |
 | Instalação e execução | `scripts/setup.ps1` (PowerShell), `scripts/fetch_wheels.py`, `scripts/build-web.ps1`, `iniciar.bat` |
-| Testes automatizados | `pytest`, 261 testes em `backend/tests/` |
+| Testes automatizados | `pytest`, 272 testes em `backend/tests/` |
 | Banco de dados, ORM, framework web de backend, autenticação | Nenhum |
 
 **Padrão arquitetural:** ponte local em três camadas. O navegador (site estático) comunica-se por HTTP/JSON com um servidor Python em loopback, que delega a simulação a um processo filho do RuFaS e a leitura de seus arquivos de saída.
@@ -153,6 +153,7 @@ Itens que não existem e não devem ser assumidos, nem implementados sem decisã
 | Servidor local (`server.py`) | Processo Python de longa duração | API JSON, arquivos estáticos, montagem de cenários a partir das requisições |
 | Gerenciador de tarefas (`jobs.py`) | Threads do servidor | Executa simulações e sensibilidades em segundo plano, uma por vez |
 | Ruminante Singular (`module/`) | Servidor | Modelo linear das restrições, avaliação e comparação de dietas, dieta ótima por PL e preços-sombra |
+| Ração linear × RuFaS (`module/pen_lp.py`) | Servidor | Resolve o LP sobre as exigências de cada intervalo de uma simulação e compara com a ração do SLSQP (A.14) |
 | Adaptador do RuFaS (`rufas_adapter.py`) | Servidor | Escreve entradas do RuFaS, executa-o, detecta falha |
 | Leitor de saídas (`rufas_results.py`) | Servidor | Filtros de saída e conversão dos JSONs em `SimulationResult` |
 | Economia e cache (`scenarios.py`) | Servidor | Preços padrão, receita, custo, margem, cache |
@@ -218,7 +219,7 @@ aplicacao RuFaS/
       sensitivity.py          Sensibilidade e Spearman
       lactation.py            Curva de Wood e marcos
       feeds.py                Biblioteca NRC e tetos padrão
-    tests/                    261 testes (pytest)
+    tests/                    272 testes (pytest)
   web/                        Fontes da interface (Next.js)
     src/app, src/views, src/components, src/providers, src/hooks, src/lib
     package.json, package-lock.json, next.config.ts, LICENSE-TEMPLATE.md
@@ -326,7 +327,7 @@ aplicacao RuFaS/
 | Modificar o código do RuFaS | O RuFaS é usado como está. |
 | Hospedagem em nuvem, vários usuários, várias fazendas | O sistema é local e individual. |
 | CI/CD, ambiente de homologação, fluxo de revisão do repositório Git | Não existem (seção 27). |
-| Testes automatizados de integração e de interface | Não existem; só os 261 testes do back-end. |
+| Testes automatizados de integração e de interface | Não existem; só os 272 testes do back-end. |
 
 ---
 
@@ -503,6 +504,8 @@ A busca casa o texto (sem diferença de maiúsculas) com o título do alimento o
 
 "Leite por vaca" = leite total ÷ (média de vacas em lactação × número de dias da série).
 
+**Aba Ração linear** (depois de Visão geral, Ração e Nutrição; só nesta tela, não no detalhe de uma execução): botão **Comparar com a ração linear**, progresso e Cancelar, indicadores, gráfico do custo por intervalo, ração média e o quadro "Como ler esta comparação". Especificação na seção A.14.
+
 ### 10.5 Tela 3: Curva de lactação (`/curva`)
 
 | Bloco | Conteúdo |
@@ -585,7 +588,8 @@ Servidor HTTP em `http://127.0.0.1:8000` (porta e endereço configuráveis por `
 | `GET /api/jobs/<id>` | — | 200: tarefa com `result`; 404 `{"error": "job não encontrado"}` |
 | `POST /api/jobs/simulate` | `{ feeds: [ids], prices?, limits?, milk_price?, years?, max_milk_reduction?, seed?, cow_num? }` | 202: tarefa (`id`, `kind`, `status`, `done`, `total`, `error`, `created`, `finished`), sem resultado |
 | `POST /api/jobs/sensitivity` | O mesmo corpo de simulação mais `{ factors: [{ key, label, low, high }], method?, n?, workers? }` | 202: tarefa, sem resultado. A tarefa termina em `error` ("A análise exigiria N simulações do RuFaS; o limite é 100…") se o tamanho passa dos limites da seção 15.2, e em `cancelled` se for cancelada |
-| `POST /api/jobs/<id>/cancel` | — | 200: tarefa; a sensibilidade para antes do próximo lote |
+| `POST /api/jobs/lp-ration` | O mesmo corpo de simulação | 202: tarefa, sem resultado; o resultado é o da seção A.14 (ração linear × RuFaS na simulação) |
+| `POST /api/jobs/<id>/cancel` | — | 200: tarefa; a sensibilidade e a comparação com a ração linear param antes do próximo passo |
 | qualquer outro `POST` | — | 404 `{"error": "rota não encontrada"}` |
 | `GET` fora da API | — | Arquivo de `frontend/` ou 404 em texto "nao encontrado" |
 
@@ -1119,7 +1123,7 @@ O sistema é considerado implementado quando:
 
 | `test_module_evaluate.py` | Avaliação de dietas: oferta linear = oferta do RuFaS no ponto, erro fora do ponto, razões exatas, `min` da proteína, categorias, ordenação, replicações do RuFaS, entradas inválidas |
 
-Total: 261 testes passando. Integração real com o RuFaS e interface foram verificadas manualmente, **sem teste automatizado**.
+Total: 272 testes passando. Integração real com o RuFaS e interface foram verificadas manualmente, **sem teste automatizado**.
 
 ---
 
@@ -1698,6 +1702,76 @@ espaço).
 O tempo cresce cerca de 20 s mais 0,075 s por vaca e a memória, cerca de 0,6 GB mais 0,7 MB por vaca; a interface usa essa reta, relativa à estimativa de 17 s para 100 vacas, no aviso e na previsão de tempo da sensibilidade. O teto de 500 é o maior tamanho medido (a máquina de teste tinha pouca memória livre; 1000 vacas não foi tentado).
 
 **Limitação do RuFaS (PRD, L9).** Abaixo de 60 vacas a simulação quebra por um defeito do próprio RuFaS 1.0.6: em `herd_manager.py`, ao inserir um animal num lote vazio sem ração definida pelo usuário, a lista de alimentos do lote é filtrada com o dicionário inteiro de rações em vez da lista do lote; o lote das bezerras fica sem alimentos e a divisão por zero aborta a simulação. Em rebanhos pequenos o lote das bezerras esvazia entre um nascimento e outro. O código do RuFaS não é alterado, então o mínimo fica em 60 vacas. O resultado de um tamanho só vale se a simulação concluir; o limite foi verificado com a semente 42, e outra semente pode falhar perto do mínimo (a mensagem do RuFaS aparece no erro da execução).
+
+### A.14 Ração linear × ração do RuFaS na Vaca leiteira (implementado em 17/11/2026, RF-31)
+
+**O que o usuário faz.** Na tela Vaca leiteira, depois de uma simulação, a aba **Ração linear** tem o botão **Comparar com a ração
+linear**. O servidor resolve o LP de cada intervalo de ração da simulação sobre as **exigências médias do lote que o RuFaS usou**
+(com os mesmos alimentos, preços e limites) e compara com a ração que o SLSQP do RuFaS formulou. Não roda uma nova simulação: o
+cenário vem do cache (se não estiver, é simulado antes). A tarefa mostra o progresso ("n de N etapas") e pode ser cancelada.
+
+**Duas variantes do LP**, para não confundir ração mais barata com mais consumo:
+
+| Variante | Consumo | Uso |
+|---|---|---|
+| Consumo livre | Qualquer um da faixa que o RuFaS permite (estimativa ± 30%) | Mostra o que o LP faria com a mesma liberdade do SLSQP |
+| Mesmo consumo | O que o SLSQP escolheu naquele intervalo | A comparação mais conservadora; é a que vale se as vacas não comerem mais que isso |
+
+**Resultado na tela.** Cinco indicadores (custo da ração do RuFaS, do LP de mesmo consumo e do LP de consumo livre, em US$ por vaca
+por dia, com a variação em relação ao RuFaS, e a diferença do rebanho nas duas variantes: RuFaS menos LP, positiva quando o LP custa
+menos); gráfico **Custo da ração por intervalo** (três linhas, com a alternância para tabela, que traz também se as restrições
+originais foram atendidas); tabela **Ração média** (kg de MS por vaca por dia, por alimento, e consumo total); e o quadro
+"Como ler esta comparação", que diz que o esperado é um empate. O resultado fica no estado compartilhado e vale para a simulação
+em que foi calculado; mudando os parâmetros ou simulando de novo, a tela pede para comparar outra vez.
+
+**API.** `POST /api/jobs/lp-ration`, com o mesmo corpo de `POST /api/jobs/simulate`; tarefa em segundo plano (202), com progresso em
+`done` e `total` (duas etapas por intervalo, uma por variante) e cancelamento por `POST /api/jobs/<id>/cancel`. Não entra no
+histórico de execuções. O resultado traz `standard`, `feed_ids`, `feeds` (`id`, `label`), `intervals` e `summary`:
+
+| Campo | Conteúdo |
+|---|---|
+| `intervals[]` | `day`, `days` (duração do intervalo), `cows` (vacas em lactação), `slsqp` (`cost`, `dmi`, `amounts`), `lp_free` e `lp_same` (`cost`, `dmi`, `amounts`, `verified`, `violated`, `tdn_percentage`, `concentrate_percentage`; `null` se o LP não achou ração viável) |
+| `summary` | `intervals_used`, `days`, `slsqp_cost_per_cow_day`, `slsqp_dmi`, `mean_cows`, `slsqp_mean_amounts`, e para `lp_free` e `lp_same`: `cost_per_cow_day`, `dmi`, `saving_per_cow_day`, `saving_pct`, `herd_saving`, `mean_amounts`, `all_verified` |
+| `warnings` | Intervalos em que o LP não achou ração viável ou violou uma restrição original além da tolerância |
+
+**Regras.**
+- Só vale para o padrão **NRC** (no NASEM a energia exige metano e nitrogênio urinário do lote, que a simulação não informa): outro
+  padrão é recusado com a mensagem "A comparação com a ração linear só está disponível para o padrão NRC."
+- As exigências de cada intervalo são as da saída do RuFaS (energia de mantença, atividade, crescimento, gestação e lactação,
+  proteína metabolizável, cálcio, fósforo e consumo estimado), passadas como sobrescritas; só o peso médio do lote entra na oferta.
+- A ração do LP é a de menor custo da busca do módulo (`optimize.search`, resolução **rápida**: cerca de 11 s por intervalo, 2 a 3
+  minutos em 1 ano) e é **verificada** com as restrições originais do RuFaS, com a tolerância relativa de 1e-5 do próprio SLSQP.
+- O custo é o da ração formulada (preço × quantidade), o mesmo do indicador "Custo da ração, vaca em lactação".
+- O leite não é simulado de novo: o RuFaS só reduz o leite quando a ração não atende, e as rações do LP atendem.
+- Intervalos sem LP viável ficam fora das médias; se nenhum tiver, a tela mostra "Sem comparação".
+
+**Por que o resultado não é uma nova simulação.** O RuFaS aceita uma ração do usuário só como percentuais fixos da MS, iguais em
+todos os intervalos, com o consumo igual à estimativa; a ração do LP muda a cada intervalo e usa a folga de consumo, e não cabe nesse
+formato sem alterar o RuFaS (que não é modificado).
+
+**Resultado esperado e medido.** Medido em 17/11/2026 (7 alimentos, preços ilustrativos, 100 vacas, 1 ano, NRC, semente 42; 13 intervalos de ração):
+
+| | Custo da ração (US$/vaca/dia, média ponderada pelos dias) | Diferença para o SLSQP |
+|---|---|---|
+| RuFaS (SLSQP) | 4,0219 | |
+| LP, mesmo consumo | 4,0201 | −0,04% |
+| LP, consumo livre | 4,0210 | −0,02% |
+
+Por intervalo, a diferença do LP de mesmo consumo foi de −0,58% (dia 60) a +0,02%, e a do consumo livre, de −0,71% (dia 60) a +0,27%
+(dia 30, onde a busca rápida do LP parou acima do SLSQP). No rebanho (cerca de 87 vacas em lactação) a diferença do ano é de
+US$ 58 a favor do LP de mesmo consumo e de US$ 31 a favor do de consumo livre. **O resultado é um empate**: o SLSQP do RuFaS já chega perto do ótimo da ração. O consumo
+do próprio SLSQP já fica perto do teto de +30% sobre o estimado (média de 33,3 kg contra 25,7 kg de MS, +29%), de modo que o
+consumo livre do LP quase não ganha folga.
+
+O que o LP acrescenta não é um custo menor, e sim (a) um resultado que **não depende do ponto inicial aleatório** do SLSQP: em
+20 sementes por intervalo, em 5 intervalos (100 execuções), a mediana do SLSQP coincidiu com o mínimo, mas a pior semente custou até
+2,0% mais e uma execução não ficou viável; (b) os **preços-sombra** (Ruminante Singular); e (c) a formulação **linear** pedida pelo
+professor, com o erro de linearização medido (seção 6). Em tempo, o LP é **mais lento**: 4 a 8 s por problema (resolução rápida)
+contra 0,16 a 0,21 s do SLSQP.
+
+**Testes** (`test_pen_lp.py`): a ração do LP não custa mais que 0,2% além do SLSQP e atende às restrições originais; o mesmo
+consumo vale o do SLSQP; soma ponderada pelas vacas e pelos dias; intervalos sem LP viável; duração dos intervalos; padrão NASEM,
+alimento sem preço e simulação sem exigências recusados; cancelamento; progresso; faixa de consumo fixa no problema original.
 
 ### A.8 Alterações previstas em outras partes deste documento (quando implementado)
 

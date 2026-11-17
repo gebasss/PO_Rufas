@@ -1,7 +1,7 @@
 # Documento de Requisitos do Produto (PRD)
 
 **Produto:** Dieta Ótima com RuFaS
-**Versão do documento:** 0.23 (rascunho para avaliação)
+**Versão do documento:** 0.24 (rascunho para avaliação)
 **Data:** 02/11/2026
 **Status:** Versão web implementada; documento em revisão
 **Autor(es):** _[a preencher]_
@@ -73,7 +73,7 @@ seções 5.2.5, 14 e 15.
 | Núcleo científico | RuFaS v1.0.6 (GPLv3, usado sem modificação), padrão NRC (2001) |
 | Núcleo de otimização | Programação linear (SciPy/HiGHS) para a dieta ótima do Ruminante Singular; otimizador SLSQP do próprio RuFaS para a ração da vaca |
 | Entrega principal | Seis telas: Ruminante Singular, vaca leiteira, curva de lactação, sensibilidade, execuções, premissas e limites |
-| Estado | Implementado e testado (261 testes automatizados); validação científica pendente |
+| Estado | Implementado e testado (272 testes automatizados); validação científica pendente |
 
 ### 1.3 Proposta de valor
 
@@ -257,6 +257,7 @@ O exercício simples (PL de arroz e milho com tabela de cenários) saiu do siste
 | RF-27 | O sistema deve exibir um **painel de verificações de consistência** da ração obtida: consumo × estimado, FDN total, FDN de forragem e amido × Tabela 5-1 do NASEM, gordura e leite perdido. | S | Implementado | Nas simulações já guardadas a ração ficou 3 a 8 kg acima do consumo estimado e várias bateram no teto de +30% do RuFaS. **Especificado** no FSD, Anexo A.4; os limiares dependem da decisão Q8. Feito em 03/11/2026 (etapa E8a): cartão **Verificações** V1 a V5, calculado no servidor; os limiares marcados (a confirmar) seguem como propostos. |
 | RF-28 | O sistema deve **avaliar e comparar dietas já montadas** para uma vaca específica (categoria e fase), no padrão NASEM (principal) ou NRC (apoio): custo, oferta e folga de cada restrição e ordenação das dietas da menos para a mais recomendada (os preços-sombra só existem com a dieta ótima, RF-30). | M | Implementado | Pedido do professor: ampliar o Ruminante Singular. **Especificado** no FSD, Anexo B; base técnica em `LINEARIZACAO.md`. Categorias: as que o RuFaS otimiza (lactação, seca e pré-parto, novilhas em crescimento). Já implementados em 02/11/2026: campos da vaca por categoria e padrão e exigências pelas calculadoras do RuFaS (`/api/module/defaults` e `/api/module/requirements`) e, em 02/11/2026, o modelo linear e a avaliação de dietas no back-end (`POST /api/module/evaluate`: oferta linear × oferta do RuFaS, erro de linearização, folgas, ordenação); e, em 03/11/2026, a **interface** na tela 1 (hoje a tela inteira, depois da retirada do exercício simples) e a comparação formal com o RuFaS (E6, RF-29); permanece pendente o metano e o N urinário do lote no NASEM (L-Q2). |
 | RF-29 | O sistema deve usar um **modelo linear** das restrições nutricionais, com as equações não lineares do RuFaS **linearizadas**, verificar o erro de linearização contra as equações originais e permitir a **comparação com o otimizador do RuFaS**. | M | Implementado | Pedido do professor: só com equações lineares o otimizador próprio é comparável ao do RuFaS. **Especificado** em `LINEARIZACAO.md` e no FSD, Anexo B. Feita em 03/11/2026 a comparação do modelo linear com as funções do RuFaS (erro no ponto e a ±5%, por restrição e por dieta, na tela e em CSV); a comparação com o otimizador (fase 2) foi feita em 03/11/2026 com o RF-30. |
+| RF-31 | O sistema deve **comparar**, na simulação da vaca leiteira, a ração formulada pelo RuFaS (SLSQP) com a ração do **modelo linear** (LP) sobre as mesmas exigências de cada intervalo, com custo, consumo e conferência das restrições originais. | S | Implementado | Feito em 17/11/2026 (FSD, A.14; `LINEARIZACAO.md`, 7.7). Resultado medido: **empate**, com −0,04% no custo da ração (4,0219 → 4,0201 US$/vaca/dia); o SLSQP do RuFaS já chega perto do ótimo. O LP não é mais barato; acrescenta resultado independente do ponto inicial aleatório, preços-sombra e a formulação linear pedida. Só NRC. |
 | RF-30 | O sistema deve **sugerir e prever a dieta ótima** (custo mínimo) para uma vaca e uma fase específicas. | S | Implementado | Fase 2 feita em 03/11/2026: dieta ótima por LP com escalares globais fixos, conferida com as funções do RuFaS e comparada com o SLSQP do RuFaS em várias sementes, com preços-sombra e desvio das dietas avaliadas (FSD, B.11; `LINEARIZACAO.md`, 7.6). Falta o laço de redução de leite. |
 
 Os requisitos RF-24, RF-26 e RF-27 têm especificação no FSD, Anexo A, e os requisitos RF-28 a RF-30 no Anexo B e em `LINEARIZACAO.md`; nenhum está implementado. RF-28 e RF-29 são prioridade do professor. O RF-19 é o único requisito de prioridade "deve ter" ainda não atendido; ele é o principal item a especificar antes
@@ -584,7 +585,7 @@ uma dieta.
 | RNF-05 | Transparência | Falhas devem ser explícitas; o log de cada simulação deve ficar disponível em disco (`runs/<id>/console.log`). | Atendido |
 | RNF-06 | Reprodutibilidade | Versão do RuFaS fixada (v1.0.6), dependências fixadas e semente aleatória fixa (42). Mesma entrada, mesmo resultado. | Atendido |
 | RNF-07 | Segurança | O servidor escuta apenas em `127.0.0.1`, sem autenticação e sem dados pessoais. Não deve ser exposto a redes. | Atendido |
-| RNF-08 | Manutenibilidade | Código modular, RuFaS sem modificação, testes automatizados cobrindo PL, amostragem, adaptador e cache. | Atendido (261 testes) |
+| RNF-08 | Manutenibilidade | Código modular, RuFaS sem modificação, testes automatizados cobrindo PL, amostragem, adaptador e cache. | Atendido (272 testes) |
 | RNF-09 | Legal | O RuFaS é GPLv3. A distribuição conjunta deve respeitar a licença e preservar a atribuição. | Atendido (RuFaS não modificado) |
 | RNF-10 | Validade científica | Os resultados devem ser comparados com uma referência profissional antes de qualquer uso real. Premissas e limites do modelo devem estar documentados. | **Pendente** (limites documentados no README; comparação não feita) |
 | RNF-11 | Instalação | O ambiente deve ser reproduzível por script, mesmo onde o `pip` falha por TLS. | Atendido (`scripts/setup.ps1` com contorno via `curl`) |
@@ -785,7 +786,7 @@ por fase; ração que pode passar do consumo estimado em até 30% (limite do RuF
 | **NRC (2001)** | Biblioteca e exigências NRC | Atendido |
 | **NASEM (2021)** | RF-24 (e RF-26, RF-27) | Pendente; especificado no FSD, Anexo A (viabilidade técnica verificada) |
 | **CEPEA** (preços) | RF-22 | Importação por CSV feita (RF-22); leitura automática do indicador continua pendente |
-| Equações do simulador/otimizador **lineares** (pedido do professor, 01/11/2026) | RF-29 | Implementado (E3, E6 e E7); especificado em `LINEARIZACAO.md` e no FSD, Anexo B |
+| Equações do simulador/otimizador **lineares** (pedido do professor, 01/11/2026) | RF-29 e RF-31 | Implementado (E3, E6, E7 e, na simulação da vaca leiteira, a comparação de 17/11/2026); especificado em `LINEARIZACAO.md` e no FSD, Anexos A.14 e B |
 | Dietas variadas testadas e comparadas, da menos recomendada até a ótima | RF-28 e RF-30 | Implementado (fase 1 no Anexo B; fase 2 em `LINEARIZACAO.md`, 7.6) |
 | Entradas do módulo: características da vaca, exigências NASEM, dieta e preços em US$ (CEPEA) | RF-28 e RF-22 | Implementado (a importação de preços em US$ é o RF-22) |
 | Vaca recém-parida em consideração | Curva de lactação e ração por intervalo desde o dia 0 da simulação | Parcial: a curva é exibida, mas a dieta não é otimizada por fase da lactação (o RuFaS formula uma ração para o grupo de vacas em lactação) |
@@ -923,3 +924,4 @@ próprio RuFaS.
 | 0.21 | 16/11/2026 | _[a preencher]_ | Vaca leiteira (guias de uso em `docs/guias/`): variação dos totais em relação ao cenário-base só com o mesmo rebanho e o mesmo período, preço importado por CSV arredondado a 4 casas e texto do estado vazio com o tempo real da simulação (cerca de 20 a 30 s). |
 | 0.22 | 16/11/2026 | _[a preencher]_ | Organização dos documentos: `PLANO_IMPLEMENTACAO.md` e `DESIGN_REPAGINACAO.md` (concluídos) movidos para `docs/arquivo/`; capas de `LINEARIZACAO.md` e `DOMINIO.md` e o README atualizados com o estado atual (fases 1 e 2 implementadas; histórico, exportação, cenários, importação de preços, rebanho e NASEM no Ruminante Singular no DOMINIO); guias de uso em `docs/guias/`. |
 | 0.23 | 16/11/2026 | _[a preencher]_ | Consolidação dos documentos: `DESIGN.md` reescrito como fonte única da linguagem visual (tokens atuais, seis telas, componentes, gráficos por saída, decisões de produto da repaginação e contraste medido, com as lacunas do tema claro); `DECISOES_TECNICAS.md` arquivado, com as decisões e o que não inventar incorporados ao FSD (3.1 e 3.2); contagens de testes (261) e de telas (seis) corrigidas no PRD e no FSD; referências atualizadas. |
+| 0.24 | 17/11/2026 | _[a preencher]_ | Vaca leiteira (RF-31, FSD A.14): aba **Ração linear**, que compara a ração do SLSQP do RuFaS com a do modelo linear (LP) sobre as exigências de cada intervalo da simulação; medido: empate (−0,04% no custo da ração), com o LP independente do ponto inicial aleatório; só NRC. |
