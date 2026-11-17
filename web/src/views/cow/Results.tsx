@@ -1,8 +1,8 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 
-import { CoinsIcon, DropletsIcon, GaugeIcon, MilkIcon, StarIcon, TrendingUpIcon, WalletIcon, WheatIcon } from 'lucide-react'
+import { CoinsIcon, DropletsIcon, GaugeIcon, MilkIcon, ScaleIcon, StarIcon, TrendingUpIcon, WalletIcon, WheatIcon } from 'lucide-react'
 
 import { DivergingBars, HighlightBars, SeriesLegend, TimeSeries, type SeriesSpec } from '@/components/charts'
 import ChartCard from '@/components/ChartCard'
@@ -35,6 +35,8 @@ interface Props {
   base?: RunMeta | null
   /** Marca a execução desta tela como o cenário-base. */
   onSetBase?: () => void
+  /** Conteúdo da aba "Ração linear" (só existe na tela, não no detalhe de uma execução). */
+  linear?: ReactNode
 }
 
 /** Totais do rebanho: só se comparam com o cenário-base quando os dois têm o mesmo número de vacas e o mesmo período. */
@@ -45,7 +47,7 @@ const DAYS_PER_YEAR = 365
 /** Período simulado em anos: pelo número de dias da série diária (vale também para execuções gravadas antes de o resumo trazer o período). */
 const yearsOf = (sim: SimResult) => Math.max(1, Math.round(sim.daily.day.length / DAYS_PER_YEAR))
 
-export default function Results({ sim, stale = false, base = null, onSetBase }: Props) {
+export default function Results({ sim, stale = false, base = null, onSetBase, linear }: Props) {
   const s = sim.summary
   const isBase = base !== null && base.id === sim.run_id
   const herdSize = Number(s.cow_num ?? 100)
@@ -260,6 +262,11 @@ export default function Results({ sim, stale = false, base = null, onSetBase }: 
             <TabsTab value='nutrition'>
               <DropletsIcon /> Nutrição
             </TabsTab>
+            {linear ? (
+              <TabsTab value='linear'>
+                <ScaleIcon /> Ração linear
+              </TabsTab>
+            ) : null}
           </TabsList>
           <ExportButtons screen='simulation' data={sim} meta={{ standard: 'NRC 2001' }} />
         </div>
@@ -427,6 +434,8 @@ export default function Results({ sim, stale = false, base = null, onSetBase }: 
               table={requirementTable}
             />
           </TabsPanel>
+
+          {linear ? <TabsPanel value='linear'>{linear}</TabsPanel> : null}
         </div>
       </Tabs>
     </div>

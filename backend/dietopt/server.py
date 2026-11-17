@@ -22,6 +22,7 @@ from .herd import DEFAULT_COWS, herd_limits, parse_cow_num
 from .history import base_run, clean_folders, delete_run, get_run, list_runs, record, set_base, storage_report, update_run, with_history
 from .jobs import Job, JobManager
 from .module.api import compare_payload, defaults_payload, evaluate_payload, optimize_payload, requirements_payload
+from .module.pen_lp import compare_with_simulation
 from .prices import import_prices
 from .ration_balance import build_balance
 from .ration_checks import composition, consistency_checks, summarize
@@ -176,6 +177,29 @@ def optimize_work(job: Job) -> dict[str, Any]:
     return optimize_payload(job.params, progress, lambda: job.cancel_requested)
 
 
+def lp_ration_work(job: Job) -> dict[str, Any]:
+    """Ração linear (LP) × ração do RuFaS (SLSQP) nas exigências da simulação (a simulação vem do cache quando já foi feita)."""
+    scenario, economics = scenario_from(job.params, f"web_{job.id}")
+    evaluation = evaluate(scenario, economics)
+    if not evaluation.ok or evaluation.result is None:
+        raise RuntimeError(f"Simulação do RuFaS falhou: {evaluation.detail}")
+
+    def progress(done: int, total: int) -> None:
+        job.done, job.total = done, total
+
+    result = compare_with_simulation(
+        evaluation.result,
+        scenario.lac_cow_feeds or [],
+        scenario.feed_prices,
+        scenario.feed_limits,
+        scenario.nutrient_standard,
+        progress,
+        lambda: job.cancel_requested,
+    )
+    result["feeds"] = [{"id": int(i), "label": feed_label(i, scenario.nutrient_standard)} for i in result["feed_ids"]]
+    return result
+
+
 def sensitivity_work(job: Job) -> dict[str, Any]:
     scenario, economics = scenario_from(job.params, f"web_{job.id}")
     factors = [Factor(str(f["key"]), str(f["label"]), float(f["low"]), float(f["high"])) for f in job.params["factors"]]
@@ -302,6 +326,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(JOBS.submit("simulate", body, with_history("simulation", simulate_work)).public(include_result=False), 202)
             if path == "/api/jobs/sensitivity":
                 return self._json(JOBS.submit("sensitivity", body, with_history("sensitivity", sensitivity_work)).public(include_result=False), 202)
+            if path == "/api/jobs/lp-ration":
+                return self._json(JOBS.submit("lp-ration", body, lp_ration_work).public(include_result=False), 202)
             if path == "/api/jobs/optimize":
                 return self._json(JOBS.submit("optimize", body, with_history("optimization", optimize_work)).public(include_result=False), 202)
             if path == "/api/history/cleanup":

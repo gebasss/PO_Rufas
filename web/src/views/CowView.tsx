@@ -18,6 +18,7 @@ import { api, runJob } from '@/lib/api'
 import { DEFAULT_HERD, herdNote, herdProblem } from '@/lib/herd'
 import type { CowScenario, RunMeta, SimResult } from '@/lib/types'
 import { useApp } from '@/providers/AppProvider'
+import LinearRationCard from '@/views/cow/LinearRationCard'
 import Results from '@/views/cow/Results'
 
 const YEARS = [
@@ -238,7 +239,7 @@ export default function CowView() {
           )}
 
           {sim ? (
-            <Results sim={sim} stale={stale} base={base} onSetBase={markBase} />
+            <Results sim={sim} stale={stale} base={base} onSetBase={markBase} linear={<LinearRationCard sim={sim} simKey={simKey} stale={stale} />} />
           ) : running ? (
             <ResultsSkeleton />
           ) : (

@@ -49,6 +49,7 @@ nem multiestação — o servidor escuta em `127.0.0.1` (a própria máquina) e 
 | Servidor local | `backend/dietopt/server.py` (porta 8000) | API JSON e arquivos estáticos; monta cenários a partir das requisições |
 | Gerenciador de tarefas | `backend/dietopt/jobs.py` | Executa simulações em segundo plano, uma tarefa por vez, com progresso |
 | Ruminante Singular (módulo) | `backend/dietopt/module/` | Modelo linear das restrições, avaliação e comparação de dietas e dieta ótima por PL (SciPy/HiGHS) com preços-sombra |
+| Ração linear × RuFaS | `backend/dietopt/module/pen_lp.py` | Resolve o LP sobre as exigências de cada intervalo de uma simulação e compara com a ração do SLSQP (FSD, A.14); só NRC |
 | Adaptador do RuFaS | `backend/dietopt/rufas_adapter.py` | `Scenario` → arquivos de entrada do RuFaS; executa `main.py` em subprocesso; detecta falha |
 | Leitor de saídas | `backend/dietopt/rufas_results.py` | Filtros de saída e conversão dos JSONs do RuFaS em `SimulationResult` |
 | Economia e cache | `backend/dietopt/scenarios.py` | Preços padrão, receita, custo, margem; cache por conteúdo do cenário |
@@ -259,7 +260,7 @@ abortar, e mostra o leite perdido.
   origem nem limite de requisições: a proteção é só o endereço local. Não deve ser exposto à rede.
 - Rotas: `GET /api/feeds`, `/api/defaults`, `/api/lactation`, `/api/jobs`, `/api/jobs/<id>`, `/api/history`,
   `/api/history/<id>`, `/api/history/base`, `/api/history/storage`; `POST /api/module/*`, `/api/jobs/simulate`,
-  `/api/jobs/sensitivity`, `/api/jobs/optimize` (respondem 202), `/api/jobs/<id>/cancel`, `/api/history/<id>/base|update|delete`,
+  `/api/jobs/sensitivity`, `/api/jobs/optimize`, `/api/jobs/lp-ration` (respondem 202), `/api/jobs/<id>/cancel`, `/api/history/<id>/base|update|delete`,
   `/api/history/cleanup`, `/api/export/<csv|report>/<tela>`, `/api/scenario/save|load` e `/api/prices/import`. `POST` em rota inexistente e
   tarefa desconhecida → 404 JSON; exceção → 500 JSON com `Tipo: mensagem`; `GET` fora da API tenta um arquivo
   estático e, se não houver, responde 404 em texto.
@@ -305,6 +306,7 @@ do tamanho do rebanho pela interface e o padrão NASEM 2021 no Ruminante Singula
 | Regra | Arquivo | Função/trecho | Teste automatizado |
 |---|---|---|---|
 | Dieta ótima do Ruminante Singular e preços-sombra | `backend/dietopt/module/optimize.py` | `optimize_diet` | `test_module_optimize.py` |
+| Ração linear × ração do RuFaS na simulação (FSD, A.14) | `backend/dietopt/module/pen_lp.py` | `compare_with_simulation`; `lp_ration_work` em `server.py` | `test_pen_lp.py` |
 | Biblioteca e tetos padrão (5.2) | `backend/dietopt/feeds.py` | `load_feed_library`, `FeedInfo.default_max`, `nel_mcal_per_kg` | `test_adapter.py`: tetos padrão |
 | Limites, preços, período e redução máxima (5.3) | `backend/dietopt/server.py` | `scenario_from`, `feed_limits_from` | — |
 | Troca de ids NASEM → NRC (5.3) | `backend/dietopt/rufas_adapter.py` | `NASEM_ONLY_TO_NRC`, `remap_feed_ids` | `test_adapter.py`: troca de ids |
@@ -330,7 +332,7 @@ do tamanho do rebanho pela interface e o padrão NASEM 2021 no Ruminante Singula
 | Regras de seleção e padrões da tela (5.12) | `web/src/views/CowView.tsx`, `web/src/providers/AppProvider.tsx` | `run`, `simulationBody`, `priceOf`, `PRESET_BASE`, `PRESET_WIDE`, `STORAGE_KEY` | — |
 | Instalação e execução (3.1) | `scripts/`, `iniciar.bat` | `setup.ps1`, `fetch_wheels.py`, `build-web.ps1` | — |
 
-Os testes automatizados (261 na revisão de 16/11/2026) ficam em `backend/tests/` e cobrem a coluna da direita; as demais regras foram verificadas
+Os testes automatizados (272 na revisão de 17/11/2026) ficam em `backend/tests/` e cobrem a coluna da direita; as demais regras foram verificadas
 manualmente (execução real do RuFaS e uso das telas), sem teste automatizado.
 
 ## 8. Fontes científicas e rastreabilidade das referências

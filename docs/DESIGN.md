@@ -383,6 +383,7 @@ desatualizado. **Resultados** em abas, com o botão de exportar no cabeçalho:
 | Visão geral | Indicadores com mini gráfico (e variação contra a simulação-base); alertas; **ração média** (barras horizontais, o ingrediente principal em verde vivo); **balanço nutricional** (barras divergentes da oferta em relação à exigência, cortadas em +150% com o valor real no rótulo); **leite do rebanho** (área, com as vacas em lactação em linha tracejada no eixo direito); **custo da ração por vaca** |
 | Ração | Ração ao longo do tempo (áreas empilhadas) e composição média |
 | Nutrição | Verificações V1 a V5 com a faixa (`Bullet`) abaixo do nome, balanço em tabela e exigências |
+| Ração linear | Botão **Comparar com a ração linear** (`RunButton` com Cancelar), cinco indicadores (custo do RuFaS e do LP em dois consumos, e a diferença do rebanho), **custo da ração por intervalo** (três linhas, com tabela), **ração média** e o quadro "Como ler esta comparação" (`views/cow/LinearRationCard.tsx`) |
 
 Não há botão Cancelar: o RuFaS roda em outro processo e o servidor só cancela tarefas na fila.
 

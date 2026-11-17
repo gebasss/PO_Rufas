@@ -509,3 +509,51 @@ export interface Job<T> {
   error: string
   result?: T
 }
+
+// ---- Ração linear (LP) × ração do RuFaS (SLSQP) na simulação da vaca leiteira (FSD, A.14)
+/** Uma ração formulada para um intervalo: quantidades em kg de MS por vaca por dia, por id de alimento. */
+export interface LpRation {
+  cost: number
+  dmi: number
+  amounts: Record<string, number>
+  /** A ração atende a todas as restrições originais do RuFaS. */
+  verified: boolean
+  violated: string[]
+  tdn_percentage: number
+  concentrate_percentage: number
+}
+export interface LpRationInterval {
+  day: number
+  days: number
+  cows: number
+  slsqp: { cost: number; dmi: number; amounts: Record<string, number> }
+  /** `null` = o LP não achou ração viável. */
+  lp_free: LpRation | null
+  lp_same: LpRation | null
+}
+export interface LpRationVariant {
+  cost_per_cow_day: number
+  dmi: number
+  saving_per_cow_day: number
+  saving_pct: number
+  herd_saving: number
+  mean_amounts: Record<string, number>
+  all_verified: boolean
+}
+export interface LpRationResult {
+  standard: string
+  feed_ids: number[]
+  feeds: { id: number; label: string }[]
+  intervals: LpRationInterval[]
+  summary: {
+    intervals_used: number
+    days?: number
+    slsqp_cost_per_cow_day?: number
+    slsqp_dmi?: number
+    mean_cows?: number
+    lp_free?: LpRationVariant
+    lp_same?: LpRationVariant
+    slsqp_mean_amounts?: Record<string, number>
+  }
+  warnings: string[]
+}

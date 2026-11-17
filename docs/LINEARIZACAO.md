@@ -9,6 +9,9 @@
 > `vendor/RuFaS`, e (b) como esse cálculo foi linearizado no módulo "Ruminante Singular". As seções 1 a 6 e 10 são o estudo e
 > não mudaram; as seções 7 e 8 foram revistas.
 >
+> **Comparação na simulação (7.7, 17/11/2026):** o LP, resolvido sobre as exigências de cada intervalo de uma simulação real,
+> empata com o SLSQP do RuFaS (diferença de −0,04% no custo da ração).
+>
 > **Ainda não implementado:** o laço de redução de leite sobre LPs (7.6), a leitura automática de indicadores do CEPEA (7.2; há
 > importação de preços por CSV) e o que a seção 8 deixa em aberto com o professor. Onde um fato não foi verificado, o texto diz
 > **"a verificar"**; onde a decisão é nossa e ainda precisa de confirmação, diz **"(a confirmar)"**.
@@ -431,6 +434,40 @@ resolução rápida, o LP ficou igual ao RuFaS no NASEM e nas novilhas do NRC e 
 é um ótimo local). A fórmula do LP foi validada pelo ponto exato: nos escalares do melhor SLSQP o LP dá o mesmo custo (erro
 relativo abaixo de 1e-6) em quatro casos (NRC e NASEM, lactação, vaca seca e novilha). O SLSQP não é estável: com seis
 alimentos (sem o farelo de arroz), uma de cinco sementes parou em 3,8595 (ótimo local) e outra não convergiu.
+
+### 7.7 Comparação na simulação completa (17/11/2026)
+
+Na tela Vaca leiteira, depois de uma simulação, o LP é resolvido para **cada intervalo de ração** sobre as exigências médias do
+lote que o RuFaS usou naquele intervalo (`avg_rqmts_for_LAC_COW`), com os mesmos alimentos, preços e limites, e comparado com a
+ração que o SLSQP formulou (`backend/dietopt/module/pen_lp.py`; FSD, A.14). Não se roda nova simulação: o leite e as exigências são
+os da simulação existente, e cada ração do LP é conferida com as restrições originais do RuFaS (tolerância relativa de 1e-5, a do
+próprio SLSQP). Há duas variantes: **consumo livre** (na faixa que o RuFaS permite, estimativa ± 30%) e **mesmo consumo** (o do
+SLSQP naquele intervalo, a comparação mais conservadora; o LP recebe a faixa de consumo por `dmi_range`).
+
+**Por que não se simula a ração do LP no RuFaS.** O RuFaS aceita uma ração do usuário só como percentuais fixos da MS, iguais em
+todos os intervalos, e calcula o consumo como a estimativa (`RationManager.get_user_defined_ration`: `dry_matter × percentual`).
+Ele não aceita uma ração por intervalo nem um consumo diferente da estimativa; a ração do LP, que muda a cada intervalo e usa a
+folga de consumo, não cabe nesse formato sem alterar o RuFaS, que não é modificado.
+
+**Resultados.** Medido em 17/11/2026 (7 alimentos, preços ilustrativos, 100 vacas, 1 ano, NRC, semente 42; 13 intervalos de ração):
+
+| | Custo da ração (US$/vaca/dia, média ponderada pelos dias) | Diferença para o SLSQP |
+|---|---|---|
+| RuFaS (SLSQP) | 4,0219 | |
+| LP, mesmo consumo | 4,0201 | −0,04% |
+| LP, consumo livre | 4,0210 | −0,02% |
+
+Por intervalo, a diferença do LP de mesmo consumo foi de −0,58% (dia 60) a +0,02%, e a do consumo livre, de −0,71% (dia 60) a +0,27%
+(dia 30, onde a busca rápida do LP parou acima do SLSQP). No rebanho (cerca de 87 vacas em lactação) a diferença do ano é de
+US$ 58 a favor do LP de mesmo consumo e de US$ 31 a favor do de consumo livre. **O resultado é um empate**: o SLSQP do RuFaS já chega perto do ótimo da ração. O consumo
+do próprio SLSQP já fica perto do teto de +30% sobre o estimado (média de 33,3 kg contra 25,7 kg de MS, +29%), de modo que o
+consumo livre do LP quase não ganha folga.
+
+O que o LP acrescenta não é um custo menor, e sim (a) um resultado que **não depende do ponto inicial aleatório** do SLSQP: em
+20 sementes por intervalo, em 5 intervalos (100 execuções), a mediana do SLSQP coincidiu com o mínimo, mas a pior semente custou até
+2,0% mais e uma execução não ficou viável; (b) os **preços-sombra** (Ruminante Singular); e (c) a formulação **linear** pedida pelo
+professor, com o erro de linearização medido (seção 6). Em tempo, o LP é **mais lento**: 4 a 8 s por problema (resolução rápida)
+contra 0,16 a 0,21 s do SLSQP.
 
 ---
 
