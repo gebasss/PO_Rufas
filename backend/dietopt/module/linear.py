@@ -143,8 +143,13 @@ def build_at(
     requirements: Any,
     body_weight: float,
     pen: tuple[float, float] | None,
+    dmi_range: tuple[float, float] | None = None,
 ) -> list[LinearConstraint]:
-    """Como ``build``, mas com os escalares globais dados (``Reference``): é o que a otimização usa para parametrizá-los."""
+    """Como ``build``, mas com os escalares globais dados (``Reference``): é o que a otimização usa para parametrizá-los.
+
+    ``dmi_range`` (kg/dia) substitui a faixa de consumo do RuFaS (estimativa ± ``DMI_CONSTRAINT_FRACTION``); serve para comparar
+    com uma dieta de consumo conhecido.
+    """
     rf = rufas()
     const = rf.constants
     n = len(feeds)
@@ -171,8 +176,9 @@ def build_at(
     def add(constraint: LinearConstraint) -> None:
         constraints[constraint.id] = constraint
 
-    add(LinearConstraint("dmi_min", "", "kg/dia", "L", "ge", req.dry_matter * (1 - cap), (Piece(ones),)))
-    add(LinearConstraint("dmi_max", "", "kg/dia", "L", "le", req.dry_matter * (1 + cap), (Piece(ones),)))
+    dmi_low, dmi_high = dmi_range or (req.dry_matter * (1 - cap), req.dry_matter * (1 + cap))
+    add(LinearConstraint("dmi_min", "", "kg/dia", "L", "ge", dmi_low, (Piece(ones),)))
+    add(LinearConstraint("dmi_max", "", "kg/dia", "L", "le", dmi_high, (Piece(ones),)))
     add(LinearConstraint("calcium", "", "g/dia", "L", "ge", req.calcium, (Piece(calcium),)))
     add(LinearConstraint("phosphorus", "", "g/dia", "L", "ge", max(req.phosphorus, req.process_based_phosphorus), (Piece(phosphorus),)))
     for cid, sense, values, limit in (

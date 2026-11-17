@@ -17,6 +17,7 @@ import type {
   Defaults,
   CowScenario,
   Feed,
+  LpRationResult,
   Selected,
   SensResult,
   SensSetup,
@@ -55,6 +56,9 @@ interface AppContextValue {
   /** Parâmetros (serializados) com que `sim` foi calculada; diferente dos atuais = resultado desatualizado. */
   simKey: string | null
   setSimKey: (value: string | null) => void
+  /** Ração linear × RuFaS da simulação `key` (a mesma chave de `simKey`); de outra simulação = desatualizada. */
+  lp: { key: string; result: LpRationResult } | null
+  setLp: (value: { key: string; result: LpRationResult } | null) => void
   sens: SensResult | null
   setSens: (value: SensResult | null) => void
   /** Parâmetros (serializados) com que `sens` foi calculada; diferente dos atuais = análise desatualizada. */
@@ -107,6 +111,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [params, setParamsState] = useState<SimParams>(INITIAL_PARAMS)
   const [sim, setSim] = useState<SimResult | null>(null)
   const [simKey, setSimKey] = useState<string | null>(null)
+  const [lp, setLp] = useState<{ key: string; result: LpRationResult } | null>(null)
   const [sens, setSens] = useState<SensResult | null>(null)
   const [sensKey, setSensKey] = useState<string | null>(null)
   const [sensSetup, setSensSetup] = useState<SensSetup>(INITIAL_SENS)
@@ -232,6 +237,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     )
     setSim(null)
     setSimKey(null)
+    setLp(null)
     setSens(null)
     setSensKey(null)
   }, [])
@@ -265,6 +271,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSim,
     simKey,
     setSimKey,
+    lp,
+    setLp,
     sens,
     setSens,
     sensKey,

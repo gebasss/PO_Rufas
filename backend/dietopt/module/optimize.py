@@ -113,6 +113,7 @@ class Problem:
     tdn: np.ndarray = field(repr=False)
     concentrate: np.ndarray = field(repr=False)
     starch: np.ndarray = field(repr=False)  # kg de amido por kg de MS
+    dmi_range: tuple[float, float] | None = None  # faixa do consumo (kg/dia); ``None`` = a do RuFaS (estimativa ± 30%)
 
     @property
     def dims(self) -> tuple[str, ...]:
@@ -131,7 +132,8 @@ class Problem:
             point.dmi, intake_discount(point.tdn, point.dmi, self.body_weight), point.tdn, point.conc, point.starch
         )
         return linear.build_at(
-            self.standard, self.animal_type, self.feeds, reference, self.requirements.nutrition_requirements, self.body_weight, self.pen
+            self.standard, self.animal_type, self.feeds, reference, self.requirements.nutrition_requirements, self.body_weight, self.pen,
+            self.dmi_range,
         )
 
 
@@ -245,12 +247,13 @@ class Box:
 def _grid(problem: Problem, sizes: tuple[int, int, int, int, int]) -> tuple[list[Point], Box | None]:
     n_dmi, n_tdn, n_conc, n_starch, _ = sizes
     requirement = problem.requirements.requirements["dry_matter"]
-    constraint = (1 - rufas().constants.DMI_CONSTRAINT_FRACTION, 1 + rufas().constants.DMI_CONSTRAINT_FRACTION)
+    cap = rufas().constants.DMI_CONSTRAINT_FRACTION
+    dmi_low, dmi_high = problem.dmi_range or (requirement * (1 - cap), requirement * (1 + cap))
     rows = _relaxed_rows(problem)
     points: list[Point] = []
     lows = np.full(4, np.inf)
     highs = np.full(4, -np.inf)
-    for dmi in _linspace(requirement * constraint[0], requirement * constraint[1], n_dmi):
+    for dmi in _linspace(dmi_low, dmi_high, n_dmi):
         ranges = [_scalar_range(problem, rows, dmi, v) for v in (problem.tdn, problem.concentrate, problem.starch)]
         if any(r is None for r in ranges):
             continue
@@ -459,6 +462,7 @@ def build_problem(
     prices: Mapping[int, float],
     limits: Mapping[int, tuple[float, float]],
     required: RequirementsResult,
+    dmi_range: tuple[float, float] | None = None,
 ) -> Problem:
     feeds = build_feeds(standard, list(ids), prices, limits)
     pen = pen_inputs(standard, cow)
@@ -478,6 +482,7 @@ def build_problem(
         tdn=np.array([fd.TDN for fd in feeds], dtype=float),
         concentrate=np.array([1.0 if fd.feed_type is rufas().feed_component_type.CONC else 0.0 for fd in feeds]),
         starch=np.array([fd.starch * 0.01 for fd in feeds], dtype=float),
+        dmi_range=dmi_range,
     )
 
 
