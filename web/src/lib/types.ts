@@ -557,3 +557,36 @@ export interface LpRationResult {
   }
   warnings: string[]
 }
+
+// ---- Ração linear (LP) × ração do RuFaS em cada cenário da sensibilidade (FSD, A.15)
+export interface SensLpRow {
+  /** Cenários (S1, S2…) que compartilham esta simulação. */
+  cenarios: string[]
+  /** Preços dos fatores de alimento desta simulação (US$/kg MS), por rótulo. */
+  precos: Record<string, number>
+  erro?: string
+  intervals_sampled?: number
+  intervals_used?: number
+  slsqp_cost?: number
+  lp_cost?: number
+  diff_pct?: number
+  verified?: boolean
+}
+export interface SensLpResult {
+  standard: string
+  sample: number
+  rows: SensLpRow[]
+  summary: {
+    scenarios: number
+    compared: number
+    failed: number
+    mean_diff_pct: number
+    min_diff_pct: number
+    max_diff_pct: number
+    lp_cheaper: number
+    tie: number
+    lp_dearer: number
+    all_verified: boolean
+    tie_pct: number
+  }
+}

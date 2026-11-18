@@ -1,8 +1,8 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 
-import { GaugeIcon, ListIcon, SlidersHorizontalIcon, TrendingDownIcon, TrendingUpIcon, WaypointsIcon } from 'lucide-react'
+import { GaugeIcon, ListIcon, ScaleIcon, SlidersHorizontalIcon, TrendingDownIcon, TrendingUpIcon, WaypointsIcon } from 'lucide-react'
 
 import { DivergingBars, HighlightBars, ScatterPlot } from '@/components/charts'
 import ChartCard from '@/components/ChartCard'
@@ -27,6 +27,8 @@ interface Props {
   years?: number
   /** Vacas do rebanho, para só comparar com a base quando o tamanho é o mesmo (a margem cresce com o rebanho). */
   cowNum?: number
+  /** Conteúdo da aba "Ração linear" (só existe na tela, não no detalhe de uma execução). */
+  linear?: ReactNode
 }
 
 /** Números do eixo vertical em milhares ("450 mil"), mais curtos que o rótulo com US$. */
@@ -50,7 +52,7 @@ function histogram(values: number[]) {
   return counts
 }
 
-export default function SensResults({ result, stale = false, base = null, years, cowNum }: Props) {
+export default function SensResults({ result, stale = false, base = null, years, cowNum, linear }: Props) {
   const names = useMemo(() => Object.fromEntries(result.feeds.map(f => [String(f.id), shortName(f.label, 26)])), [result.feeds])
   const factorColumns = result.columns.filter(c => c !== 'Res')
   const okRows = result.rows.filter(r => r.Res !== null)
@@ -162,6 +164,11 @@ export default function SensResults({ result, stale = false, base = null, years,
             <TabsTab value='scenarios'>
               <ListIcon /> Cenários
             </TabsTab>
+            {linear ? (
+              <TabsTab value='linear'>
+                <ScaleIcon /> Ração linear
+              </TabsTab>
+            ) : null}
           </TabsList>
           <ExportButtons screen='sensitivity' data={result} meta={{ standard: 'NRC 2001' }} />
         </div>
@@ -393,6 +400,8 @@ export default function SensResults({ result, stale = false, base = null, years,
               <CardContent>{scenarioTable}</CardContent>
             </Card>
           </TabsPanel>
+
+          {linear ? <TabsPanel value='linear'>{linear}</TabsPanel> : null}
         </div>
       </Tabs>
     </div>

@@ -72,7 +72,7 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 /** Dispara um job do RuFaS e consulta o andamento até terminar. */
 export async function runJob<T>(
-  kind: 'simulate' | 'sensitivity' | 'optimize' | 'lp-ration',
+  kind: 'simulate' | 'sensitivity' | 'optimize' | 'lp-ration' | 'sens-lp-ration',
   body: unknown,
   onProgress: (done: number, total: number, status: Job<T>['status']) => void,
   options: { onStart?: (jobId: string) => void; intervalMs?: number } = {}

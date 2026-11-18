@@ -96,6 +96,30 @@ def sample_points(factors: list[Factor], method: str, n: int, seed: int = 42) ->
     raise ValueError(f"Método desconhecido: {method}")
 
 
+def plan_scenarios(
+    base: Scenario, factors: list[Factor], method: str, n: int, seed: int = 42
+) -> tuple[list[list[float]], list[Scenario], dict[tuple[float, ...], int]]:
+    """Pontos da análise e os cenários que exigem simulação (combinações únicas dos preços de alimentos).
+
+    ``sim_index`` liga os preços de alimentos de um ponto ao índice do cenário em ``scenarios``: pontos que só diferem no
+    preço do leite compartilham a simulação.
+    """
+    check_plan(factors, method, n)
+    points = sample_points(factors, method, n, seed)
+    feed_factors = [f for f in factors if not f.is_milk]
+    sim_index: dict[tuple[float, ...], int] = {}
+    scenarios: list[Scenario] = []
+    for point in points:
+        feed_values = tuple(round(v, 4) for v, f in zip(point, factors) if not f.is_milk)
+        if feed_values not in sim_index:
+            prices = dict(base.feed_prices)
+            for factor, value in zip(feed_factors, feed_values):
+                prices[int(factor.key)] = value
+            sim_index[feed_values] = len(scenarios)
+            scenarios.append(replace(base, name=f"{base.name}_s{len(scenarios) + 1:03d}", feed_prices=prices))
+    return points, scenarios, sim_index
+
+
 def run_sensitivity(
     base: Scenario,
     factors: list[Factor],
@@ -108,21 +132,7 @@ def run_sensitivity(
     should_cancel: Callable[[], bool] | None = None,
 ) -> dict[str, Any]:
     """Roda a análise e devolve ``{"columns", "rows", "effects"}``. Levanta ``Cancelled`` se ``should_cancel()`` for verdadeiro."""
-    check_plan(factors, method, n)
-    points = sample_points(factors, method, n, seed)
-
-    # Cenários que exigem simulação: combinações únicas dos preços de alimentos.
-    feed_factors = [f for f in factors if not f.is_milk]
-    sim_index: dict[tuple[float, ...], int] = {}
-    scenarios: list[Scenario] = []
-    for point in points:
-        feed_values = tuple(round(v, 4) for v, f in zip(point, factors) if not f.is_milk)
-        if feed_values not in sim_index:
-            prices = dict(base.feed_prices)
-            for factor, value in zip(feed_factors, feed_values):
-                prices[int(factor.key)] = value
-            sim_index[feed_values] = len(scenarios)
-            scenarios.append(replace(base, name=f"{base.name}_s{len(scenarios) + 1:03d}", feed_prices=prices))
+    points, scenarios, sim_index = plan_scenarios(base, factors, method, n, seed)
 
     done = 0
     total = len(scenarios)

@@ -22,6 +22,7 @@ import { DEFAULT_SENS_LIMITS, maxLevels, sensitivityPlan, sensitivityProblem } f
 import type { RunMeta, SensFactor, SensFactorState as FactorState, SensResult } from '@/lib/types'
 import { useApp } from '@/providers/AppProvider'
 import { simulationBody } from '@/views/CowView'
+import SensLinearRationCard from '@/views/sensitivity/LinearRationCard'
 import SensResults from '@/views/sensitivity/Results'
 
 const METHODS = [
@@ -289,7 +290,7 @@ export default function SensitivityView() {
 
           {sens ? (
             <div id='resultados' className='scroll-mt-24'>
-              <SensResults result={sens} stale={stale} base={base} years={params.years} cowNum={params.cowNum} />
+              <SensResults result={sens} stale={stale} base={base} years={params.years} cowNum={params.cowNum} linear={<SensLinearRationCard sensKey={sensKey} stale={stale} />} />
             </div>
           ) : running ? (
             <ResultsSkeleton />

@@ -35,6 +35,7 @@ REQUIREMENT_MAP = {
     "DMIest_requirement": "dry_matter",
 }
 MIN_BODY_WEIGHT = 50.0
+SAMPLE_RESOLUTION = "normal"  # com o consumo fixo a busca normal custa pouco mais que a rápida e fecha casos em que a rápida parava 0,6% acima
 RESOLUTION = "rapida"  # a normal custa 2,5 vezes mais e muda o custo em menos de 0,1%
 
 
@@ -49,17 +50,26 @@ def _cow(requirements: Mapping[str, Any]) -> dict[str, Any]:
 
 def _solve(
     requirements: Mapping[str, Any], ids: Sequence[int], prices: Mapping[int, float], limits: Mapping[int, tuple[float, float]],
-    dmi_range: tuple[float, float] | None, should_stop: Callable[[], bool] | None,
+    dmi_range: tuple[float, float] | None, should_stop: Callable[[], bool] | None, resolution: str = RESOLUTION,
 ) -> dict[str, Any] | None:  # fmt: skip
     cow = _cow(requirements)
     overrides = {name: float(requirements[key]) for key, name in REQUIREMENT_MAP.items()}
     required = compute_requirements("NRC", "LAC_COW", cow, overrides, "LAC_COW")
     problem = build_problem("NRC", "LAC_COW", "LAC_COW", cow, list(ids), prices, limits, required, dmi_range)
-    best, _ = search(problem, RESOLUTION, None, should_stop)
+    best, _ = search(problem, resolution, None, should_stop)
     if best is None:
         return None
     amounts = _amounts(problem, best.x)
     check = _check(problem, "LAC_COW", cow, "LP", amounts, prices, limits)
+    if dmi_range is not None and dmi_range[0] == dmi_range[1]:
+        # Mesmo consumo: o consumo é o que o SLSQP escolheu e não é do LP. Nos dados reais o SLSQP passou do teto de +30% em até 0,7%
+        # de um intervalo (``dmi_max``); isso não é defeito da ração do LP, então a faixa de consumo não entra na conferência.
+        skip = ("dmi_min", "dmi_max")
+        check = {
+            **check,
+            "constraints": [c for c in check["constraints"] if c.get("id") not in skip],
+            "violated": [v for v in check["violated"] if v not in skip],
+        }
     return {
         "cost": best.cost,
         "dmi": float(best.x.sum()),
@@ -105,6 +115,8 @@ def compare_with_simulation(
 
     total = 2 * steps
     done = 0
+    if on_progress:
+        on_progress(0, total)  # a barra já mostra o total antes do primeiro intervalo (sem "Na fila…")
 
     def one(index: int) -> dict[str, Any]:
         nonlocal done
@@ -181,3 +193,56 @@ def _summary(intervals: Sequence[dict[str, Any]], ids: Sequence[int]) -> dict[st
     summary["slsqp_mean_amounts"] = {str(i): mean(lambda r, k=str(i): r["slsqp"]["amounts"].get(k, 0.0)) for i in ids}
     return summary
 
+
+def sample_indices(steps: int, sample: int) -> list[int]:
+    """``sample`` intervalos igualmente espaçados, do primeiro ao último (todos, se ``sample`` >= ``steps``)."""
+    if sample >= steps:
+        return list(range(steps))
+    if sample <= 1:
+        return [0]
+    return sorted({round(i * (steps - 1) / (sample - 1)) for i in range(sample)})
+
+
+def compare_sample(
+    simulation: Any,
+    feed_ids: Sequence[int],
+    prices: Mapping[int, float],
+    limits: Mapping[int, tuple[float, float]],
+    sample: int = 4,
+    should_stop: Callable[[], bool] | None = None,
+) -> dict[str, Any]:
+    """Versão curta de ``compare_with_simulation`` para muitas simulações (Sensibilidade): só a variante de **mesmo consumo**
+    (a conservadora) e só ``sample`` intervalos igualmente espaçados.
+
+    Devolve o custo médio por vaca por dia do SLSQP e do LP nos intervalos usados (ponderado pelos dias), a diferença em % e se
+    todas as rações do LP atendem às restrições originais do RuFaS.
+    """
+    ids = sorted({int(i) for i in feed_ids})
+    steps = len(simulation.requirements)
+    if not steps or len(simulation.ration_kg_per_cow) != steps:
+        raise ValueError("A simulação não traz as exigências e a ração por intervalo.")
+    price = {i: float(prices[i]) for i in ids}
+    bounds = {i: (float(limits[i][0]), float(limits[i][1])) if i in limits else (0.0, 100.0) for i in ids}
+    lengths = _interval_lengths(simulation.interval_days, len(simulation.days))
+    rows = []
+    for index in sample_indices(steps, sample):
+        ration = simulation.ration_kg_per_cow[index]
+        amounts = {str(k): float(v) for k, v in ration.items() if k != "dry_matter_intake_total" and float(v) > 0}
+        dmi = float(ration.get("dry_matter_intake_total") or sum(amounts.values()))
+        slsqp_cost = sum(v * price.get(int(k), 0.0) for k, v in amounts.items())
+        lp = _solve(simulation.requirements[index], ids, price, bounds, (dmi, dmi), should_stop, SAMPLE_RESOLUTION)
+        rows.append({"day": int(simulation.interval_days[index]), "days": lengths[index], "slsqp": slsqp_cost, "lp": lp})
+    usable = [r for r in rows if r["lp"] is not None]
+    days = sum(r["days"] for r in usable)
+    if not days:
+        return {"intervals_sampled": len(rows), "intervals_used": 0}
+    slsqp = sum(r["slsqp"] * r["days"] for r in usable) / days
+    lp_cost = sum(r["lp"]["cost"] * r["days"] for r in usable) / days
+    return {
+        "intervals_sampled": len(rows),
+        "intervals_used": len(usable),
+        "slsqp_cost": slsqp,
+        "lp_cost": lp_cost,
+        "diff_pct": (lp_cost / slsqp - 1) * 100 if slsqp else 0.0,
+        "verified": all(r["lp"]["verified"] for r in usable),
+    }

@@ -23,6 +23,7 @@ from .history import base_run, clean_folders, delete_run, get_run, list_runs, re
 from .jobs import Job, JobManager
 from .module.api import compare_payload, defaults_payload, evaluate_payload, optimize_payload, requirements_payload
 from .module.pen_lp import compare_with_simulation
+from .module.sens_lp import compare_sensitivity
 from .prices import import_prices
 from .ration_balance import build_balance
 from .ration_checks import composition, consistency_checks, summarize
@@ -200,6 +201,25 @@ def lp_ration_work(job: Job) -> dict[str, Any]:
     return result
 
 
+def sens_lp_work(job: Job) -> dict[str, Any]:
+    """Ração linear (LP) × ração do RuFaS em cada cenário da análise de sensibilidade (as simulações vêm do cache)."""
+    scenario, economics = scenario_from(job.params, f"web_{job.id}")
+    factors = [Factor(str(f["key"]), str(f["label"]), float(f["low"]), float(f["high"])) for f in job.params["factors"]]
+
+    def progress(done: int, total: int) -> None:
+        job.done, job.total = done, total
+
+    return compare_sensitivity(
+        scenario,
+        factors,
+        economics,
+        method=job.params.get("method", "grid"),
+        n=int(job.params.get("n", 2)),
+        on_progress=progress,
+        should_cancel=lambda: job.cancel_requested,
+    )
+
+
 def sensitivity_work(job: Job) -> dict[str, Any]:
     scenario, economics = scenario_from(job.params, f"web_{job.id}")
     factors = [Factor(str(f["key"]), str(f["label"]), float(f["low"]), float(f["high"])) for f in job.params["factors"]]
@@ -326,6 +346,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(JOBS.submit("simulate", body, with_history("simulation", simulate_work)).public(include_result=False), 202)
             if path == "/api/jobs/sensitivity":
                 return self._json(JOBS.submit("sensitivity", body, with_history("sensitivity", sensitivity_work)).public(include_result=False), 202)
+            if path == "/api/jobs/sens-lp-ration":
+                return self._json(JOBS.submit("sens-lp-ration", body, sens_lp_work).public(include_result=False), 202)
             if path == "/api/jobs/lp-ration":
                 return self._json(JOBS.submit("lp-ration", body, lp_ration_work).public(include_result=False), 202)
             if path == "/api/jobs/optimize":
