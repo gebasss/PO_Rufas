@@ -12,6 +12,9 @@
 > **Comparação na simulação (7.7, 17/11/2026):** o LP, resolvido sobre as exigências de cada intervalo de uma simulação real,
 > empata com o SLSQP do RuFaS (diferença de −0,04% no custo da ração).
 >
+> **Comparação na sensibilidade (7.8, 17/11/2026):** em 27 simulações com preços muito diferentes o LP empata com o SLSQP (nunca
+> custou mais que 0,012% além dele e custou 0,13% a 0,41% menos em 5).
+>
 > **Ainda não implementado:** o laço de redução de leite sobre LPs (7.6), a leitura automática de indicadores do CEPEA (7.2; há
 > importação de preços por CSV) e o que a seção 8 deixa em aberto com o professor. Onde um fato não foi verificado, o texto diz
 > **"a verificar"**; onde a decisão é nossa e ainda precisa de confirmação, diz **"(a confirmar)"**.
@@ -468,6 +471,33 @@ O que o LP acrescenta não é um custo menor, e sim (a) um resultado que **não 
 2,0% mais e uma execução não ficou viável; (b) os **preços-sombra** (Ruminante Singular); e (c) a formulação **linear** pedida pelo
 professor, com o erro de linearização medido (seção 6). Em tempo, o LP é **mais lento**: 4 a 8 s por problema (resolução rápida)
 contra 0,16 a 0,21 s do SLSQP.
+
+### 7.8 Comparação em cada cenário da sensibilidade (17/11/2026)
+
+Na tela Sensibilidade, depois de uma análise, o LP é resolvido para cada **simulação** da análise (cada combinação de preços de
+alimentos; cenários que só diferem no preço do leite compartilham a simulação), sobre as exigências que o RuFaS usou em **4 intervalos**
+igualmente espaçados, só na variante de **mesmo consumo** (a conservadora de 7.7), e comparado com a ração do SLSQP
+(`backend/dietopt/module/sens_lp.py` e `pen_lp.compare_sample`; FSD, A.15). As simulações vêm do cache da análise. A busca do LP usa a
+resolução **normal** (a rápida da 7.7 chegou a parar 0,6% acima em um caso; com o consumo fixo a normal custa pouco mais).
+
+**Resultados.** Medido em 17/11/2026 em três análises de 9 simulações cada (grade de 3 níveis; 7 alimentos, 100 vacas, 1 ano, NRC, preços ilustrativos), com a busca normal do LP e 4 intervalos por simulação. A diferença é `custo do LP / custo do SLSQP − 1` (negativa = o LP custa menos):
+
+| Análise | Fatores (faixa) | Custo da ração (US$/vaca/dia) | Diferença do LP (média; mínimo a máximo) | Empates (até 0,1%) |
+|---|---|---|---|---|
+| A | Silagem de milho imatura (0,045 a 0,135), silagem de leguminosa (0,06 a 0,18) e leite | de 2,13 a 5,28 | +0,0008%; −0,0003% a +0,0064% | 9 de 9 |
+| B | Farelo de soja (0,275 a 0,825), farelo de arroz (0,125 a 0,375) e leite | de 3,16 a 4,00 | −0,012%; −0,133% a +0,012% | 8 de 9 (o LP custa menos em 1) |
+| C | Farinha de sangue (0,55 a 1,65), farelo de soja (0,275 a 0,825) e leite | de 3,43 a 4,08 | −0,123%; −0,413% a +0,008% | 5 de 9 (o LP custa menos em 4) |
+
+**O empate se mantém quando os preços mudam muito**: o custo da ração varia de 2,13 a 5,28 US$/vaca/dia entre as simulações e a diferença
+média entre o LP e o SLSQP fica entre −0,12% e +0,001%. Nas 27 simulações o LP **nunca** custou mais que 0,012% além do SLSQP e custou
+**menos** (de 0,13% a 0,41%) em 5; 22 empataram. Todas as rações do LP atendem às
+restrições originais do RuFaS (no mesmo consumo, a faixa de consumo não entra na conferência, porque o consumo é o do SLSQP: em um
+intervalo ele passou do teto de +30% do RuFaS em 0,7%).
+
+**A resolução da busca importa.** Com a busca *rápida* (a da aba Ração linear da Vaca leiteira) uma simulação da análise B ficou com o LP
+**0,59% acima** do SLSQP; com a busca normal o mesmo caso ficou em +0,012% (e na fina, +0,006%), por apenas cerca de 15% mais tempo no
+mesmo consumo (17,6 s contra 15,4 s para 4 intervalos). A busca do LP é heurística (grade de escalares mais refinamento), não um ótimo
+certificado; por isso a Sensibilidade usa a normal. De 20 a 45 s por simulação (4 intervalos).
 
 ---
 

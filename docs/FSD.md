@@ -87,7 +87,7 @@ O repositório contém também a implementação de referência que este FSD des
 | Ferramentas de build da interface | Node 20.9 ou superior e npm (observado: Node 24.18, npm 11.16); só para quem altera a interface |
 | Dados de referência | Tabelas CSV e JSON do RuFaS (`NRC_comp.csv`, `user_feeds.csv`, exemplo `freestall`) e constantes do código |
 | Instalação e execução | `scripts/setup.ps1` (PowerShell), `scripts/fetch_wheels.py`, `scripts/build-web.ps1`, `iniciar.bat` |
-| Testes automatizados | `pytest`, 272 testes em `backend/tests/` |
+| Testes automatizados | `pytest`, 281 testes em `backend/tests/` |
 | Banco de dados, ORM, framework web de backend, autenticação | Nenhum |
 
 **Padrão arquitetural:** ponte local em três camadas. O navegador (site estático) comunica-se por HTTP/JSON com um servidor Python em loopback, que delega a simulação a um processo filho do RuFaS e a leitura de seus arquivos de saída.
@@ -153,7 +153,7 @@ Itens que não existem e não devem ser assumidos, nem implementados sem decisã
 | Servidor local (`server.py`) | Processo Python de longa duração | API JSON, arquivos estáticos, montagem de cenários a partir das requisições |
 | Gerenciador de tarefas (`jobs.py`) | Threads do servidor | Executa simulações e sensibilidades em segundo plano, uma por vez |
 | Ruminante Singular (`module/`) | Servidor | Modelo linear das restrições, avaliação e comparação de dietas, dieta ótima por PL e preços-sombra |
-| Ração linear × RuFaS (`module/pen_lp.py`) | Servidor | Resolve o LP sobre as exigências de cada intervalo de uma simulação e compara com a ração do SLSQP (A.14) |
+| Ração linear × RuFaS (`module/pen_lp.py`, `sens_lp.py`) | Servidor | Resolve o LP sobre as exigências de cada intervalo de uma simulação (A.14) ou de cada simulação de uma análise de sensibilidade (A.15) e compara com a ração do SLSQP |
 | Adaptador do RuFaS (`rufas_adapter.py`) | Servidor | Escreve entradas do RuFaS, executa-o, detecta falha |
 | Leitor de saídas (`rufas_results.py`) | Servidor | Filtros de saída e conversão dos JSONs em `SimulationResult` |
 | Economia e cache (`scenarios.py`) | Servidor | Preços padrão, receita, custo, margem, cache |
@@ -219,7 +219,7 @@ aplicacao RuFaS/
       sensitivity.py          Sensibilidade e Spearman
       lactation.py            Curva de Wood e marcos
       feeds.py                Biblioteca NRC e tetos padrão
-    tests/                    272 testes (pytest)
+    tests/                    281 testes (pytest)
   web/                        Fontes da interface (Next.js)
     src/app, src/views, src/components, src/providers, src/hooks, src/lib
     package.json, package-lock.json, next.config.ts, LICENSE-TEMPLATE.md
@@ -327,7 +327,7 @@ aplicacao RuFaS/
 | Modificar o código do RuFaS | O RuFaS é usado como está. |
 | Hospedagem em nuvem, vários usuários, várias fazendas | O sistema é local e individual. |
 | CI/CD, ambiente de homologação, fluxo de revisão do repositório Git | Não existem (seção 27). |
-| Testes automatizados de integração e de interface | Não existem; só os 272 testes do back-end. |
+| Testes automatizados de integração e de interface | Não existem; só os 281 testes do back-end. |
 
 ---
 
@@ -543,6 +543,8 @@ A comparação com a simulação-base (variação da melhor margem e linha trace
 
 Estimativa: pontos = `n^k` (grade, k = fatores marcados) ou `n` (latin); simulações = `n^(fatores de alimento)` (grade), ou `n` (latin, com ao menos um fator de alimento; só o leite = 1); tempo = `⌈simulações × 17 s ÷ 60⌉` minutos, no mínimo 1 (D2).
 
+**Aba Ração linear** (depois das abas dos resultados; só nesta tela, não no detalhe de uma execução): botão **Comparar com a ração linear**, progresso e Cancelar, quatro indicadores, gráfico da diferença do custo por simulação, tabela e o quadro "Como ler esta comparação". Especificação na seção A.15.
+
 ### 10.7 Tela 5: Premissas e limites (`/sobre`)
 
 Cinco cartões de texto, em duas colunas a partir de 1.280 px (o terceiro ocupa as duas):
@@ -588,6 +590,7 @@ Servidor HTTP em `http://127.0.0.1:8000` (porta e endereço configuráveis por `
 | `GET /api/jobs/<id>` | — | 200: tarefa com `result`; 404 `{"error": "job não encontrado"}` |
 | `POST /api/jobs/simulate` | `{ feeds: [ids], prices?, limits?, milk_price?, years?, max_milk_reduction?, seed?, cow_num? }` | 202: tarefa (`id`, `kind`, `status`, `done`, `total`, `error`, `created`, `finished`), sem resultado |
 | `POST /api/jobs/sensitivity` | O mesmo corpo de simulação mais `{ factors: [{ key, label, low, high }], method?, n?, workers? }` | 202: tarefa, sem resultado. A tarefa termina em `error` ("A análise exigiria N simulações do RuFaS; o limite é 100…") se o tamanho passa dos limites da seção 15.2, e em `cancelled` se for cancelada |
+| `POST /api/jobs/sens-lp-ration` | O mesmo corpo da sensibilidade | 202: tarefa, sem resultado; o resultado é o da seção A.15 (ração linear × RuFaS em cada cenário) |
 | `POST /api/jobs/lp-ration` | O mesmo corpo de simulação | 202: tarefa, sem resultado; o resultado é o da seção A.14 (ração linear × RuFaS na simulação) |
 | `POST /api/jobs/<id>/cancel` | — | 200: tarefa; a sensibilidade e a comparação com a ração linear param antes do próximo passo |
 | qualquer outro `POST` | — | 404 `{"error": "rota não encontrada"}` |
@@ -1123,7 +1126,7 @@ O sistema é considerado implementado quando:
 
 | `test_module_evaluate.py` | Avaliação de dietas: oferta linear = oferta do RuFaS no ponto, erro fora do ponto, razões exatas, `min` da proteína, categorias, ordenação, replicações do RuFaS, entradas inválidas |
 
-Total: 272 testes passando. Integração real com o RuFaS e interface foram verificadas manualmente, **sem teste automatizado**.
+Total: 281 testes passando. Integração real com o RuFaS e interface foram verificadas manualmente, **sem teste automatizado**.
 
 ---
 
@@ -1772,6 +1775,67 @@ contra 0,16 a 0,21 s do SLSQP.
 **Testes** (`test_pen_lp.py`): a ração do LP não custa mais que 0,2% além do SLSQP e atende às restrições originais; o mesmo
 consumo vale o do SLSQP; soma ponderada pelas vacas e pelos dias; intervalos sem LP viável; duração dos intervalos; padrão NASEM,
 alimento sem preço e simulação sem exigências recusados; cancelamento; progresso; faixa de consumo fixa no problema original.
+
+### A.15 Ração linear × ração do RuFaS em cada cenário da Sensibilidade (implementado em 17/11/2026, RF-32)
+
+**O que o usuário faz.** Na tela Sensibilidade, depois de uma análise, a aba **Ração linear** tem o botão **Comparar com a ração linear**.
+O servidor refaz a lista de cenários da análise (mesmo método, níveis e fatores), acha as simulações no cache e, para cada **simulação**
+(cada combinação de preços de alimentos), resolve o LP sobre as exigências que o RuFaS usou e compara com a ração que o SLSQP formulou.
+Mostra se o empate da Vaca leiteira (A.14) se mantém quando os preços mudam. Não roda novas simulações (se faltar alguma no cache, é
+simulada). A tarefa mostra "n de N cenários" e pode ser cancelada.
+
+**Como é calculado.** Em cada simulação, 4 intervalos de ração igualmente espaçados (o primeiro, o último e os intermediários); em cada um,
+o LP de **mesmo consumo** (o do SLSQP naquele intervalo; a variante conservadora de A.14) com a busca de resolução **normal**, conferido com
+as restrições originais do RuFaS (tolerância relativa de 1e-5). O custo de cada simulação é a média, ponderada pelos dias, do custo da ração
+formulada (preço × quantidade) nos intervalos usados; a diferença é `custo do LP / custo do SLSQP − 1`, em %.
+
+**Resultado na tela.** Quatro indicadores (economia média do LP, melhor caso, pior caso e empates, até 0,1%; a economia é positiva quando o linear custa
+menos, o contrário de `diff_pct`); gráfico **Economia do LP no custo da ração, por simulação** (barras divergentes, verde = o linear custa menos,
+eixo de −1% a +1%, com a alternância para tabela); tabela com os preços dos fatores, o custo do RuFaS, o do LP, a economia e se as restrições foram
+atendidas; e o quadro "Como ler esta comparação", que diz que o
+esperado é um empate. O resultado fica no estado compartilhado e vale para a análise em que foi calculado; mudando os fatores ou os
+parâmetros, a tela pede para comparar outra vez. A aba existe só na tela, não no detalhe de uma execução.
+
+**API.** `POST /api/jobs/sens-lp-ration`, com o mesmo corpo de `POST /api/jobs/sensitivity`; tarefa em segundo plano (202), progresso em `done`
+e `total` (um passo por simulação) e cancelamento por `POST /api/jobs/<id>/cancel`; fora do histórico. O resultado traz `standard`, `sample` (4),
+`rows` e `summary`:
+
+| Campo | Conteúdo |
+|---|---|
+| `rows[]` | `cenarios` (S1, S2… que compartilham a simulação), `precos` (por fator de alimento), `intervals_sampled`, `intervals_used`, `slsqp_cost`, `lp_cost`, `diff_pct`, `verified`; ou `erro` se a simulação do RuFaS falhou |
+| `summary` | `scenarios`, `compared`, `failed`, `mean_diff_pct`, `min_diff_pct`, `max_diff_pct`, `lp_cheaper`, `tie`, `lp_dearer`, `all_verified`, `tie_pct` (0,1) |
+
+**Regras.**
+- Só vale para o padrão **NRC** (outro padrão é recusado: "A comparação com a ração linear só está disponível para o padrão NRC.").
+- Simulações que falharam no RuFaS ficam na tabela como "falhou" e fora das médias; intervalos sem ração viável no LP ficam fora do custo da simulação, e uma
+  simulação sem nenhum é mostrada como "sem ração viável no LP".
+- Os cenários vêm de `sensitivity.plan_scenarios`, a mesma função da análise (semente 42), então a numeração S1..SN coincide.
+- O consumo do SLSQP em um intervalo pode passar do teto de +30% do RuFaS (medido: 0,7%); no mesmo consumo a faixa de consumo não entra
+  na conferência das restrições, para não reprovar a ração do LP por um consumo que não é dela.
+- O LP não é um ótimo certificado: a busca é heurística. Com a resolução rápida um caso ficou 0,59% acima; por isso esta comparação usa a normal
+  (de 20 a 45 s por simulação).
+
+**Resultado esperado e medido.** Medido em 17/11/2026 em três análises de 9 simulações cada (grade de 3 níveis; 7 alimentos, 100 vacas, 1 ano, NRC, preços ilustrativos), com a busca normal do LP e 4 intervalos por simulação. A diferença é `custo do LP / custo do SLSQP − 1` (negativa = o LP custa menos):
+
+| Análise | Fatores (faixa) | Custo da ração (US$/vaca/dia) | Diferença do LP (média; mínimo a máximo) | Empates (até 0,1%) |
+|---|---|---|---|---|
+| A | Silagem de milho imatura (0,045 a 0,135), silagem de leguminosa (0,06 a 0,18) e leite | de 2,13 a 5,28 | +0,0008%; −0,0003% a +0,0064% | 9 de 9 |
+| B | Farelo de soja (0,275 a 0,825), farelo de arroz (0,125 a 0,375) e leite | de 3,16 a 4,00 | −0,012%; −0,133% a +0,012% | 8 de 9 (o LP custa menos em 1) |
+| C | Farinha de sangue (0,55 a 1,65), farelo de soja (0,275 a 0,825) e leite | de 3,43 a 4,08 | −0,123%; −0,413% a +0,008% | 5 de 9 (o LP custa menos em 4) |
+
+**O empate se mantém quando os preços mudam muito**: o custo da ração varia de 2,13 a 5,28 US$/vaca/dia entre as simulações e a diferença
+média entre o LP e o SLSQP fica entre −0,12% e +0,001%. Nas 27 simulações o LP **nunca** custou mais que 0,012% além do SLSQP e custou
+**menos** (de 0,13% a 0,41%) em 5; 22 empataram. Todas as rações do LP atendem às
+restrições originais do RuFaS (no mesmo consumo, a faixa de consumo não entra na conferência, porque o consumo é o do SLSQP: em um
+intervalo ele passou do teto de +30% do RuFaS em 0,7%).
+
+**A resolução da busca importa.** Com a busca *rápida* (a da aba Ração linear da Vaca leiteira) uma simulação da análise B ficou com o LP
+**0,59% acima** do SLSQP; com a busca normal o mesmo caso ficou em +0,012% (e na fina, +0,006%), por apenas cerca de 15% mais tempo no
+mesmo consumo (17,6 s contra 15,4 s para 4 intervalos). A busca do LP é heurística (grade de escalares mais refinamento), não um ótimo
+certificado; por isso a Sensibilidade usa a normal. De 20 a 45 s por simulação (4 intervalos).
+
+**Testes** (`test_sens_lp.py`): amostra de intervalos, simulações compartilhadas entre cenários que só diferem no preço do leite, comparação curta
+de mesmo consumo, agrupamento e falhas, resumo (empates e extremos), resumo sem comparação, progresso e cancelamento e padrão NASEM recusado.
 
 ### A.8 Alterações previstas em outras partes deste documento (quando implementado)
 

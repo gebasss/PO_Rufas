@@ -406,6 +406,7 @@ tempo; `RunButton` no rodapé). **Resultados em abas:**
 | Visão geral | Indicadores (melhor margem com variação contra a simulação-base, pior, amplitude, cenários com resultado); **margem por cenário** (barras, o ótimo em verde vivo e a linha tracejada do base); **distribuição das margens** (histograma); ração do cenário ótimo |
 | Fatores | **Efeito de cada fator** em tornado (barras divergentes ordenadas por \|ρ\| de Spearman; verde sobe a margem, vermelho reduz); **margem em função de um fator** (dispersão com um ponto por cenário, com seletor do fator) |
 | Cenários | Tabela de cenários, com o ótimo destacado e **Res** em mapa de calor |
+| Ração linear | Botão **Comparar com a ração linear** (`RunButton` com Cancelar), quatro indicadores (economia média, melhor caso, pior caso e empates), **economia do LP no custo da ração, por simulação** (barras divergentes de −1% a +1%, verde = o linear custa menos, com tabela) e o quadro "Como ler esta comparação" (`views/sensitivity/LinearRationCard.tsx`) |
 
 A linha tracejada e a variação só aparecem quando há uma simulação-base **com o mesmo período** (a margem cresce com os
 anos). Cenário que falha mostra "falhou" (causa na dica); leite perdido aparece em âmbar.
