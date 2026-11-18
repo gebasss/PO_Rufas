@@ -17,10 +17,15 @@ import type {
 /** Máximo de dietas por avaliação (o mesmo limite do back-end, `MAX_DIETS`). */
 export const MAX_DIETS = 10
 
-export const STANDARDS: { value: NutrientStandard; label: string; hint: string }[] = [
-  { value: 'NASEM', label: 'NASEM 2021', hint: 'principal' },
-  { value: 'NRC', label: 'NRC 2001', hint: 'apoio' }
-]
+/** O Ruminante Singular usa só o NASEM 2021 (o NRC 2001 saiu da tela; o back-end ainda o aceita, a Vaca leiteira o usa). */
+export const MODULE_STANDARD: NutrientStandard = 'NASEM'
+
+/** Cenário (arquivo ou execução duplicada) de outro padrão não abre nesta tela: as bibliotecas e os campos da vaca são outros. */
+export function assertModuleStandard(data: { standard: NutrientStandard }) {
+  if (data.standard !== MODULE_STANDARD) {
+    throw new Error('Este cenário usa o padrão NRC 2001, que não está mais disponível no Ruminante Singular (só o NASEM 2021).')
+  }
+}
 
 export const CATEGORIES: { value: ModuleCategory; label: string }[] = [
   { value: 'LAC_COW', label: 'Vaca em lactação' },
@@ -124,7 +129,7 @@ export const RESOLUTIONS: { value: OptimizationResolution; label: string; hint: 
 
 export function initialModuleState(): ModuleState {
   return {
-    standard: 'NASEM',
+    standard: MODULE_STANDARD,
     category: 'LAC_COW',
     animalType: 'LAC_COW',
     cow: { ...SAMPLE_COWS.LAC_COW },
@@ -147,9 +152,11 @@ export function initialModuleState(): ModuleState {
 
 /** Estado da tela Avaliar dietas a partir de um cenário (arquivo aberto ou execução duplicada); os resultados começam vazios. */
 export function moduleStateFromScenario(data: ModuleScenario): ModuleState {
+  assertModuleStandard(data)
+
   return {
     ...initialModuleState(),
-    standard: data.standard,
+    standard: MODULE_STANDARD,
     category: data.category,
     animalType: data.animalType,
     cow: data.cow,

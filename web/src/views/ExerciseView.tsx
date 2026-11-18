@@ -9,7 +9,7 @@ export default function ExerciseView() {
     <>
       <PageHeader
         title='Ruminante Singular'
-        description='Compara dietas já montadas para uma vaca real: exigências do NASEM (ou do NRC), restrições lineares calculadas pelas equações do RuFaS, custo em dólares e ranking das dietas.'
+        description='Compara dietas já montadas para uma vaca real: exigências do NASEM 2021, restrições lineares calculadas pelas equações do RuFaS, custo em dólares e ranking das dietas.'
       />
       <ModuleView />
     </>

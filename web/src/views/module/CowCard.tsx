@@ -2,7 +2,7 @@
 
 import { RotateCcwIcon } from 'lucide-react'
 
-import { Segmented } from '@/components/Segmented'
+import { Badge } from '@/components/ui/badge'
 import { NumberInput } from '@/components/shared'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -12,9 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { nf } from '@/lib/format'
-import type { ModuleCategory, ModuleDefaults, ModuleField, ModuleRequirements, NutrientStandard } from '@/lib/types'
+import type { ModuleCategory, ModuleDefaults, ModuleField, ModuleRequirements } from '@/lib/types'
 
-import { ANIMAL_TYPES, CATEGORIES, HOUSING_LABELS, STANDARDS, standardName, type ModuleState } from './model'
+import { ANIMAL_TYPES, CATEGORIES, HOUSING_LABELS, standardName, type ModuleState } from './model'
 
 interface Props {
   state: ModuleState
@@ -24,7 +24,6 @@ interface Props {
   requirementsLoading: boolean
   requirementsError: string | null
   problems: string[]
-  onStandard: (value: NutrientStandard) => void
   onCategory: (value: ModuleCategory) => void
   onAnimalType: (value: string) => void
   onCow: (key: string, value: number | string) => void
@@ -92,7 +91,6 @@ export default function CowCard({
   requirementsLoading,
   requirementsError,
   problems,
-  onStandard,
   onCategory,
   onAnimalType,
   onCow,
@@ -114,8 +112,8 @@ export default function CowCard({
       <CardHeader>
         <CardTitle>Vaca</CardTitle>
         <CardDescription>
-          Padrão nutricional, categoria e características do animal. Os valores iniciais são um exemplo: troque-os pelos da
-          vaca real.
+          Categoria e características do animal, com as exigências do NASEM 2021. Os valores iniciais são um exemplo: troque-os
+          pelos da vaca real.
         </CardDescription>
       </CardHeader>
       <CardContent className='space-y-6'>
@@ -123,12 +121,7 @@ export default function CowCard({
           <div className='space-y-1.5'>
             <Label>Padrão nutricional</Label>
             <div>
-              <Segmented
-                label='Padrão nutricional'
-                value={state.standard}
-                options={STANDARDS}
-                onChange={onStandard}
-              />
+              <Badge variant='secondary'>{standardName(state.standard)}</Badge>
             </div>
           </div>
           <div className='min-w-56 space-y-1.5'>

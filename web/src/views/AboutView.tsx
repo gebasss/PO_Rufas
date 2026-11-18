@@ -31,8 +31,7 @@ export default function AboutView() {
         <Section title='Como o sistema funciona' description='Do cenário à margem.'>
           <li>
             O <Strong>Ruminante Singular</Strong> avalia dietas já montadas para uma vaca real, com as exigências do{' '}
-            <Strong>NASEM (2021)</Strong> ou da <Strong>NRC (2001)</Strong>, e sugere a de menor custo por programação linear,
-            comparando-a com o RuFaS.
+            <Strong>NASEM (2021)</Strong>, e sugere a de menor custo por programação linear, comparando-a com o RuFaS.
           </li>
           <li>
             Na <Strong>Vaca leiteira</Strong> você escolhe alimentos, preços e limites e o sistema roda o <Strong>RuFaS</Strong>,
