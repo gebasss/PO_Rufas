@@ -18,7 +18,6 @@ import type {
   ModuleOptimization,
   ModuleScenario,
   ModuleRequirements,
-  NutrientStandard,
   OptimizationResolution
 } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -202,11 +201,6 @@ export default function ModuleView() {
   }, [online, defaults, feeds, cowProblemList, state, library])
 
   // ---- ações
-  const changeStandard = (standard: NutrientStandard) => {
-    setNotice(null)
-    patch({ standard, result: null, resultKey: null })
-  }
-
   // Trocar de categoria ou de tipo de animal muda os campos da vaca: volta ao exemplo do novo tipo.
   const resetCow = (category: ModuleCategory, animalType: string) =>
     patch({ category, animalType, cow: { ...SAMPLE_COWS[animalType] }, override: {}, result: null, resultKey: null })
@@ -341,8 +335,10 @@ export default function ModuleView() {
   })
 
   const loadScenario = (data: ModuleScenario) => {
+    const next = moduleStateFromScenario(data) // recusa cenário de outro padrão (o erro vira aviso no ScenarioFile)
+
     setNotice(null)
-    setState(moduleStateFromScenario(data))
+    setState(next)
   }
 
   const optimize = async () => {
@@ -408,7 +404,6 @@ export default function ModuleView() {
             requirementsLoading={requirementsLoading}
             requirementsError={requirementsError}
             problems={cowProblemList}
-            onStandard={changeStandard}
             onCategory={changeCategory}
             onAnimalType={changeAnimalType}
             onCow={setCow}

@@ -304,17 +304,12 @@ export function RankingView({ result, selected, onSelect, optimalCost }: ViewPro
             </CardDescription>
           </CardHeader>
           <CardContent className='space-y-4'>
-            <div className='grid grid-cols-2 gap-3 lg:grid-cols-4'>
+            <div className='grid grid-cols-2 gap-3 lg:grid-cols-3'>
               <KpiCard label='Consumo de MS' value={`${nf(detail.intake.dry_matter, 2)} kg/dia`} />
               <KpiCard label='TDN da dieta' value={detail.intake.tdn_percentage === null ? '—' : `${nf(detail.intake.tdn_percentage, 1)}%`} />
               <KpiCard
                 label='Concentrado na dieta'
                 value={detail.intake.concentrate_percentage === null ? '—' : `${nf(detail.intake.concentrate_percentage, 1)}%`}
-              />
-              <KpiCard
-                label='Desconto de ingestão (NRC)'
-                value={detail.intake.intake_discount === null ? '—' : nf(detail.intake.intake_discount, 3)}
-                hint={detail.intake.intake_discount === null ? 'só existe no padrão NRC' : '1 = sem desconto'}
               />
             </div>
             {detail.warnings.length > 0 && (
