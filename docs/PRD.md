@@ -1,7 +1,7 @@
 # Documento de Requisitos do Produto (PRD)
 
 **Produto:** Dieta Ótima com RuFaS
-**Versão do documento:** 0.25 (rascunho para avaliação)
+**Versão do documento:** 0.26 (rascunho para avaliação)
 **Data:** 02/11/2026
 **Status:** Versão web implementada; documento em revisão
 **Autor(es):** _[a preencher]_
@@ -927,3 +927,4 @@ próprio RuFaS.
 | 0.23 | 16/11/2026 | _[a preencher]_ | Consolidação dos documentos: `DESIGN.md` reescrito como fonte única da linguagem visual (tokens atuais, seis telas, componentes, gráficos por saída, decisões de produto da repaginação e contraste medido, com as lacunas do tema claro); `DECISOES_TECNICAS.md` arquivado, com as decisões e o que não inventar incorporados ao FSD (3.1 e 3.2); contagens de testes (261) e de telas (seis) corrigidas no PRD e no FSD; referências atualizadas. |
 | 0.24 | 17/11/2026 | _[a preencher]_ | Vaca leiteira (RF-31, FSD A.14): aba **Ração linear**, que compara a ração do SLSQP do RuFaS com a do modelo linear (LP) sobre as exigências de cada intervalo da simulação; medido: empate (−0,04% no custo da ração), com o LP independente do ponto inicial aleatório; só NRC. |
 | 0.25 | 17/11/2026 | _[a preencher]_ | Sensibilidade (RF-32, FSD A.15): aba **Ração linear**, que compara a ração do SLSQP do RuFaS com a do modelo linear (LP) em cada simulação da análise; medido em 27 simulações: empate (o LP nunca custou mais que 0,012% além do SLSQP), e a busca normal do LP substitui a rápida nesta comparação; só NRC. |
+| 0.26 | 18/11/2026 | _[a preencher]_ | Comparações do LP com o RuFaS (RF-29, RF-31 e RF-32): **avisos** e **conclusão curta** no topo dos resultados da Vaca leiteira, da Sensibilidade, da Dieta ótima e da Linearização; na Sensibilidade, aviso de fatores sem efeito (todas as simulações com o mesmo custo: a comparação vale por uma só). |

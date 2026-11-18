@@ -8,12 +8,14 @@ import { toast } from 'sonner'
 import { DivergingBars } from '@/components/charts'
 import ChartCard from '@/components/ChartCard'
 import RunButton, { type RunState } from '@/components/RunButton'
+import LpVerdict from '@/components/LpVerdict'
 import { KpiCard } from '@/components/shared'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { cancelJob, JobCancelledError, runJob } from '@/lib/api'
 import { nf, shortName, signedPct, usd } from '@/lib/format'
+import { sensVerdict } from '@/lib/lpConclusion'
 import type { SensLpResult } from '@/lib/types'
 import { useApp } from '@/providers/AppProvider'
 
@@ -93,6 +95,7 @@ export default function SensLinearRationCard({ sensKey, stale }: Props) {
   }
 
   const summary = result?.summary
+  const verdict = result ? sensVerdict(result) : null
   const compared = (result?.rows ?? []).filter(row => row.intervals_used)
   const label = (row: SensLpResult['rows'][number]) =>
     row.cenarios.length > 1 ? `${row.cenarios[0]} a ${row.cenarios[row.cenarios.length - 1]}` : row.cenarios[0]
@@ -137,6 +140,8 @@ export default function SensLinearRationCard({ sensKey, stale }: Props) {
             </p>
           )}
 
+          {verdict && <LpVerdict verdict={verdict} />}
+
           <div className='grid gap-3 sm:grid-cols-2 2xl:grid-cols-3'>
             <KpiCard
               tone='primary'
@@ -167,19 +172,6 @@ export default function SensLinearRationCard({ sensKey, stale }: Props) {
               hint={`diferença de até ${nf(summary.tie_pct, 1)}%; LP mais barato em ${summary.lp_cheaper} e mais caro em ${summary.lp_dearer}`}
             />
           </div>
-
-          {(summary.failed > 0 || !summary.all_verified) && (
-            <Alert>
-              <InfoIcon />
-              <AlertTitle>Atenção</AlertTitle>
-              <AlertDescription>
-                <ul className='list-disc pl-4'>
-                  {summary.failed > 0 && <li>{summary.failed} simulação(ões) do RuFaS falharam e ficaram fora da comparação.</li>}
-                  {!summary.all_verified && <li>Alguma ração do LP não atendeu a uma restrição original do RuFaS: confira a tabela.</li>}
-                </ul>
-              </AlertDescription>
-            </Alert>
-          )}
 
           <ChartCard
             title='Economia do LP no custo da ração, por simulação'

@@ -232,6 +232,15 @@ ponto percentual (de +0,001% a -0,12%), o LP nunca custou mais que 0,012% além 
 reproduz o comportamento do RuFaS em toda a faixa de preços analisada e, nos casos em que difere, é igual ou levemente melhor.
 
 
+4.8 Caso em que a comparação da Sensibilidade não diz nada (18/11/2026)
+Na sensibilidade de 18/11 (id 20261118-111113-0001 do histórico: 18 alimentos, 200 vacas, 2 anos, fatores farinha de alfafa 0,3 a 0,9 e farinha de
+sangue 0,7 a 2,1 e preço do leite), a aba Ração linear mostrou 0,000% em tudo e "9 de 9" empates. Reprodução: o mesmo corpo de /api/jobs/sens-lp-ration
+(o "params" do histórico) por compare_sensitivity, com o cache do usuário; 136 s. Resultado: as 9 simulações têm exatamente o mesmo custo no RuFaS e no LP
+(1,830856 US$/vaca/dia; diferença de -0,000002%). Causa: com 18 alimentos e vários mais baratos (silagem de milho a 0,035), nenhum dos dois alimentos
+variados entra na ração; mudar o preço de um alimento que não é usado não muda a ração, e os dois métodos acham a mesma. O resultado está certo, mas
+equivale a uma só comparação. A interface passou a avisar nesse caso (todas as simulações com o mesmo custo) e a mostrar uma conclusão curta em todas as
+abas que comparam o LP com o RuFaS (Vaca leiteira, Sensibilidade, Dieta ótima e Linearização do Ruminante Singular).
+
 ======================================================================================================================
 5. Conclusões prévias
 ======================================================================================================================

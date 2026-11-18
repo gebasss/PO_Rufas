@@ -7,6 +7,7 @@ import { AlertTriangleIcon, CheckCircle2Icon, DownloadIcon, ScaleIcon, XCircleIc
 import { ToneBars, type ToneDatum } from '@/components/charts'
 import ChartCard from '@/components/ChartCard'
 import { ResultsSkeleton } from '@/components/EmptyState'
+import LpVerdict from '@/components/LpVerdict'
 import { Segmented } from '@/components/Segmented'
 import { KpiCard, NumberInput } from '@/components/shared'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -17,6 +18,7 @@ import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { downloadText } from '@/lib/download'
 import { nf, shortName, signedPct } from '@/lib/format'
+import { linearizationVerdict } from '@/lib/lpConclusion'
 import { cn } from '@/lib/utils'
 import type { ComparisonDiet, ComparisonProbe, ComparisonRow, ModuleComparison } from '@/lib/types'
 
@@ -255,6 +257,8 @@ export default function CompareCard({
 
       {report && detail && (
         <div className={cn('space-y-6 transition-opacity', (running || stale) && 'opacity-60')}>
+          <LpVerdict verdict={linearizationVerdict(report)} />
+
           <div className='grid gap-3 sm:grid-cols-2 2xl:grid-cols-4'>
             <KpiCard
               icon={ScaleIcon}

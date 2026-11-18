@@ -8,12 +8,14 @@ import { toast } from 'sonner'
 import { SeriesLegend, TimeSeries } from '@/components/charts'
 import ChartCard from '@/components/ChartCard'
 import RunButton, { type RunState } from '@/components/RunButton'
+import LpVerdict from '@/components/LpVerdict'
 import { KpiCard } from '@/components/shared'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { cancelJob, JobCancelledError, runJob } from '@/lib/api'
 import { nf, shortName, usd } from '@/lib/format'
+import { cowVerdict } from '@/lib/lpConclusion'
 import type { LpRationResult, LpRationVariant, SimResult } from '@/lib/types'
 import { useApp } from '@/providers/AppProvider'
 
@@ -93,6 +95,7 @@ export default function LinearRationCard({ sim, simKey, stale }: Props) {
   }
 
   const summary = result?.summary
+  const verdict = result ? cowVerdict(result, Number(sim.summary.reducao_leite ?? 0)) : null
   const same = summary?.lp_same
   const free = summary?.lp_free
   const slsqp = summary?.slsqp_cost_per_cow_day ?? 0
@@ -156,6 +159,8 @@ export default function LinearRationCard({ sim, simKey, stale }: Props) {
             </p>
           )}
 
+          {verdict && <LpVerdict verdict={verdict} />}
+
           <div className='grid gap-3 sm:grid-cols-2 2xl:grid-cols-3'>
             <KpiCard
               icon={CoinsIcon}
@@ -197,20 +202,6 @@ export default function LinearRationCard({ sim, simKey, stale }: Props) {
               hint='o consumo pode subir até o limite do RuFaS'
             />
           </div>
-
-          {result.warnings.length > 0 && (
-            <Alert>
-              <InfoIcon />
-              <AlertTitle>Atenção</AlertTitle>
-              <AlertDescription>
-                <ul className='list-disc pl-4'>
-                  {result.warnings.map(text => (
-                    <li key={text}>{text}</li>
-                  ))}
-                </ul>
-              </AlertDescription>
-            </Alert>
-          )}
 
           <ChartCard
             title='Custo da ração por intervalo'
