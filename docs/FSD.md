@@ -1889,13 +1889,16 @@ arroz em grão. Sem RF-24, o módulo funciona só no padrão NRC.
 
 ### B.2 Interface
 
+**Padrão único (decisão de 18/11/2026).** O Ruminante Singular usa **só o NASEM 2021**: a tela não tem mais a escolha do padrão (o cartão Vaca mostra o selo "NASEM 2021"), e um cenário salvo ou uma execução duplicada de outro padrão (NRC) é recusado com a mensagem "Este cenário usa o padrão NRC 2001, que não está mais disponível no Ruminante Singular (só o NASEM 2021)". O back-end continua aceitando `standard` = `NRC` (a Vaca leiteira, a Sensibilidade e as comparações do LP com o RuFaS usam o NRC pelas mesmas rotas e funções); só a interface deste painel deixou de oferecê-lo.
+
+
 O módulo é a **tela 1 (Ruminante Singular)**. O exercício simples que ela tinha antes (e o seletor que alternava entre os dois) foi retirado em 11/11/2026.
 
 - A tela tem quatro cartões, em ordem:
 
 | Cartão | Conteúdo |
 |---|---|
-| **Vaca** | Padrão nutricional (NASEM ou NRC); categoria (B.3); campos da vaca (B.3); exigências calculadas, com a opção de **sobrescrever** cada uma |
+| **Vaca** | Padrão nutricional (fixo em NASEM 2021, mostrado como selo); categoria (B.3); campos da vaca (B.3); exigências calculadas, com a opção de **sobrescrever** cada uma |
 | **Dietas** | Tabela de dietas montadas: nome e quantidades (kg MS/dia) por alimento (B.4); botões **+ Dieta** e **Remover** |
 | **Preços** | US$/kg MS por alimento, com valor original, unidade, moeda, câmbio e base (B.5) |
 | **Resultado** | Botão **Avaliar dietas**; **ranking** das dietas; detalhe por restrição de uma dieta escolhida; erro de linearização |

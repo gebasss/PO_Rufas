@@ -356,11 +356,11 @@ Se uma tolerância falhar: repetir o ponto fixo; se persistir, passar à técnic
 | Grupo | Conteúdo | Fonte |
 |---|---|---|
 | **Vaca** | As características da seção 3.2 (peso, paridade, dias em lactação, produção e composição do leite, gestação, escore de condição corporal, alojamento, distância, etc.) e a **categoria** (seção 2) | Usuário |
-| **Exigências** | Calculadas pelo RuFaS (NASEM) para a vaca informada; o usuário pode **sobrescrever** | NASEM (principal), NRC (apoio) |
+| **Exigências** | Calculadas pelo RuFaS (NASEM) para a vaca informada; o usuário pode **sobrescrever** | NASEM (a tela do Ruminante Singular só oferece o NASEM desde 18/11/2026; o módulo ainda aceita o NRC, usado nas comparações da Vaca leiteira e da Sensibilidade) |
 | **Restrições** | Fibra, gordura, consumo, proteína, cálcio e fósforo (seções 4.1 a 4.6) | Constantes do RuFaS; Tabela 5-1 do NASEM como verificação |
 | **Dieta** | Uma ou várias dietas **já montadas**: lista de alimentos com `x_i` (kg MS/dia) | Usuário |
 | **Preços** | Por alimento, em US$ (seção 7.2) | CEPEA |
-| **Padrão** | NASEM (principal) ou NRC | Usuário |
+| **Padrão** | NASEM (fixo na tela; o NRC só no back-end) | Sistema |
 
 ### 7.2 Preços (CEPEA, em dólares)
 

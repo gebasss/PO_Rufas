@@ -18,7 +18,7 @@ com as exigências do **NASEM (2021)** ou da **NRC (2001)**.
 
 | Tela | O que faz |
 |---|---|
-| 1 · Ruminante Singular | Avalia dietas já montadas para uma vaca real (NASEM ou NRC): custo, restrições lineares e ranking; compara o modelo linear com o RuFaS e sugere a dieta ótima por programação linear. |
+| 1 · Ruminante Singular | Avalia dietas já montadas para uma vaca real (NASEM 2021): custo, restrições lineares e ranking; compara o modelo linear com o RuFaS e sugere a dieta ótima por programação linear. |
 | 2 · Vaca leiteira (RuFaS) | Escolha de alimentos NRC (130), preços e limites. Roda o RuFaS (~30 s por ano simulado) e mostra margem, ração, exigências e leite. |
 | 3 · Curva de lactação | Curva de Wood por paridade (parâmetros calibrados pelo RuFaS), com PEV, gestação e secagem ajustáveis. |
 | 4 · Sensibilidade (RuFaS) | Varia preços de alimentos e do leite (grade ou hipercubo latino), roda o RuFaS e monta a tabela de cenários e o efeito (Spearman) de cada fator. |
