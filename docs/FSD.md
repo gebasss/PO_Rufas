@@ -1720,7 +1720,9 @@ cenário vem do cache (se não estiver, é simulado antes). A tarefa mostra o pr
 | Consumo livre | Qualquer um da faixa que o RuFaS permite (estimativa ± 30%) | Mostra o que o LP faria com a mesma liberdade do SLSQP |
 | Mesmo consumo | O que o SLSQP escolheu naquele intervalo | A comparação mais conservadora; é a que vale se as vacas não comerem mais que isso |
 
-**Resultado na tela.** Cinco indicadores (custo da ração do RuFaS, do LP de mesmo consumo e do LP de consumo livre, em US$ por vaca
+**Resultado na tela.** No topo, os **avisos** e a **conclusão** (`cowVerdict`): aviso se a simulação perdeu leite (as exigências já vêm reduzidas), se algum
+intervalo ficou sem ração viável no LP ou se alguma ração do LP não atendeu a uma restrição original; conclusão "empate" (a ração linear a menos de 0,1% do RuFaS
+no mesmo consumo), "o método linear foi mais barato" ou "o RuFaS foi mais barato", com a economia em % e em US$ no rebanho. Depois, cinco indicadores (custo da ração do RuFaS, do LP de mesmo consumo e do LP de consumo livre, em US$ por vaca
 por dia, com a variação em relação ao RuFaS, e a diferença do rebanho nas duas variantes: RuFaS menos LP, positiva quando o LP custa
 menos); gráfico **Custo da ração por intervalo** (três linhas, com a alternância para tabela, que traz também se as restrições
 originais foram atendidas); tabela **Ração média** (kg de MS por vaca por dia, por alimento, e consumo total); e o quadro
@@ -1789,7 +1791,11 @@ o LP de **mesmo consumo** (o do SLSQP naquele intervalo; a variante conservadora
 as restrições originais do RuFaS (tolerância relativa de 1e-5). O custo de cada simulação é a média, ponderada pelos dias, do custo da ração
 formulada (preço × quantidade) nos intervalos usados; a diferença é `custo do LP / custo do SLSQP − 1`, em %.
 
-**Resultado na tela.** Quatro indicadores (economia média do LP, melhor caso, pior caso e empates, até 0,1%; a economia é positiva quando o linear custa
+**Resultado na tela.** No topo, os **avisos** e a **conclusão** (`sensVerdict`). O aviso principal é o dos **fatores sem efeito**: se todas as simulações
+têm o mesmo custo do RuFaS (custos iguais até a quarta casa decimal), os alimentos variados não entram na ração, a comparação vale por uma só e a
+tela pede para variar alimentos que a ração usa (com conclusão "sem informação nova"); há também o aviso de poucos custos distintos (menos da metade das simulações),
+de simulações do RuFaS que falharam e de ração do LP fora de uma restrição original. A conclusão é "empate" (todas a menos de 0,1%), "o método linear nunca foi pior"
+(nenhuma simulação com o LP mais caro que 0,1%, e quantas o LP custou menos), "o RuFaS foi mais barato" ou "resultado misto". Depois, quatro indicadores (economia média do LP, melhor caso, pior caso e empates, até 0,1%; a economia é positiva quando o linear custa
 menos, o contrário de `diff_pct`); gráfico **Economia do LP no custo da ração, por simulação** (barras divergentes, verde = o linear custa menos,
 eixo de −1% a +1%, com a alternância para tabela); tabela com os preços dos fatores, o custo do RuFaS, o do LP, a economia e se as restrições foram
 atendidas; e o quadro "Como ler esta comparação", que diz que o
@@ -2041,6 +2047,8 @@ quantidades escaladas por 0,95 e 1,05 (só a classe A; vazio nas classes L e E).
 
 ### B.8 Comparação com o RuFaS (RF-29)
 
+*Conclusão e avisos* (`linearizationVerdict`, no topo do cartão): "a linearização reproduz o RuFaS" quando a igualdade no ponto confere e nenhuma restrição passa da tolerância; "linearização aproximada fora do ponto" (quantas restrições e dietas passaram, o pior caso) ou "diverge" se a igualdade no ponto falha; avisos se a igualdade no ponto falha ou se o estado (viável ou violada) difere em alguma sonda de ±5%.
+
 - **Fase 1 (implementada em 03/11/2026, etapa E6; `module/compare.py`):** para a mesma vaca, o mesmo lote e a mesma dieta, comparar a oferta e a folga de cada restrição **linearizada**
   com a **original do RuFaS** (as funções `NutritionSupplyCalculator.*`, chamadas diretamente; **verificado** em 01/11/2026: o estudo numérico de `LINEARIZACAO.md`, seção 10, já as chamou assim).
   Relatório: erro por restrição e por dieta, com as tolerâncias de `LINEARIZACAO.md`, seção 6.
@@ -2083,6 +2091,9 @@ quantidades escaladas por 0,95 e 1,05 (só a classe A; vazio nas classes L e E).
 Sugere a dieta de **menor custo** entre os alimentos da tabela de dietas, para a mesma vaca, com as mesmas restrições, e a compara
 com o otimizador do RuFaS. O método está em `LINEARIZACAO.md`, 5.1b e 7.6 (LP por ponto de uma grade de escalares globais).
 
+- **Avisos e conclusão** (`optimalVerdict`), no topo do resultado: aviso se não se pediu nenhuma execução do RuFaS (0 sementes), se nenhuma ou só parte das execuções
+  ficou viável e se a dieta do LP viola uma restrição original; conclusão "empate" (o LP a menos de 0,1% do melhor SLSQP, com quanto a pior execução do RuFaS custou a mais),
+  "o método linear foi mais barato" (o SLSQP parou em um ótimo local) ou "o RuFaS achou custo menor" (a busca do LP é heurística: aumentar a resolução).
 - **Tela:** cartão "Dieta ótima" depois do Resultado: resolução da busca (rápida ≈ 5 s, normal ≈ 15 s, fina ≈ 1 min), número de
   execuções do RuFaS (0 a 30; padrão 5), botão **Calcular dieta ótima** e **Cancelar**, com barra de progresso. Mostra o custo, o
   consumo, o TDN% e o % de concentrado, o regime (TDN% abaixo ou a partir de 60), a ração (kg MS/dia e % da dieta), a conferência com

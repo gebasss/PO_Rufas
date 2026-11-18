@@ -306,6 +306,7 @@ visuais abaixo.
 | `NumberInput` | `shared.tsx` | Campo numérico controlado (vazio vira `NaN`; ver `finite()`); aceita `aria-label` |
 | `JobProgress` | `shared.tsx` | Barra de progresso com texto "n de N simulações"; hoje sem uso (o progresso vive no `RunButton`) |
 | `heat()` | `shared.tsx` | Cor de fundo proporcional ao valor, para tabelas de cenários (8% a 40% da cor, ver _Acessibilidade_) |
+| `LpVerdict` | `LpVerdict.tsx` | Avisos (âmbar) e conclusão curta (esmeralda para empate ou o método linear melhor, âmbar para o RuFaS melhor, neutra quando diz pouco) no topo dos resultados das comparações do LP com o RuFaS: Ração linear (Vaca leiteira e Sensibilidade), Dieta ótima e Linearização do Ruminante Singular; a lógica, uma função por tela, está em `lib/lpConclusion.ts` |
 | `RunButton` | `RunButton.tsx` | Botão de executar com quatro estados: pronto (claro), executando (barra de progresso dentro do botão, "n de N"), concluído (esmeralda, "ver resultados", com "executar de novo") e erro (vermelho, "tentar de novo") |
 | `ChartCard` | `ChartCard.tsx` | Cartão de gráfico com a alternância **gráfico / tabela** |
 | `EmptyState`, `ResultsSkeleton` | `EmptyState.tsx` | Estado vazio (ícone, título e os passos do fluxo) e esqueleto dos resultados enquanto a execução roda |
