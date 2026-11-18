@@ -6,6 +6,7 @@ import { DivergingBars, ScatterPlot, ShareBars } from '@/components/charts'
 import ChartCard from '@/components/ChartCard'
 import { ResultsSkeleton } from '@/components/EmptyState'
 import { feedTitle } from '@/components/FeedPicker'
+import LpVerdict from '@/components/LpVerdict'
 import { NumberInput, KpiCard } from '@/components/shared'
 import { Segmented } from '@/components/Segmented'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -16,6 +17,7 @@ import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { nf, shortName, signedPct, usd } from '@/lib/format'
+import { optimalVerdict } from '@/lib/lpConclusion'
 import { cn } from '@/lib/utils'
 import type { Feed, ModuleOptimization, OptimizationResolution } from '@/lib/types'
 
@@ -65,6 +67,7 @@ export default function OptimalCard({
 }: Props) {
   const name = (id: string | number) => (library[Number(id)] ? feedTitle(library[Number(id)]) : `Alimento ${id}`)
   const diet = result?.diet
+  const verdict = result ? optimalVerdict(result) : null
   const rufas = result?.rufas
   const bestRun = rufas?.runs.find(run => run.seed === rufas.best_seed) ?? null
   const rows = diet
@@ -250,6 +253,8 @@ export default function OptimalCard({
               </AlertDescription>
             </Alert>
           )}
+
+          {verdict && <LpVerdict verdict={verdict} />}
 
           <div className='grid gap-3 sm:grid-cols-2 2xl:grid-cols-4'>
             <KpiCard tone='primary' icon={WalletIcon} label='Custo' value={usd(diet.cost, 2)} hint='por vaca e por dia' />
