@@ -1,7 +1,7 @@
 CONCLUSÕES PRÉVIAS
 Dieta Ótima com RuFaS (Pesquisa Operacional)
 Registro dos resultados encontrados, por data, com os comandos usados e as conclusões.
-Última atualização: 17/11/2026. Documento de trabalho, não é especificação: os requisitos estão no PRD e no FSD.
+Última atualização: 17/11/2026 (noite). Documento de trabalho, não é especificação: os requisitos estão no PRD e no FSD.
 
 Convenções
 - Todos os comandos rodam na raiz do projeto, no PowerShell ou no Git Bash do Windows.
@@ -171,11 +171,73 @@ o mesmo cache errado e foi descartada junto com a primeira (3.3). O que vale é 
 
 
 ======================================================================================================================
-4. Conclusões prévias
+4. 17/11/2026 (noite) - Ração linear na Sensibilidade: o empate se mantém quando os preços mudam?
+======================================================================================================================
+
+4.1 Equações usadas na Sensibilidade
+Já verificadas em 3.1: cada cenário da análise roda o RuFaS completo (SLSQP e curva de Wood). O sistema só sorteia os cenários e calcula o
+Spearman e a variação em US$; nada linear.
+
+4.2 O que foi feito
+- Rota nova POST /api/jobs/sens-lp-ration (mesmo corpo de /api/jobs/sensitivity): refaz a lista de cenários com sensitivity.plan_scenarios (a mesma
+  função da análise), acha cada simulação no cache e compara a ração do SLSQP com a do LP sobre as exigências que o RuFaS usou em 4 intervalos
+  igualmente espaçados, só com o mesmo consumo (backend\dietopt\module\sens_lp.py e pen_lp.compare_sample). Cada ração do LP é conferida com as
+  restrições originais do RuFaS.
+- Aba "Ração linear" na tela Sensibilidade (web\src\views\sensitivity\LinearRationCard.tsx).
+- Testes: cd backend; ..\.venv\Scripts\python -m pytest tests\test_sens_lp.py -q   (8 passando); suíte completa: 281 passando.
+
+4.3 Comandos das medições
+- Servidor de teste: cd backend; ..\.venv\Scripts\python -m dietopt.server --port 8011
+- Análise (rota /api/jobs/sensitivity) e comparação (rota /api/jobs/sens-lp-ration) com o mesmo corpo do Apêndice A, acrescido de
+  "factors" (key, label, low, high), "method": "grid" e "n": 3; consulta de GET /api/jobs/<id> até "done".
+  Análise A: silagem de milho imatura (id 50, 0,045 a 0,135), silagem de leguminosa (id 110, 0,06 a 0,18) e preço do leite (0,36 a 0,54).
+  Análise B: farelo de soja (id 167, 0,275 a 0,825), farelo de arroz (id 138, 0,125 a 0,375) e preço do leite (0,36 a 0,54).
+  Análise C (a que a interface propõe por padrão): farinha de sangue (id 23, 0,55 a 1,65), farelo de soja (id 167, 0,275 a 0,825) e leite.
+  Cada uma tem 27 cenários e 9 simulações. Tempo da comparação: cerca de 130 a 200 s nas análises A e B (15 a 22 s por simulação) e cerca
+  de 6 a 7 min na C, pela interface (as rações com farinha de sangue deixam a busca do LP mais lenta).
+
+4.4 Resultados (busca normal do LP, 4 intervalos por simulação, mesmo consumo)
+  Análise  Custo da ração (US$/vaca/dia)  Diferença do LP: média; mínimo a máximo   Empates (até 0,1%)
+  A        de 2,13 a 5,28                 +0,0008%; -0,0003% a +0,0064%              9 de 9
+  B        de 3,16 a 4,00                 -0,012%; -0,133% a +0,012%                 8 de 9 (o LP custa menos em 1)
+  C        de 3,43 a 4,08                 -0,123%; -0,413% a +0,008%                 5 de 9 (o LP custa menos em 4)
+- Nas 27 simulações o LP nunca custou mais que 0,012% além do SLSQP e custou menos (de 0,13% a 0,41%) em 5; 22 empataram.
+- Todas as rações do LP atendem às restrições originais do RuFaS; nenhuma simulação do RuFaS falhou.
+- Mesmo com o preço de um alimento variando três vezes (custo da ração de 2,13 a 5,28), a diferença entre o LP e o SLSQP continua em
+  centésimos de ponto percentual.
+
+4.5 Achado sobre a resolução da busca do LP
+Na primeira rodada da análise B, com a busca RÁPIDA, a simulação do cenário S25 a S27 (farelo de soja 0,825 e farelo de arroz 0,375) ficou com
+o LP 0,59% acima do SLSQP (4,0217 contra 3,9981). Comando: script que chama compare_sample na simulação do cache com a resolução trocada
+(pen_lp.SAMPLE_RESOLUTION = "rapida" | "normal" | "fina").
+  Resolução   Diferença do LP   Tempo (4 intervalos, mesmo consumo)
+  rápida      +0,59%            15,4 s
+  normal      +0,012%           17,6 s
+  fina        +0,006%           26,5 s
+Conclusão: a busca do LP é heurística (grade de escalares mais refinamento), não um ótimo certificado. Com o consumo fixo a busca normal custa
+cerca de 15% mais que a rápida e fecha o caso; por isso a Sensibilidade usa a normal. A aba da Vaca leiteira (variante de consumo livre, em que a
+normal custa 2,5 vezes mais) continua com a rápida, e ali a diferença por intervalo chegou a +0,27% no dia 30 (seção 3.4).
+
+4.6 Um achado sobre o consumo do SLSQP
+Na análise C, a simulação S25 a S27 (sangue 1,65 e soja 0,825) apareceu como "conferir": no 4º intervalo amostrado o LP de mesmo consumo violava
+o teto de consumo (dmi_max) em 0,22 kg (0,68%). A causa não é a ração do LP: o consumo é o do SLSQP, que ali ficou 0,68% acima do teto de +30% que
+o próprio RuFaS impõe (32,44 kg contra 32,22 kg). Comando: script que refaz o LP do intervalo e lista as restrições violadas (nesta simulação,
+só dmi_max). Correção: no mesmo consumo, a faixa de consumo não entra na conferência das restrições (pen_lp._solve); as demais seguem valendo.
+Conclusão: o SLSQP do RuFaS pode devolver uma ração levemente fora das restrições do próprio RuFaS, e, nos casos em que o LP custa menos com a
+ração viável, o SLSQP parou acima do ótimo; o LP atende às restrições.
+
+4.7 Conclusão desta seção
+O empate medido na Vaca leiteira (seção 3) se mantém em 27 simulações com preços muito diferentes: nenhuma diferença média passou de décimos de
+ponto percentual (de +0,001% a -0,12%), o LP nunca custou mais que 0,012% além do SLSQP e custou de 0,13% a 0,41% menos em 5 delas. O método linear
+reproduz o comportamento do RuFaS em toda a faixa de preços analisada e, nos casos em que difere, é igual ou levemente melhor.
+
+
+======================================================================================================================
+5. Conclusões prévias
 ======================================================================================================================
 1. Fora do Ruminante Singular, o sistema roda as equações padrão do RuFaS: Vaca leiteira usa o SLSQP não linear e a curva de
    Wood; a Curva de lactação é a curva de Wood do RuFaS; a Sensibilidade repete simulações do RuFaS. O modelo linear existe só no
-   Ruminante Singular.
+   Ruminante Singular; a Vaca leiteira e a Sensibilidade têm, além disso, uma aba que compara a ração do RuFaS com a do modelo linear.
 2. No custo da ração, o método linear EMPATA com o SLSQP do RuFaS; não é melhor. Em uma simulação real de 1 ano a diferença foi de
    -0,04% (4,0219 para 4,0201 US$/vaca/dia), cerca de US$ 58 por ano no rebanho. O SLSQP do RuFaS já chega perto do ótimo da ração
    (em 100 execuções, a mediana igualou o mínimo). O resultado de 03/11/2026 (+0,008%) vai na mesma direção.
@@ -190,18 +252,24 @@ o mesmo cache errado e foi descartada junto com a primeira (3.3). O que vale é 
 6. Limite do método de comparação: a ração do LP não pode ser simulada de volta no RuFaS sem alterá-lo (3.2); a comparação usa as
    exigências que o RuFaS calculou e não re-simula o leite (o RuFaS só reduz o leite quando a ração não atende, e as rações do LP
    atendem).
-7. Limites de validade: só padrão NRC (o NASEM exige metano e nitrogênio urinário do lote, que a simulação não informa); um
-   cenário (7 alimentos, preços ilustrativos, 100 vacas, 1 ano); resolução rápida da busca do LP (a normal custa 2,5 vezes mais e
-   mudou o custo em menos de 0,1% no teste). Outros alimentos, preços e rebanhos podem dar outro resultado.
+7. Limites de validade: só padrão NRC (o NASEM exige metano e nitrogênio urinário do lote, que a simulação não informa); 7 alimentos,
+   preços ilustrativos, 100 vacas, 1 ano; a Vaca leiteira compara um cenário e a Sensibilidade, 27 simulações com preços muito
+   diferentes, mas só 4 intervalos por simulação. A busca do LP é heurística: com a resolução rápida (Vaca leiteira) a diferença por
+   intervalo chegou a +0,27%, e em um caso da Sensibilidade a rápida deu +0,59% (a normal, +0,012%; seção 4.5). Outros alimentos e
+   rebanhos podem dar outro resultado.
 8. Erro de procedimento registrado (3.3): a primeira medição usou o cache do cenário errado e deu uma vantagem de 9,1% que não
    existe. Os números inválidos não aparecem nos documentos do projeto; só neste registro.
 
+9. A Sensibilidade confirma o empate em outros preços (seção 4): em 27 simulações o LP nunca custou mais que 0,012% além do SLSQP e custou
+   de 0,13% a 0,41% menos em 5. Reforça o argumento (c) do item 4 (o modelo linear reproduz o RuFaS em toda a faixa de preços, e não só em um
+   cenário) e dá um ganho pequeno e real: onde o SLSQP para acima do ótimo (e, em um caso, até fora do teto de consumo do RuFaS, seção 4.6), o LP não.
+   Mesmo assim a economia é de décimos de ponto percentual, não de um custo menor de forma relevante.
+
 Próximos passos possíveis (não feitos)
-- Medir a mesma comparação em mais cenários (outros alimentos e preços, 2 anos, outros tamanhos de rebanho) para ver se o empate
-  se mantém.
+- Medir a mesma comparação em mais cenários (outros alimentos, 2 anos, outros tamanhos de rebanho); a Sensibilidade já cobre preços
+  muito diferentes em 27 simulações (seção 4).
 - Medir a variabilidade do SLSQP com mais intervalos e cenários, para quantificar a vantagem (a) do item 4.
 - Mostrar os preços-sombra na Vaca leiteira (hoje existem só no Ruminante Singular).
-- Atualizar o guia em Word da Vaca leiteira com a aba "Ração linear".
 
 
 ======================================================================================================================

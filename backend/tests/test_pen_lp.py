@@ -105,7 +105,7 @@ def test_cancelamento_interrompe_a_comparacao():
 def test_progresso_conta_duas_resolucoes_por_intervalo():
     steps = []
     compare_with_simulation(simulacao(), FEEDS, PRICES, LIMITS, on_progress=lambda done, total: steps.append((done, total)))
-    assert steps == [(1, 2), (2, 2)]
+    assert steps == [(0, 2), (1, 2), (2, 2)]
 
 
 def test_faixa_de_consumo_fixa_vale_no_lp_e_no_problema_original():
@@ -116,3 +116,14 @@ def test_faixa_de_consumo_fixa_vale_no_lp_e_no_problema_original():
     best, _ = optimize.search(problem, "rapida")
     assert best is not None
     assert float(best.x.sum()) == pytest.approx(29.0, rel=1e-6)
+
+
+def test_mesmo_consumo_acima_do_teto_do_rufas_nao_reprova_a_racao_do_lp():
+    """No mesmo consumo o consumo é do SLSQP (que chegou a passar do teto de +30% do RuFaS); só as demais restrições valem."""
+    from dietopt.module.pen_lp import _solve
+
+    teto = REQUIREMENTS["DMIest_requirement"] * 1.3
+    out = _solve(REQUIREMENTS, FEEDS, PRICES, LIMITS, (teto + 0.2, teto + 0.2), None)
+    assert out is not None
+    assert out["verified"] is True
+    assert "dmi_max" not in out["violated"]

@@ -19,6 +19,7 @@ import type {
   Feed,
   LpRationResult,
   Selected,
+  SensLpResult,
   SensResult,
   SensSetup,
   SimParams,
@@ -59,6 +60,9 @@ interface AppContextValue {
   /** Ração linear × RuFaS da simulação `key` (a mesma chave de `simKey`); de outra simulação = desatualizada. */
   lp: { key: string; result: LpRationResult } | null
   setLp: (value: { key: string; result: LpRationResult } | null) => void
+  /** Ração linear × RuFaS da análise `key` (a mesma chave de `sensKey`); de outra análise = desatualizada. */
+  sensLp: { key: string; result: SensLpResult } | null
+  setSensLp: (value: { key: string; result: SensLpResult } | null) => void
   sens: SensResult | null
   setSens: (value: SensResult | null) => void
   /** Parâmetros (serializados) com que `sens` foi calculada; diferente dos atuais = análise desatualizada. */
@@ -112,6 +116,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [sim, setSim] = useState<SimResult | null>(null)
   const [simKey, setSimKey] = useState<string | null>(null)
   const [lp, setLp] = useState<{ key: string; result: LpRationResult } | null>(null)
+  const [sensLp, setSensLp] = useState<{ key: string; result: SensLpResult } | null>(null)
   const [sens, setSens] = useState<SensResult | null>(null)
   const [sensKey, setSensKey] = useState<string | null>(null)
   const [sensSetup, setSensSetup] = useState<SensSetup>(INITIAL_SENS)
@@ -240,6 +245,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setLp(null)
     setSens(null)
     setSensKey(null)
+    setSensLp(null)
   }, [])
 
   const trackTask = useCallback((label: string): TaskHandle => {
@@ -273,6 +279,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSimKey,
     lp,
     setLp,
+    sensLp,
+    setSensLp,
     sens,
     setSens,
     sensKey,
