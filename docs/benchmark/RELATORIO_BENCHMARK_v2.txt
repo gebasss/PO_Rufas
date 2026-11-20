@@ -1,0 +1,71 @@
+BENCHMARK LP × SLSQP DO RuFaS — desenho v2
+Margem de equivalência: ±0,50% do custo; empate: até 0,1%. Resolução do LP: normal; 10 sementes do SLSQP por caso; semente dos preços: 20261120.
+Diferença = (custo do LP − custo do SLSQP) / custo do SLSQP, em %; negativa = o LP é mais barato. Custos ilustrativos (não são cotações).
+
+== NASEM 2021: 36 de 36 casos resolvidos (0 sem solução); dietas do LP que atendem às restrições do RuFaS: 36 de 36
+  LP contra o MELHOR SLSQP (de 10 sementes): n = 36; média 0,0247%, mediana 0,0000%, mín. -0,499%, máx. 0,482%
+    IC 90% (bootstrap) da média: -0,0128% a 0,0634%; TOST p = 0,0000; Wilcoxon p = 0,0013; LP mais barato / empate / LP mais caro: 1 / 31 / 4
+    Equivalência (TOST e IC 90% concordam) por margem: ±0,10%: sim; ±0,25%: sim; ±0,50%: sim; ±1,00%: sim
+  LP contra a MEDIANA do SLSQP: n = 36; média -0,0055%, mediana 0,0000%, mín. -0,733%, máx. 0,482%
+    IC 90% (bootstrap) da média: -0,0604% a 0,0456%; TOST p = 0,0000; Wilcoxon p = 0,7119; LP mais barato / empate / LP mais caro: 3 / 29 / 4
+    Equivalência (TOST e IC 90% concordam) por margem: ±0,10%: sim; ±0,25%: sim; ±0,50%: sim; ±1,00%: sim
+  LP contra UMA execução do SLSQP (semente 0): n = 36; média 0,0128%, mediana -0,0000%, mín. -0,561%, máx. 0,482%
+    IC 90% (bootstrap) da média: -0,0292% a 0,0544%; TOST p = 0,0000; Wilcoxon p = 0,7562; LP mais barato / empate / LP mais caro: 2 / 30 / 4
+    Equivalência (TOST e IC 90% concordam) por margem: ±0,10%: sim; ±0,25%: sim; ±0,50%: sim; ±1,00%: sim
+  Casos fora da margem (LP contra o melhor SLSQP): 0
+  Falhas do SLSQP: 1 de 360 execuções (0,3%), em 1 caso(s); o LP resolveu 36 de 36.
+  Entre sementes (execuções viáveis): a pior custa em média 0,154% e no máximo 2,172% mais que a melhor; CV médio 0,057%. Uma única execução custou mais que o LP além da margem em 1 casos.
+  Tempo (mediana): LP 11,3 s por problema; SLSQP 0,06 s por execução; razão 178×.
+  Efeito dos preços × efeito do método: o custo ótimo varia de 75% (média por vaca; máx. 84%) entre os conjuntos de preços; a diferença entre os métodos é de 0,0525% em média (máx. 0,499%).
+  VEREDITO (margem ±0,50%): EQUIVALENTE
+
+== NRC 2001: 36 de 36 casos resolvidos (0 sem solução); dietas do LP que atendem às restrições do RuFaS: 36 de 36
+  LP contra o MELHOR SLSQP (de 10 sementes): n = 36; média -0,1230%, mediana 0,0000%, mín. -1,153%, máx. 0,483%
+    IC 90% (bootstrap) da média: -0,2243% a -0,0290%; TOST p = 0,0000; Wilcoxon p = 0,9632; LP mais barato / empate / LP mais caro: 9 / 21 / 6
+    Equivalência (TOST e IC 90% concordam) por margem: ±0,10%: não; ±0,25%: sim; ±0,50%: sim; ±1,00%: sim
+  LP contra a MEDIANA do SLSQP: n = 36; média -0,1695%, mediana 0,0000%, mín. -1,243%, máx. 0,483%
+    IC 90% (bootstrap) da média: -0,2838% a -0,0622%; TOST p = 0,0000; Wilcoxon p = 0,2746; LP mais barato / empate / LP mais caro: 11 / 19 / 6
+    Equivalência (TOST e IC 90% concordam) por margem: ±0,10%: não; ±0,25%: não; ±0,50%: sim; ±1,00%: sim
+  LP contra UMA execução do SLSQP (semente 0): n = 36; média -0,1847%, mediana 0,0000%, mín. -1,214%, máx. 0,483%
+    IC 90% (bootstrap) da média: -0,3056% a -0,0732%; TOST p = 0,0000; Wilcoxon p = 0,1858; LP mais barato / empate / LP mais caro: 11 / 19 / 6
+    Equivalência (TOST e IC 90% concordam) por margem: ±0,10%: não; ±0,25%: não; ±0,50%: sim; ±1,00%: sim
+  Casos fora da margem (LP contra o melhor SLSQP): 6
+    NRC-primipara-p3: -1,153% (regime do LP: sem_desconto)
+    NRC-alta-p4: -0,931% (regime do LP: sem_desconto)
+    NRC-primipara-p1: -0,858% (regime do LP: sem_desconto)
+    NRC-alta-p3: -0,738% (regime do LP: sem_desconto)
+    NRC-final-p4: -0,590% (regime do LP: sem_desconto)
+    NRC-media-p3: -0,560% (regime do LP: sem_desconto)
+  Falhas do SLSQP: 12 de 360 execuções (3,3%), em 7 caso(s); o LP resolveu 36 de 36.
+  Entre sementes (execuções viáveis): a pior custa em média 0,214% e no máximo 2,287% mais que a melhor; CV médio 0,077%. Uma única execução custou mais que o LP além da margem em 8 casos.
+  Tempo (mediana): LP 14,5 s por problema; SLSQP 0,10 s por execução; razão 152×.
+  Efeito dos preços × efeito do método: o custo ótimo varia de 73% (média por vaca; máx. 75%) entre os conjuntos de preços; a diferença entre os métodos é de 0,2100% em média (máx. 1,153%).
+  VEREDITO (margem ±0,50%): EQUIVALENTE
+
+== Os dois padrões juntos: 72 de 72 casos resolvidos (0 sem solução); dietas do LP que atendem às restrições do RuFaS: 72 de 72
+  LP contra o MELHOR SLSQP (de 10 sementes): n = 72; média -0,0491%, mediana 0,0000%, mín. -1,153%, máx. 0,483%
+    IC 90% (bootstrap) da média: -0,1051% a 0,0037%; TOST p = 0,0000; Wilcoxon p = 0,0434; LP mais barato / empate / LP mais caro: 10 / 52 / 10
+    Equivalência (TOST e IC 90% concordam) por margem: ±0,10%: não; ±0,25%: sim; ±0,50%: sim; ±1,00%: sim
+  LP contra a MEDIANA do SLSQP: n = 72; média -0,0875%, mediana 0,0000%, mín. -1,243%, máx. 0,483%
+    IC 90% (bootstrap) da média: -0,1521% a -0,0263%; TOST p = 0,0000; Wilcoxon p = 0,3075; LP mais barato / empate / LP mais caro: 14 / 48 / 10
+    Equivalência (TOST e IC 90% concordam) por margem: ±0,10%: não; ±0,25%: sim; ±0,50%: sim; ±1,00%: sim
+  LP contra UMA execução do SLSQP (semente 0): n = 72; média -0,0860%, mediana -0,0000%, mín. -1,214%, máx. 0,483%
+    IC 90% (bootstrap) da média: -0,1510% a -0,0242%; TOST p = 0,0000; Wilcoxon p = 0,4731; LP mais barato / empate / LP mais caro: 13 / 49 / 10
+    Equivalência (TOST e IC 90% concordam) por margem: ±0,10%: não; ±0,25%: sim; ±0,50%: sim; ±1,00%: sim
+  Casos fora da margem (LP contra o melhor SLSQP): 6
+    NRC-primipara-p3: -1,153% (regime do LP: sem_desconto)
+    NRC-alta-p4: -0,931% (regime do LP: sem_desconto)
+    NRC-primipara-p1: -0,858% (regime do LP: sem_desconto)
+    NRC-alta-p3: -0,738% (regime do LP: sem_desconto)
+    NRC-final-p4: -0,590% (regime do LP: sem_desconto)
+    NRC-media-p3: -0,560% (regime do LP: sem_desconto)
+  Falhas do SLSQP: 13 de 720 execuções (1,8%), em 8 caso(s); o LP resolveu 72 de 72.
+  Entre sementes (execuções viáveis): a pior custa em média 0,184% e no máximo 2,287% mais que a melhor; CV médio 0,067%. Uma única execução custou mais que o LP além da margem em 9 casos.
+  Tempo (mediana): LP 12,9 s por problema; SLSQP 0,08 s por execução; razão 164×.
+  Efeito dos preços × efeito do método: o custo ótimo varia de 74% (média por vaca; máx. 84%) entre os conjuntos de preços; a diferença entre os métodos é de 0,1312% em média (máx. 1,153%).
+  VEREDITO (margem ±0,50%): EQUIVALENTE
+  ATENÇÃO: o agregado mistura efeitos de sinais opostos (diferença média 0,025% no NASEM e -0,123% no NRC); os efeitos se compensam. Vale o veredito de cada padrão, não este.
+
+Como ler: o teste de equivalência (TOST) só diz que a diferença MÉDIA está dentro da margem; o máximo mostra o pior caso. Os casos são projetados
+(4 vacas × 9 conjuntos de preços), não uma amostra aleatória de fazendas: a conclusão vale para essa família de casos.
+Reprodução: cd backend; ..\.venv\Scripts\python -m dietopt.benchmark run --out ..\docs\benchmark   (cerca de 20 a 30 min; Python 3.12.10, numpy 2.2.0, scipy 1.16.2).
