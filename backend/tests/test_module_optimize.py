@@ -105,15 +105,14 @@ def test_nasem_chega_ao_mesmo_custo_do_rufas():
 
 
 def test_nasem_acha_o_otimo_estreito_junto_de_tdn_60_que_a_grade_nao_toca():
-    """Caso do benchmark (CONCLUSOES_PREVIAS, 5.5): a grade não tem ponto viável no regime sem desconto, mas o ótimo do SLSQP
-    do RuFaS (2,13518 US$/dia, TDN% = 59,9993) está nele. Sem o resgate por regime o LP parava em 2,17287 (+1,77%)."""
-    from dietopt import benchmark
-
-    case = next(c for c in benchmark.cases() if c["id"] == "NASEM-alta-p1")
-    ids = sorted(benchmark.FEEDS)
-    prices = {int(k): v for k, v in case["prices"].items()}
-    required = compute_requirements("NASEM", "LAC_COW", case["cow"], None, "LAC_COW")
-    problem = optimize.build_problem("NASEM", "LAC_COW", "LAC_COW", case["cow"], ids, prices, resolve_limits("NASEM", ids, None), required)
+    """Caso do benchmark v1 e v2 (CONCLUSOES_PREVIAS, 5.5), congelado aqui: a grade não tem ponto viável no regime sem desconto, mas o
+    ótimo do SLSQP do RuFaS (2,13518 US$/dia, TDN% = 59,9993) está nele. Sem o resgate por regime o LP parava em 2,17287 (+1,77%)."""
+    cow = dict(body_weight=650, mature_body_weight=700, parity=2, days_in_milk=100, day_of_pregnancy=60, body_condition_score_5=3.0, calving_interval=400,
+               milk_production=40, milk_fat=3.7, milk_true_protein=3.1, milk_lactose=4.85, housing="Barn", distance=100)  # fmt: skip
+    prices = {23: 1.017, 44: 0.2875, 50: 0.0676, 110: 0.0806, 138: 0.1516, 167: 0.3186, 230: 0.1891}
+    ids = sorted(prices)
+    required = compute_requirements("NASEM", "LAC_COW", cow, None, "LAC_COW")
+    problem = optimize.build_problem("NASEM", "LAC_COW", "LAC_COW", cow, ids, prices, resolve_limits("NASEM", ids, None), required)
     grid, _ = optimize._grid(problem, optimize.RESOLUTIONS["normal"])
     assert not any(optimize.solve_point(problem, p) for p in grid if p.regime == "sem_desconto")  # a grade não acerta
     best, _ = optimize.search(problem, "normal")

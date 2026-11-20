@@ -1,14 +1,14 @@
 CONCLUSÕES PRÉVIAS
 Dieta Ótima com RuFaS (Pesquisa Operacional)
 Registro dos resultados encontrados, por data, com os comandos usados e as conclusões.
-Última atualização: 20/11/2026 (NASEM sem seletor na Vaca e na Sensibilidade, metano e N urinário como saídas, benchmark v2). Documento de trabalho, não é especificação: os requisitos estão no PRD e no FSD.
+Última atualização: 20/11/2026 (NASEM sem seletor na Vaca e na Sensibilidade, metano e N urinário como saídas, benchmark refeito do zero como v3). Documento de trabalho, não é especificação: os requisitos estão no PRD e no FSD.
 
 Convenções
 - Todos os comandos rodam na raiz do projeto, no PowerShell ou no Git Bash do Windows.
 - "Back-end" = pasta backend; o Python é o do ambiente do projeto (.venv\Scripts\python).
 - Os valores são os medidos nas datas indicadas, com preços ilustrativos (não são cotações), RuFaS v1.0.6, padrão NRC 2001,
   semente 42, 7 alimentos (ids 23, 44, 50, 110, 138, 167 e 230), 100 vacas e 1 ano, salvo onde dito o contrário. O benchmark da seção 5
-  usa os dois padrões (NASEM e NRC), 4 vacas e casos próprios, e está descrito lá.
+  usa só o NASEM, 8 animais, 3 cardápios e 12 conjuntos de preços, e está descrito lá.
 
 
 ======================================================================================================================
@@ -243,147 +243,100 @@ equivale a uma só comparação. A interface passou a avisar nesse caso (todas a
 abas que comparam o LP com o RuFaS (Vaca leiteira, Sensibilidade, Dieta ótima e Linearização do Ruminante Singular).
 
 ======================================================================================================================
-5. 20/11/2026 - Benchmark estatístico: o custo da dieta do LP é equivalente ao do SLSQP do RuFaS?
+5. 20/11/2026 - Benchmark estatístico (v3): o custo da dieta do LP é equivalente ao do SLSQP do RuFaS?
 ======================================================================================================================
 
 5.1 O que, por que e como em uma página (para a apresentação)
-O QUE: um conjunto fixo de 72 casos (2 padrões nutricionais x 4 vacas x 9 conjuntos de preços) em que a MESMA dieta de custo mínimo é calculada
-  por dois métodos: o modelo linear (LP, o método do sistema) e o otimizador do RuFaS (SLSQP, não linear, com ponto inicial aleatório).
-POR QUE: as seções 3 e 4 deram medições pontuais (um cenário; 27 simulações só no NRC) e sem teste formal. Para afirmar "o LP não tem vantagem
-  expressiva sobre o RuFaS" é preciso um critério definido ANTES (margem de equivalência), um teste adequado a "são equivalentes" (e não só
-  "não achei diferença"), e um conjunto de casos que qualquer pessoa consiga repetir.
-COMO: um comando refaz tudo (5.3); cada caso é registrado em arquivo; o relatório é gerado por código (não digitado).
-O QUE ACONTECEU (em três tempos):
-  1) Primeira medição: o LP era equivalente ao SLSQP no NRC, mas no NASEM custava em média 0,36% mais (11 de 36 casos acima, até +1,77%).
-  2) Investigação (5.5): a busca do LP nunca explorava uma fatia estreita da região viável (regime sem desconto de ingestão, TDN% logo abaixo
-     de 60) onde o SLSQP achava a dieta mais barata. Não era a fórmula, era a busca. Corrigi a busca (resgate por regime).
-  3) Medição repetida e validada com 36 casos NOVOS: no NASEM o LP passou a ser equivalente até a +/-0,1% (média -0,04%; em 34 de 36 casos
-     empata, em 2 custa menos, em nenhum custa mais que 0,023%); nos casos novos, 36 de 36 empates. O NRC não mudou (nenhum caso).
-RESULTADO EM UMA FRASE: o LP e o SLSQP têm custo praticamente igual (mediana da diferença = 0 nos dois padrões; 55 de 72 casos empatados a
-  0,1%), nenhum é melhor de forma relevante, o LP é um pouco mais barato em alguns casos (até -1,15%), e ele é cerca de 150 a 170 vezes mais lento.
-  Não há vantagem de custo para sustentar; a vantagem do LP está em determinismo, ausência de falhas e preços-sombra.
+O QUE: 288 casos fixos (8 animais x 3 cardápios x 12 conjuntos de preços, padrão NASEM) em que a MESMA dieta de custo mínimo é calculada por dois
+  métodos: o modelo linear (LP, a parametrização da seção 7) e o otimizador do RuFaS (SLSQP, não linear, com ponto inicial aleatório).
+POR QUE: as seções 3 e 4 deram medições pontuais (um cenário; 27 simulações) sem teste formal. Para afirmar "o LP não tem vantagem expressiva sobre
+  o RuFaS" é preciso um critério definido ANTES (margem de equivalência), um teste adequado a "são equivalentes" (e não só "não achei diferença")
+  e casos que qualquer pessoa consiga repetir.
+COMO: um comando refaz tudo (5.3); cada caso fica registrado em arquivo e o relatório é gerado por código (não digitado).
+O QUE UM CASO É: um animal em UM dia (as exigências vêm do estado do animal), não uma simulação completa da fazenda. A comparação ao longo de uma
+  simulação completa é a da seção 6 (um cenário de 13 intervalos).
+RESULTADO EM UMA FRASE: o LP e o SLSQP têm custo praticamente igual (mediana da diferença 0,000%; 226 de 240 casos empatados a 0,1%); a diferença
+  média é de +0,015% (IC de 90%: +0,002% a +0,029%), dentro da margem de +/-0,5%; o LP é cerca de 180 vezes mais lento. Não há vantagem de
+  custo para sustentar; a vantagem do LP está no determinismo e nos preços-sombra. A busca do LP continua heurística: 8 casos saíram da margem (5.4).
 
-5.2 Decisões tomadas (20/11/2026) e os porquês
-(1) Margem de equivalência: +/-0,5% do custo da dieta. Decisão do usuário, que aceitou a minha sugestão. Por que 0,5%:
-    a) Em dinheiro é desprezível: o custo médio dos casos é US$ 2,47 por vaca por dia; 0,5% são US$ 0,012 por vaca por dia, cerca de US$ 450 por
-       ano em 100 vacas. Isso é menor do que a incerteza dos preços de entrada (são ilustrativos, e o usuário os digita).
-    b) É muito menor que o efeito dos preços: ao variar os preços de 0,5x a 2x, o custo ótimo da mesma vaca muda 73% a 74% em média (NASEM e NRC).
-       0,5% é cerca de 1/150 disso; uma diferença dessa ordem não muda nenhuma decisão de formulação.
-    c) Separa "mesmo custo" de "ótimo local": o ruído numérico do SLSQP entre sementes boas é da ordem de 0,0001% (ftol de 1e-6), enquanto a
-       pior semente chega a +2,9%. Uma margem de 0,5% fica entre os dois, então um SLSQP que parou em ótimo local aparece como diferença.
-    d) É maior que o "empate" da interface (0,1%): 0,1% significa "indistinguível no que a tela mostra"; 0,5% significa "economicamente
-       irrelevante". São critérios diferentes, por isso há dois limiares.
-    Limite honesto: é uma escolha de julgamento, não um valor tirado de uma norma ou do professor. Por isso o relatório mostra o mesmo teste
-    também para 0,1%, 0,25% e 1%, e a conclusão fica visível em cada margem (5.4).
-(2) Tempo de execução: aceito pelo usuário. Por que isso importa e o que decidimos:
-    a) O LP usa a resolução "normal" da tela. A "rápida" errou um caso em +0,59% (seção 4.5) e a "fina" custa cerca de 1,5 vez mais sem ganho
-       relevante (nos dois casos NASEM investigados, 1,77% passou a 1,66% e 1,66% a 1,65% com a fina; o que resolveu foi corrigir a busca, 5.5).
-    b) Medido: o LP leva em mediana 11,8 s por problema no NASEM (9,0 a 23,8 s) e 18,5 s no NRC (9,7 a 31,1 s); o SLSQP, 0,07 s e 0,12 s por
-       execução. O LP é de 150 a 170 vezes mais lento (a primeira rodada, antes da correção, deu 144x e 163x; os tempos variam entre rodadas).
-    c) Cada rodada de 72 casos levou de 20 a 30 minutos, em sequência (sem paralelismo, para os tempos não se contaminarem).
-    d) Consequência para a apresentação: NÃO se pode alegar vantagem de velocidade. O que o tempo a mais compra é a ausência de ponto inicial
-       aleatório e a verificação de cada dieta com as restrições originais do RuFaS (72 de 72 verificadas).
-(3) Escopo dos padrões. O usuário perguntou se valia levar o NASEM a todos os painéis. Primeira resposta minha: não, porque a simulação
-    "não informa" metano e nitrogênio urinário do lote e seria preciso inventá-los ou alterar o RuFaS. ISSO ESTAVA FORTE DEMAIS e foi corrigido
-    em 20/11/2026 depois de ler o código do RuFaS: no modo NASEM o RuFaS calcula o metano e o nitrogênio urinário médios do lote a cada
-    intervalo (pen.py) e grava o metano total por lote e a excreção de nitrogênio urinário nas saídas; extraí-los é possível, sem inventar
-    valores e sem alterar o RuFaS (exige conferir unidades, número de vacas por lote e o instante de cada intervalo). O usuário argumentou, com
-    razão, que o RuFaS foi construído majoritariamente em NASEM (os exemplos dele vêm em NASEM) e que o NRC 2001 é 20 anos mais antigo; o NRC
-    ficou nas abas Vaca leiteira e Sensibilidade por uma escolha inicial de simplicidade (o NASEM exige mais dados), não por mérito científico.
-    DECISÃO (usuário, 20/11/2026): levar o NASEM à Vaca leiteira e à Sensibilidade, depois do benchmark. FEITO no mesmo dia (seção 6). O
-    benchmark cobre os DOIS padrões pela mesma rotina (optimize_diet).
-(4) 10 sementes do SLSQP por caso (a tela usa 5): mais sementes dão um "melhor SLSQP" mais confiável e medem melhor a estabilidade; custa
-    segundos. "Melhor SLSQP" = a menor das execuções que convergiram E atendem às restrições originais do RuFaS (tolerância de 1e-5).
-(5) Os casos são PROJETADOS, não sorteados de fazendas reais. Quatro vacas fixas (alta produção, média, fim de lactação, primípara), 7 alimentos
-    (o conjunto base: ids 23, 44, 50, 110, 138, 167 e 230), o preço-base e 8 conjuntos de preços sorteados com semente fixa (cada preço = base x
-    fator log-uniforme entre 0,5 e 2). No desenho v1 o metano (400 g/dia) e o nitrogênio urinário (0,2 kg/dia) do NASEM eram valores de TESTE fixos; no
-    v2 (20/11/2026, decisão do usuário) são calculados da dieta (seção 6.6) e o SLSQP recebe os da dieta do LP.
+5.2 Desenho e decisões, com os porquês (o desenho foi fechado antes de rodar e não mudou depois)
+(1) Casos: 8 animais (4 vacas em lactação: alta produção, média, fim de lactação e primípara; vaca seca; novilha pré-parto; novilhas II e I) x 3
+    cardápios (enxuto, 5 alimentos; base, 7; amplo, 12) x 12 conjuntos de preços (o base e 11 sorteados: cada preço = base x fator log-uniforme de
+    0,5 a 2, com semente fixa por cardápio). Os casos são PROJETADOS, não sorteados de fazendas reais, e os preços são ilustrativos.
+(2) Padrão: só NASEM, o único das telas desde 20/11/2026. O metano e o nitrogênio urinário são calculados da dieta (seção 6.6) e o SLSQP recebe os
+    da dieta do LP; informar valores medidos não muda a pergunta do benchmark e não foi variado. (O NRC foi medido nos desenhos v1 e v2: 5.5.)
+(3) Escopo dos padrões (histórico). O usuário perguntou se valia levar o NASEM a todos os painéis e argumentou, com razão, que o RuFaS foi
+    construído majoritariamente em NASEM e que o NRC 2001 é 20 anos mais antigo. A primeira resposta, "seria preciso inventar metano e nitrogênio
+    urinário", ESTAVA FORTE DEMAIS: no modo NASEM o RuFaS os calcula a cada intervalo (pen.py) e os grava nas saídas. O NRC ficou nas abas Vaca
+    leiteira e Sensibilidade por simplicidade inicial, não por mérito científico. Decisão do usuário (20/11/2026): NASEM em todas as telas
+    (feito, seção 6).
+(4) 10 sementes do SLSQP por caso (a tela usa 5): dão um "melhor SLSQP" mais confiável e medem a estabilidade; custa segundos. "Melhor SLSQP" =
+    a menor das execuções que convergiram E atendem às restrições originais do RuFaS (tolerância de 1e-5).
+(5) Resolução "normal" do LP (a da tela). A "rápida" errou um caso em +0,59% (seção 4.5) e a "fina" custa cerca de 1,5 vez mais sem ganho
+    relevante. O tempo mais longo do LP é aceito (decisão do usuário) e não se alega velocidade.
+(6) Medida: diferença do caso = (custo do LP - melhor custo do SLSQP) / melhor custo do SLSQP, em %. Negativa = o LP é mais barato. Empate = até 0,1%
+    (o da interface).
+(7) Margem de equivalência: +/-0,5% do custo. Decisão do usuário, que aceitou a minha sugestão. Por que 0,5%: (a) em dinheiro é desprezível (cerca de
+    um centavo de dólar por vaca por dia, menos que a incerteza dos preços digitados); (b) é cerca de 1/350 do efeito dos preços, que movem o custo
+    ótimo em 175% em média (5.4); (c) separa "mesmo custo" de "ótimo local": o ruído numérico do SLSQP entre sementes boas é da ordem de 0,0001%,
+    enquanto a pior semente chega a muitos pontos percentuais acima; (d) é maior que o "empate" da interface (0,1%): 0,1% é "indistinguível no
+    que a tela mostra"; 0,5% é "economicamente irrelevante". Limite honesto: é uma escolha de julgamento, não um valor de norma ou do professor.
+(8) Critério único: o LP é EQUIVALENTE se (i) o IC de 90% da diferença média cabe em +/-0,5% E (ii) ao menos 95% dos casos ficam dentro dessa margem.
+    O IC é um bootstrap por AGRUPAMENTO (10.000 reamostragens, semente fixa): os casos do mesmo animal e cardápio compartilham exigências e
+    alimentos, então reamostrar casos soltos daria um intervalo estreito demais. Dois testes que antes vinham juntos (TOST, Wilcoxon) foram
+    abandonados: o TOST supõe casos independentes e o Wilcoxon não responde à pergunta de equivalência.
+(9) Casos em que o LP não acha dieta: o SLSQP também é rodado; o esperado é que ele também não convirja (concordância entre os dois métodos).
+(10) Regra contra remendos: se aparecer um defeito, corrige-se e repete-se o benchmark com OUTRA semente de preços (--price-seed), para a correção não
+    ser ajustada aos casos já vistos. O desenho em si não é alterado depois de ver os resultados.
 
-5.3 Como foi feito (reprodução)
-Código: backend\dietopt\benchmark.py (desenho "v1"; casos, execução, estatística e relatório). Testes: backend\tests\test_benchmark.py (9).
-Comandos (na pasta backend; o Python é o do ambiente do projeto):
-    ..\.venv\Scripts\python -m dietopt.benchmark run --out ..\docs\benchmark      (executa os casos que faltam e gera o relatório; retoma se parar)
-    ..\.venv\Scripts\python -m dietopt.benchmark report --out ..\docs\benchmark   (só refaz o resumo e o relatório a partir de resultados.jsonl)
-    ..\.venv\Scripts\python -m dietopt.benchmark cases                            (lista os 72 casos)
-    ..\.venv\Scripts\python -m dietopt.benchmark run --out ..\docs\benchmark\validacao_casos_novos --price-seed 20261121 --standards NASEM
-                                                                                  (casos novos: mesmo desenho, outros preços; 36 casos do NASEM)
-Arquivos em docs\benchmark: resultados.jsonl (um caso por linha: LP, as 10 execuções do SLSQP, tempos), resumo.json (todas as medidas) e
-RELATORIO_BENCHMARK_v1.txt (o relatório completo, com os números exatos). Subpastas: antes_da_correcao_da_busca (a primeira medição, para comparar)
-e validacao_casos_novos (os 36 casos novos do NASEM).
-Cada caso chama optimize_diet (a rota da tela Dieta ótima do Ruminante Singular): o LP com a resolução "normal" e 10 execuções do
-RationOptimizer do RuFaS, uma por semente do ponto inicial. Ambos usam a mesma vaca, os mesmos alimentos, preços e limites.
-Medidas e o que cada uma quer dizer:
-- Diferença relativa = (custo do LP - custo do SLSQP) / custo do SLSQP. Negativa = o LP é mais barato. Comparada com o MELHOR das 10 execuções
-  (a comparação justa: qual método acha a dieta mais barata), com a MEDIANA e com UMA execução (a semente 0: o que um usuário obtém rodando uma vez).
-- TOST (duas provas unilaterais de t, pareado): testa "a diferença média está DENTRO de +/-margem". p < 0,05 quer dizer: equivalentes.
-  É o teste certo para "empate"; um teste comum de diferença que "não deu significativo" não prova equivalência.
-- Intervalo de confiança de 90% por bootstrap (10.000 reamostragens, semente fixa) da média: se cai inteiro dentro de +/-margem, é o mesmo
-  veredito do TOST a 5%, sem supor distribuição normal. O veredito final exige que os DOIS concordem.
-- Wilcoxon (postos sinalizados, zeros descartados): testa se há um sentido consistente (LP sempre acima ou abaixo).
-- Ganhos, empates e perdas: LP mais barato / empate (até 0,1%) / LP mais caro.
-- Falhas do SLSQP: execuções que não convergiram ou violaram as restrições do RuFaS. Estabilidade: quanto a pior semente custa a mais que a
-  melhor, e o coeficiente de variação entre sementes. Efeito dos preços x efeito do método: quanto o custo ótimo varia entre os 9 conjuntos de
-  preços da mesma vaca, contra a diferença entre os métodos.
+5.3 Como reproduzir
+Código: backend\dietopt\benchmark.py. Testes: backend\tests\test_benchmark.py (14; não rodam o RuFaS). Na pasta backend, com o Python do ambiente do projeto:
+    ..\.venv\Scripts\python -m dietopt.benchmark run --out ..\docs\benchmark\v3      (executa os casos que faltam e gera o relatório; retoma se parar)
+    ..\.venv\Scripts\python -m dietopt.benchmark report --out ..\docs\benchmark\v3   (só refaz o resumo e o relatório a partir de resultados.jsonl)
+    ..\.venv\Scripts\python -m dietopt.benchmark cases                               (lista os 288 casos)
+    ..\.venv\Scripts\python -m dietopt.benchmark run --out <outra pasta> --price-seed <outro número>   (casos novos, mesmo desenho)
+Arquivos em docs\benchmark\v3: RELATORIO.txt (os números exatos), resumo.json (todas as medidas) e resultados.jsonl (um caso por linha: LP, as 10
+execuções do SLSQP e tempos). docs\benchmark\README.md descreve o desenho e as pastas; docs\benchmark\historico guarda o v1 e o v2.
+Cada caso chama optimize_diet (a rota da tela Dieta ótima do Ruminante Singular). A execução dos 288 casos levou cerca de 1 hora, em sequência
+(sem paralelismo, para os tempos não se contaminarem).
 
-5.4 Resultados (LP "normal" contra SLSQP de 10 sementes; todos os casos resolvidos pelo LP; todas as dietas do LP atendem às restrições do RuFaS)
-                                         NASEM, ANTES da   NASEM, DEPOIS da   NASEM, 36 casos   NRC 2001
-                                         correção (36)     correção (36)      NOVOS (36)        (36; não mudou)
-  Diferença média (melhor SLSQP)         +0,363%           -0,039%            +0,003%           -0,123%
-  Mediana; mínimo; máximo                0; 0; +1,765%     0; -0,991; +0,023  0; 0; +0,028%     0; -1,153; +0,483
-  IC 90% da média (bootstrap)            +0,203 a +0,538   -0,095 a +0,003    +0,001 a +0,006   -0,224 a -0,029
-  TOST (p) para +/-0,5%                  0,097 (não)       < 0,0001 (sim)     < 0,0001 (sim)    < 0,0001 (sim)
-  Equivalente a +/-0,1 / 0,25 / 0,5 / 1  não/não/não/SIM   SIM/SIM/SIM/SIM   SIM/SIM/SIM/SIM   não/SIM/SIM/SIM
-  LP mais barato / empate / mais caro    0 / 25 / 11       2 / 34 / 0         0 / 36 / 0        9 / 21 / 6
-  Casos dentro de +/-0,5%                26 de 36          35 de 36           36 de 36          30 de 36
-  Uma execução do SLSQP custou > 0,5%    0 casos           2 casos            1 caso            8 casos (22%)
-    mais que o LP
-  Falhas do SLSQP (de 360 execuções)     6 (1,7%)          6 (1,7%)           0                 12 (3,3%)
-  Pior semente contra a melhor:          +0,165; +2,920%   (igual)            +0,081; +1,411%   +0,214; +2,287%
-    média; máximo
-  Tempo mediano: LP; SLSQP; razão        9,2 s; 144x       11,8 s; 169x       13,6 s; 206x      18,5 s; 153x
-  Custo ótimo varia com os preços        74%               74%                180%              73%
-    (média por vaca)
-  Diferença entre os métodos: média |d|  0,363%            0,044%            0,003%            0,210%
-  Regime do LP: sem / com desconto       0 / 36            12 / 24            16 / 20           16 / 20
-Os dois padrões juntos (72 casos, depois da correção): diferença média -0,081% (IC 90% -0,137% a -0,028%); 11 mais barato / 55 empates /
-6 mais caro; 65 de 72 dentro de +/-0,5%; equivalente a +/-0,25%, +/-0,5% e +/-1%; falhas do SLSQP 18 de 720 (2,5%); LP 15,0 s contra
-0,10 s (155x); 7 casos fora da margem, todos com o LP MAIS BARATO (6 no NRC e 1 no NASEM, alta-p4 -0,991%).
-Veredito a +/-0,5%: EQUIVALENTE nos dois padrões (e a +/-0,1% no NASEM). Antes da correção, o NASEM NÃO era equivalente a +/-0,5% (IC até +0,538%).
-O custo do LP mudou em 12 casos do NASEM, e em TODOS desceu (nenhum subiu); nos 36 casos do NRC não mudou nada: não há regressão.
-Os 8 casos do NRC em que uma execução do SLSQP custa mais de 0,5% além do LP são uma vantagem real do LP (estabilidade); no NASEM isso quase não ocorre.
-Casos mais afastados (LP contra o melhor SLSQP, depois da correção): NRC, LP mais barato: primípara-p3 -1,153%; alta-p4 -0,931%; primípara-p1
--0,858%; alta-p3 -0,738%; final-p4 -0,590%; média-p3 -0,560%. NASEM: alta-p4 -0,991%. Nenhum caso com o LP mais caro que +0,5%.
+5.4 Resultados do v3 (20/11/2026; LP "normal" contra o melhor de 10 sementes do SLSQP)
+GERAL (240 casos comparáveis)
+  - Diferença média +0,015% (IC 90% por agrupamento: +0,002% a +0,029%); mediana 0,000%; de -0,93% a +1,03%.
+  - 96,7% dos casos dentro de +/-0,5% (mínimo exigido: 95%). LP mais barato / empate / mais caro: 4 / 226 / 10.
+  - VEREDITO: EQUIVALENTE (as duas condições do critério valem).
+  - O SLSQP não falhou em nenhuma das 2.400 execuções; o LP resolveu os 240 casos que têm dieta.
+  - Entre as sementes do SLSQP, a pior custa em média 0,13% mais que a melhor, mas chega a +16,98% (lac-final/amplo/p7); os seguintes são +2,2%, +1,6% e +1,5%.
+  - Tempo (mediana): LP 9,2 s por problema; SLSQP 0,05 s por execução (cerca de 180 vezes).
+  - Os preços mexem muito mais no custo que o método: o custo ótimo varia 175% em média (até 212%) entre os conjuntos de preços do mesmo animal e cardápio.
+SEM SOLUÇÃO (48 de 288): as novilhas I e II com os cardápios enxuto e base (4 combinações x 12 preços). O SLSQP também não convergiu em nenhuma semente
+  em todos os 48: os cardápios não atendem às exigências desses animais (com o cardápio amplo, que tem fosfato bicálcico, há solução).
+POR ANIMAL (36 casos por linha; 12 nas novilhas I e II; leia como indicação, o critério vale para o conjunto):
+  equivalentes: lac-alta (média +0,007%), lac-final (+0,027%), vaca-seca, novilha-ii e novilha-i (diferença exatamente nula).
+  não demonstrada porque a fração dentro da margem fica abaixo de 95% (2 casos fora em lac-media, -0,003%, e em lac-primipara, +0,004%; 3 em
+  novilha-pre-parto, +0,064%, a que mais custa mais com o LP: até +1,03%).
+POR CARDÁPIO: enxuto (+0,020%) e base (+0,015%) equivalentes; amplo (+0,012%) não demonstrado (94,8% dos casos dentro da margem: 5 fora, de -0,93% a +1,03%;
+  o IC de 90% vai de -0,013% a +0,038%, dentro da margem).
+CASOS FORA DA MARGEM (8 de 240): LP mais caro em 6 (novilha-pre-parto/amplo/p7 +1,03%; lac-final/amplo/p3 +0,94%; lac-primipara/amplo/p7 +0,81%;
+  novilha-pre-parto/enxuto/p5 +0,76%; lac-media/base/p3 +0,58%; novilha-pre-parto/enxuto/p11 +0,53%) e mais barato em 2 (lac-primipara/amplo/p11 -0,93%;
+  lac-media/amplo/p11 -0,68%). Em 5 dos 6 casos em que o LP ficou mais caro, o LP terminou no regime com desconto de ingestão, o mesmo padrão
+  do defeito de busca da seção 5.5. NÃO investiguei esses casos (o desenho proíbe ajustar a busca olhando os resultados; ver 5.6, item 9).
+DIETAS DO LP VERIFICADAS COM AS RESTRIÇÕES DO RuFaS: 232 de 240. As 8 restantes têm custo igual ao do melhor SLSQP e uma violação mínima do TETO da
+  proteína metabolizável; nos dois casos que inspecionei, 2,8e-5 g e 5,7e-6 g contra tetos de 972 g e 403 g (cerca de 3e-8 e 1e-8 em termos
+  relativos): o LP fica exatamente no teto e o arredondamento passa da tolerância de 1e-5. É numérico, sem efeito no custo, mas é um defeito
+  do LP a corrigir (por exemplo, com uma folga de 1e-6 no teto).
+ANÁLISE POSTERIOR (não prevista no desenho; indicação, não veredito): sem os 60 casos de diferença nula (vaca seca e novilhas I e II), as 180 vacas
+  em lactação e novilha pré-parto dão média +0,020% (IC 90% +0,003% a +0,038%), 95,6% dentro da margem e 8 casos fora: o resultado é o mesmo.
 
-5.4b Resultados do desenho v2 (20/11/2026): metano e nitrogênio urinário do NASEM calculados da dieta
-O v1 fixava o metano em 400 g/dia e o nitrogênio urinário em 0,2 kg/dia no NASEM (valores de teste). Por decisão do usuário, no v2 os dois são
-SAÍDAS da dieta (equações lineares do RuFaS, seção 6.6) e o SLSQP do RuFaS, que só aceita constantes, recebe os da dieta do LP. Os casos, os
-preços, a margem, a busca do LP (já corrigida) e a semente dos preços são os mesmos; o NRC não usa os dois e ficou IDÊNTICO (nenhum custo mudou).
-Os resultados do v1 ficam em docs\benchmark\v1_metano_e_n_de_teste.
-                                         NASEM v2 (36)     NASEM v2, 36 casos   NRC 2001
-                                                           NOVOS (36)           (36; igual ao v1)
-  Diferença média (melhor SLSQP)         +0,025%           +0,001%              -0,123%
-  Mediana; mínimo; máximo                0; -0,499; +0,482 0; 0; +0,032%        0; -1,153; +0,483
-  IC 90% da média (bootstrap)            -0,013 a +0,063   0,000 a +0,003       -0,224 a -0,029
-  TOST (p) para +/-0,5%                  < 0,0001 (sim)    < 0,0001 (sim)       < 0,0001 (sim)
-  Equivalente a +/-0,1 / 0,25 / 0,5 / 1  SIM/SIM/SIM/SIM   SIM/SIM/SIM/SIM      não/SIM/SIM/SIM
-  LP mais barato / empate / mais caro    1 / 31 / 4        0 / 36 / 0           9 / 21 / 6
-  Casos dentro de +/-0,5%                36 de 36          36 de 36             30 de 36
-  Uma execução do SLSQP custou > 0,5%    1 caso            0 casos              8 casos (22%)
-    mais que o LP
-  Falhas do SLSQP (de 360 execuções)     1 (0,3%)          0                    12 (3,3%)
-  Pior semente contra a melhor:          +0,154; +2,172%   +0,003; +0,057%      +0,214; +2,287%
-    média; máximo
-  Tempo mediano: LP; SLSQP; razão        11,3 s; 0,06 s; 178x  11,9 s; 0,06 s; 190x  14,5 s; 0,10 s; 152x
-  Custo ótimo varia com os preços        75%               177%                 73%
-    (média por vaca)
-  Diferença entre os métodos: média |d|  0,053%; máx. 0,499%  0,001%; máx. 0,032%  0,210%; máx. 1,153%
-Os dois padrões juntos (72 casos, v2): diferença média -0,049%; 66 de 72 dentro de +/-0,5%; falhas do SLSQP 13 de 720 (1,8%); LP 12,9 s contra
-0,08 s (164x); 6 casos fora da margem, todos no NRC e com o LP mais barato.
-Leitura: o NASEM com metano e nitrogênio calculados confirma a medição depois da correção da busca (5.5): equivalente até +/-0,1%, nenhum caso fora
-de +/-0,5%, e nos 36 casos novos 36 de 36 empates. Em 4 dos 36 casos o LP custou até +0,48% mais que o melhor SLSQP (dentro da margem; a busca
-heurística do LP). As falhas do SLSQP no NASEM passaram de 6 de 360 (v1) para 1 de 360 (v2); não investiguei a causa (o modelo de energia mudou).
-
-5.5 O defeito da busca do LP: investigação, correção e validação
+5.5 Histórico (v1 e v2): o defeito da busca do LP, investigação, correção e validação
+Antes do v3 houve dois desenhos de 72 casos (2 padrões x 4 vacas x 9 conjuntos de preços), guardados em docs\benchmark\historico.
+- v1: metano (400 g/dia) e nitrogênio urinário (0,2 kg/dia) fixos como valores de teste. NRC equivalente; NASEM com o LP em média +0,36% acima (11 de 36
+  casos acima, até +1,77%). A investigação abaixo achou o defeito da busca, corrigiu-o e validou a correção com 36 casos NOVOS (pasta
+  historico\v1\validacao_casos_novos; a medição anterior à correção está em historico\v1\antes_da_correcao_da_busca).
+- v2: metano e nitrogênio calculados da dieta. NASEM equivalente até +/-0,1% (média +0,025%; 36 de 36 casos dentro de +/-0,5%); NRC equivalente a
+  +/-0,5% (média -0,12%; 6 casos fora da margem, todos com o LP mais barato, até -1,15%, porque o SLSQP parou em ótimo local). O SLSQP falhou em
+  0,3% (NASEM) e 3,3% (NRC) das execuções.
+O registro da investigação, mantido como estava:
 Roteiro (scripts de investigação, não versionados): rodar o SLSQP com 10 sementes, tomar o melhor, calcular os escalares globais dele (consumo,
 TDN%, % de concentrado, amido) e resolver o LP FIXANDO esses escalares; depois rodar a busca do LP nas três resoluções.
 - NASEM-alta-p1 (LP +1,765% antes): melhor SLSQP 2,13518 US$/dia; o LP achou 2,17287. O SLSQP parou com TDN = 59,99926%, colado na
@@ -411,47 +364,44 @@ Leitura: nenhum método domina. A busca do LP era heurística e perdia um ótimo
 ótimo local, mesmo com 10 sementes (NRC, até +1,2% sobre o LP), e falha em 2,5% das execuções. A busca do LP continua heurística (não é um
 ótimo certificado): outros casos podem ter outro defeito que estes 144 casos não revelaram.
 
-5.6 Conclusões do benchmark (o que pode e o que não pode ser dito)
+5.6 Conclusões do benchmark v3 (o que pode e o que não pode ser dito)
 PODE SER DITO
-1. O custo da dieta do LP é equivalente ao do melhor SLSQP do RuFaS dentro de +/-0,5% nos dois padrões (NASEM v2, com metano e nitrogênio
-   calculados da dieta: média +0,02%, IC 90% -0,01% a +0,06%; NRC: média -0,12%, IC 90% -0,22% a -0,03%; TOST p < 0,0001 nos dois), e no NASEM
-   até +/-0,1%. Nos 36 casos novos do NASEM, 36 de 36 empates.
-2. Não há vantagem expressiva do LP no custo. O pior caso a favor do LP é -1,15% (NRC) e o pior contra é +0,48%; em 52 de 72 casos (31 no NASEM e
-   21 no NRC) os custos empatam a 0,1% e a mediana da diferença é 0,000% nos dois padrões.
-3. A variação dos preços pesa de 350 a 1.400 vezes mais que a escolha do método: o custo ótimo varia 73% a 75% entre os conjuntos de preços
-   e a diferença média entre os métodos é de 0,05% (NASEM) a 0,21% (NRC).
-4. O LP não é mais rápido; é de 150 a 180 vezes mais lento (11 a 15 s contra 0,06 a 0,10 s).
-5. Onde o LP tem vantagem real: (a) é determinístico (o SLSQP depende do ponto inicial: o custo varia até 2,9% entre sementes e 2,5% das
-   execuções falham ou ficam inviáveis; o LP resolveu os 72 casos); (b) no NRC, uma única execução do SLSQP custou mais de 0,5% além do LP em
-   8 de 36 casos (22%); (c) as dietas do LP foram todas verificadas com as restrições originais (72 de 72); (d) fornece preços-sombra
-   (seção 8, item 4b).
+1. O custo da dieta do LP é equivalente ao do melhor SLSQP do RuFaS dentro de +/-0,5% no NASEM: em 240 casos (8 animais, 3 cardápios, 12
+   conjuntos de preços), média +0,015%, IC de 90% por agrupamento +0,002% a +0,029%, 96,7% dos casos dentro da margem.
+2. Não há vantagem expressiva do LP no custo: mediana 0,000%; 226 de 240 casos empatam a 0,1%; o LP é mais barato em 4 (até -0,93%) e mais caro em
+   10 (até +1,03%).
+3. O preço dos alimentos pesa muito mais que o método: o custo ótimo varia 175% em média entre os conjuntos de preços, e a diferença entre os
+   métodos é de centésimos de ponto percentual na média.
+4. O LP não é mais rápido: cerca de 180 vezes mais lento (9,2 s contra 0,05 s).
+5. Onde o LP tem vantagem real: (a) é determinístico (entre as sementes do SLSQP o custo chega a +17% em um caso, e a pior semente custa em média
+   0,13% mais); (b) 232 das 240 dietas do LP atendem às restrições originais do RuFaS e as 8 restantes violam só o teto da proteína por
+   arredondamento (5.4); (c) fornece preços-sombra (seção 8, item 4b). Neste desenho o SLSQP não falhou em nenhuma das 2.400 execuções (nos
+   desenhos anteriores falhava em 0,3% no NASEM e 3,3% no NRC).
+6. Onde o SLSQP não acha dieta, o LP também não: nos 48 casos sem solução o SLSQP não convergiu em nenhuma semente.
 NÃO PODE SER DITO
-6. "O LP é melhor que o RuFaS no custo": não se sustenta (a diferença média é de centésimos a décimos de ponto percentual).
-7. "O LP nunca custa mais que o RuFaS": vale nas seções 3 e 4 (NRC, simulação: até +0,012%); no benchmark v2 o LP custou até +0,48% mais em 4 casos
-   do NASEM e em 6 do NRC. Antes da correção da busca custava até +1,77% no NASEM. Dizer "dentro de +/-0,5% em todos os casos medidos", e não "nunca".
-8. Que o resultado vale para qualquer fazenda ou para qualquer dieta: são 4 vacas e 9 conjuntos de preços projetados (mais 9 de validação no NASEM).
-9. Que a busca do LP está livre de defeitos: ela já tinha um defeito que 3 seções de medição não mostraram; só um benchmark em casos variados o achou.
+7. "O LP é melhor que o RuFaS no custo": não se sustenta.
+8. "O LP nunca custa mais que o RuFaS": em 10 casos custou mais que o empate e em 6 passou da margem (até +1,03%).
+9. Que a busca do LP está livre de defeitos: 5 dos 6 casos em que o LP passou da margem estão no regime com desconto de ingestão, o padrão do
+   defeito da seção 5.5, e não foram investigados. Se a busca for revista, o benchmark deve ser repetido com outra semente de preços (5.2, item 10).
+10. Que o resultado vale para qualquer fazenda ou dieta: são casos projetados, de um dia, com preços ilustrativos.
+11. Que o critério vale para cada animal ou cardápio isolado: o critério é do conjunto; as linhas por animal e por cardápio têm poucos casos e são
+    indicação. Três animais e um cardápio não passaram sozinhos na condição dos 95%.
 
 5.7 Limites, falhas de procedimento e o que não foi feito
-- Não foi feita nenhuma simulação completa do RuFaS no benchmark: ele usa as exigências calculadas pelo módulo (as mesmas funções do cartão Dieta
-  ótima), não as médias de um lote simulado. A evidência de simulação completa é a das seções 3 e 4 (NRC) e, para o NASEM, a da seção 6 (um cenário).
-- As 4 vacas e os 9 conjuntos de preços não são independentes entre si (a mesma vaca aparece 9 vezes; os mesmos 9 preços em todas): o TOST e o
-  bootstrap tratam os 36 casos de cada padrão como permutáveis, o que é uma aproximação.
-- Metano e nitrogênio urinário do NASEM: no v1 eram valores de teste fixos (400 g/dia e 0,2 kg/dia); no v2 são calculados da dieta (seção 6.6). O SLSQP
-  do RuFaS recebe os da dieta do LP (uma rodada, sem iterar até a consistência: o SLSQP salta entre ótimos locais quando as constantes mudam um pouco).
-  Valores medidos informados pelo usuário não foram variados no benchmark.
-- O desenho foi congelado antes (casos, margem, testes), mas o ALGORITMO foi alterado depois de ver os resultados. Por isso a repetição com casos novos
-  (5.5). O relatório de cada rodada diz a semente dos preços usada.
-- Falha de procedimento registrada: a primeira execução parou no 28º caso porque a vaca primípara foi definida com dia de gestação 0 (o campo
-  aceita de 1 a 285). Corrigi a vaca (dia de lactação 90, gestação 5 dias) e retomei; os 27 casos já gravados eram de outras vacas e não mudam.
-- Defeito do meu relatório, achado ao ler o resultado e corrigido: o "efeito dos preços" do agregado misturava custos de NASEM e NRC (dava 112%);
-  passou a ser calculado por padrão e vaca. O relatório também avisa quando o agregado dos dois padrões mistura sinais opostos (como aconteceu antes
-  da correção: +0,36% no NASEM e -0,12% no NRC); depois dela os dois são negativos e o agregado é coerente.
-- Tempos: variam entre rodadas (o LP do NRC deu mediana 25,7 s na primeira e 18,5 s na segunda, com o mesmo código no NRC); citar a faixa, não um
-  valor único.
-- A interface diz, quando o RuFaS acha custo menor, "aumente a resolução (rápida, normal ou fina)". Nos casos NASEM investigados a resolução fina
-  quase não ajudava; a correção da busca resolveu o caso. O texto ainda promete mais do que a resolução entrega e deveria ser revisto (não alterado).
-- Testes: backend\tests\test_benchmark.py (9) e 2 novos em test_module_optimize.py.
+- Cada caso é um animal em UM dia; não há simulação completa do RuFaS no benchmark. A evidência de simulação completa é a das seções 3 e 4
+  (NRC) e, no NASEM, a da seção 6 (um cenário).
+- Os casos são projetados: 8 animais, 3 cardápios e 12 conjuntos de preços definidos por mim, não uma amostra de fazendas. O bootstrap por
+  agrupamento trata os 20 grupos animal x cardápio que têm solução como as unidades independentes, o que é uma aproximação (poucos grupos).
+- 48 dos 288 casos (novilhas I e II com os cardápios enxuto e base) não têm solução em nenhum dos métodos; o desenho os mantém e os conta. O cardápio
+  amplo é o único que atende a essas novilhas, então elas têm só 12 casos cada.
+- A análise posterior sem os 60 casos de diferença nula (5.4) NÃO estava prevista; foi feita depois de ver os resultados e serve só de indicação.
+- Metano e nitrogênio urinário: calculados da dieta; o SLSQP recebe os da dieta do LP (uma rodada, sem iterar até a consistência). Valores
+  informados pelo usuário não foram variados.
+- Tempos: variam entre rodadas e máquinas; citar a ordem de grandeza (cerca de 180 vezes), não um valor único.
+- A interface diz, quando o RuFaS acha custo menor, "aumente a resolução (rápida, normal ou fina)". A resolução fina quase não ajuda nos casos
+  investigados (5.5); o texto promete mais do que a resolução entrega e deveria ser revisto (não alterado).
+- Falhas de procedimento no v3: nenhuma que tenha invalidado resultado. No desenho anterior a primeira execução parou porque a vaca primípara tinha
+  dia de gestação 0 (o campo aceita de 1 a 285); isso foi corrigido antes do v3.
 
 ======================================================================================================================
 6. 20/11/2026 - NASEM na Vaca leiteira e na Sensibilidade (RF-24): o que, como e por quê
@@ -555,7 +505,7 @@ COMO ENTRA NO SISTEMA (módulo do Ruminante Singular; backend\dietopt\module\emi
 - Os valores 450 g/dia e 0,25 kg/dia (do usuário) ficaram como valores de partida do SLSQP quando se chama run_rufas sem dieta do LP e sem entrada
   (optimize.rufas_pen); como há equação, não são o caso normal.
 - Na Vaca leiteira e na Sensibilidade (simulação do RuFaS) os dois são saídas da SIMULAÇÃO (6.2), não da equação; a comparação com o LP os usa como constantes.
-IMPACTO: o benchmark foi refeito como v2 (5.4b): NASEM equivalente até +/-0,1%. Testes: tests\test_emissions.py (9) e os do módulo atualizados (a energia do
+IMPACTO: o benchmark foi refeito como v2 (5.5): NASEM equivalente até +/-0,1%; depois, do zero, como v3 (5.4). Testes: tests\test_emissions.py (9) e os do módulo atualizados (a energia do
   NASEM deixou de ficar "indisponível" sem metano e N urinário).
 
 6.7 Limites e o que não foi feito
@@ -646,8 +596,8 @@ Propriedades:
 7.5 O que foi medido sobre o método
 - Fórmula do LP: nos escalares do melhor SLSQP, o LP dá o mesmo custo (erro relativo abaixo de 1e-6) em quatro casos (NRC e NASEM; lactação, vaca
   seca e novilha). Ou seja, quando o ponto é o mesmo, as duas formulações coincidem; as diferenças de custo vêm da busca, não da formulação.
-- Comparação de custo com o SLSQP: seção 5 (72 casos): equivalente dentro de +/-0,5% nos dois padrões (NASEM +/-0,1% depois da correção); seções 3,
-  4 e 6 (simulação completa e Sensibilidade): empate no custo.
+- Comparação de custo com o SLSQP: seção 5 (v3, 288 casos no NASEM): equivalente dentro de +/-0,5% (média +0,015%); seções 3, 4 e 6 (simulação
+  completa e Sensibilidade): empate no custo.
 - Defeito da busca achado pelo benchmark (seção 5.5): a grade não tinha pontos viáveis no regime sem desconto no NASEM (o LP perdia até +1,77%);
   corrigido com o resgate por regime (7.3, item 4) e validado em 36 casos novos (+0,003% em média).
 - Avaliação de dietas montadas (aba Linearização do Ruminante Singular): aqui NÃO se parametriza; as restrições de classe L e E são exatas e as de
@@ -662,7 +612,7 @@ Propriedades:
 - O LP é cerca de 150 a 180 vezes mais lento que o SLSQP (seção 5): a vantagem do método não está no custo nem na velocidade, e sim no resultado
   determinístico (o SLSQP depende do ponto inicial aleatório), na verificação contra as restrições originais e nos preços-sombra.
 - O consumo da dieta ótima pode chegar a +30% do estimado (teto do RuFaS): é uma propriedade do problema, não do método.
-- Validado em 4 vacas e 9 conjuntos de preços (mais 9 de validação no NASEM); não vale para qualquer fazenda sem repetir a medição.
+- Validado em 8 animais, 3 cardápios e 12 conjuntos de preços (v3, um dia por animal); não vale para qualquer fazenda sem repetir a medição.
 
 
 ======================================================================================================================
@@ -674,12 +624,12 @@ Propriedades:
 2. No custo da ração, o método linear EMPATA com o SLSQP do RuFaS; não é melhor. Em uma simulação real de 1 ano a diferença foi de
    -0,04% (4,0219 para 4,0201 US$/vaca/dia), cerca de US$ 58 por ano no rebanho. O SLSQP do RuFaS já chega perto do ótimo da ração
    (em 100 execuções, a mediana igualou o mínimo). O resultado de 03/11/2026 (+0,008%) vai na mesma direção.
-   REVISADO em 20/11/2026 (seção 5): em 72 casos projetados, o custo do LP é equivalente ao do melhor SLSQP dentro de +/-0,5% nos dois
-   padrões (NASEM: média -0,04%; NRC: média -0,12%) e, no NASEM, dentro de +/-0,1%. Antes de uma correção da busca do LP o NASEM não era
-   equivalente (média +0,36%, até +1,77%). Continua valendo: não há vantagem de custo do LP.
-3. O linear também não é mais rápido: 4 a 8 s por problema contra 0,2 s do SLSQP (no benchmark da seção 5: cerca de 150 a 170 vezes mais lento).
+   REVISADO em 20/11/2026 (seção 5, v3): em 240 casos projetados do NASEM, o custo do LP é equivalente ao do melhor SLSQP dentro de +/-0,5%
+   (média +0,015%, IC de 90% +0,002% a +0,029%; 96,7% dos casos dentro da margem). Antes de uma correção da busca do LP o NASEM não era
+   equivalente (v1: média +0,36%, até +1,77%; 5.5). Continua valendo: não há vantagem de custo do LP.
+3. O linear também não é mais rápido: 4 a 8 s por problema contra 0,2 s do SLSQP (no benchmark da seção 5: cerca de 180 vezes mais lento).
 4. A vantagem do método linear não está no custo, e sim em:
-   a) resultado que não depende do ponto inicial aleatório do SLSQP (pior semente +2,0%; 1 de 100 execuções inviável; no benchmark da seção 5: até +2,9% e 18 de 720 execuções, 2,5%, falharam);
+   a) resultado que não depende do ponto inicial aleatório do SLSQP (pior semente +2,0%; 1 de 100 execuções inviável; no benchmark v3: a pior semente custa em média 0,13% mais e, em um caso, 17% mais; o SLSQP não falhou em 2.400 execuções, ao contrário dos desenhos anteriores, 0,3% a 3,3%);
    b) preços-sombra (quanto custa cada exigência e cada limite), que o RuFaS não fornece;
    c) formulação linear, com o erro de linearização medido, como o professor pediu (a comparação é possível porque as equações
       do RuFaS foram linearizadas, LINEARIZACAO.md).
@@ -692,8 +642,8 @@ Propriedades:
    preços ilustrativos, 100 vacas, 1 ano; a Vaca leiteira compara um cenário e a Sensibilidade, 27 simulações com preços muito
    diferentes, mas só 4 intervalos por simulação. A busca do LP é heurística: com a resolução rápida (Vaca leiteira) a diferença por
    intervalo chegou a +0,27%, e em um caso da Sensibilidade a rápida deu +0,59% (a normal, +0,012%; seção 4.5). Outros alimentos e
-   rebanhos podem dar outro resultado. O benchmark da seção 5 cobre também o NASEM (no módulo do Ruminante Singular; 4 vacas e 9 conjuntos de
-   preços projetados).
+   rebanhos podem dar outro resultado. O benchmark da seção 5 cobre o NASEM (no módulo do Ruminante Singular; 8 animais, 3 cardápios e 12
+   conjuntos de preços projetados, um dia por animal).
 8. Erro de procedimento registrado (3.3): a primeira medição usou o cache do cenário errado e deu uma vantagem de 9,1% que não
    existe. Os números inválidos não aparecem nos documentos do projeto; só neste registro.
 
@@ -701,26 +651,27 @@ Propriedades:
    de 0,13% a 0,41% menos em 5. Reforça o argumento (c) do item 4 (o modelo linear reproduz o RuFaS em toda a faixa de preços, e não só em um
    cenário) e dá um ganho pequeno e real: onde o SLSQP para acima do ótimo (e, em um caso, até fora do teto de consumo do RuFaS, seção 4.6), o LP não.
    Mesmo assim a economia é de décimos de ponto percentual, não de um custo menor de forma relevante.
-   (Isto vale para o NRC em simulação; no NASEM, antes da correção da busca, o benchmark da seção 5 achou o LP até +1,77% acima do SLSQP;
-   depois dela, no máximo +0,03%.)
+   (Isto vale para o NRC em simulação; no NASEM, antes da correção da busca, o benchmark v1 achou o LP até +1,77% acima do SLSQP; depois dela,
+   no v3, 6 casos de 240 passaram de +0,5% (até +1,03%): a busca continua heurística, 5.4.)
 
-10. Benchmark estatístico (seção 5, 72 casos, margem +/-0,5%): o LP e o SLSQP do RuFaS são equivalentes no custo nos dois padrões (NASEM:
-    média -0,04%, até +/-0,1%; NRC: média -0,12%). Nenhum método domina: o LP é um pouco mais barato em 11 de 72 casos (até -1,15%), empata em
-    55 e custa mais em 6 (até +0,48%, todos no NRC). A formulação do LP está certa nos dois padrões: nos escalares do SLSQP ela reproduz o custo dele.
+10. Benchmark estatístico (seção 5, v3: 288 casos, margem +/-0,5%): o LP e o SLSQP do RuFaS são equivalentes no custo no NASEM (média +0,015%; IC de 90%
+    +0,002% a +0,029%; 96,7% dos casos dentro da margem). Nenhum método domina: o LP é mais barato em 4 de 240 casos (até -0,93%), empata em 226 e custa
+    mais em 10 (até +1,03%). A formulação do LP está certa: nos escalares do SLSQP ela reproduz o custo dele (7.5). Os desenhos anteriores (NASEM e NRC,
+    72 casos cada) deram o mesmo tipo de resultado (5.5).
 11. A medição achou um DEFEITO da busca do LP (NASEM, até +1,77%): a grade não tinha pontos viáveis no regime sem desconto de ingestão (TDN% logo
     abaixo de 60), então o regime nunca era explorado. Foi corrigido com um resgate por regime e validado com 36 casos novos (LP +0,003% em média,
     36 de 36 empates); nenhum caso do NRC mudou. A busca continua heurística, sem garantia de ótimo.
 12. O que se pode afirmar na apresentação: (i) não há vantagem de custo do LP, medida com critério definido antes; (ii) o preço dos alimentos pesa
-    350 a 1.700 vezes mais que o método; (iii) as vantagens do LP são determinismo, ausência de falhas (72 de 72 resolvidos, contra 2,5% de
-    execuções do SLSQP que falham), verificação de cada dieta pelas restrições originais e preços-sombra; (iv) o LP é cerca de 150 a 170 vezes
-    mais lento. Dizer "dentro de +/-0,5% em todos os casos medidos", e não "o LP nunca custa mais".
-13. Decisões de 20/11/2026 e porquês (5.2): margem de +/-0,5% (economicamente desprezível, 1/150 do efeito dos preços, entre o ruído do SLSQP e
+    muito mais que o método (175% contra centésimos de ponto percentual); (iii) as vantagens do LP são o determinismo (o SLSQP variou até 17% entre
+    sementes em um caso), a verificação de cada dieta pelas restrições originais (232 de 240; as demais violam o teto da proteína por arredondamento)
+    e os preços-sombra; (iv) o LP é cerca de 180 vezes mais lento. Dizer "dentro de +/-0,5% em todos os casos medidos", e não "o LP nunca custa mais".
+13. Decisões de 20/11/2026 e porquês (5.2): margem de +/-0,5% (economicamente desprezível, 1/350 do efeito dos preços, entre o ruído do SLSQP e
     o ótimo local); tempo de execução aceito, com a resolução "normal" do LP (sem alegar velocidade); NASEM levado à Vaca leiteira e à
     Sensibilidade, depois do benchmark (a primeira justificativa contra, "seria preciso inventar metano e nitrogênio urinário", estava errada:
     o RuFaS os calcula e os grava). Feito em 20/11/2026 (seção 6), SEM seletor: o NASEM é o padrão único da Vaca leiteira e da Sensibilidade, e a aba
     Ração linear vale no NASEM. Metano e nitrogênio urinário passaram a ser saídas da dieta, pelas equações lineares do RuFaS (6.6).
 14. Metano e nitrogênio urinário (6.6): as duas equações do RuFaS são lineares na dieta, então a energia do NASEM continua linear e o módulo os calcula
-    como saída, sem entrada manual (que fica opcional). Benchmark v2 (5.4b): NASEM equivalente até +/-0,1%, 36 de 36 casos dentro de +/-0,5%.
+    como saída, sem entrada manual (que fica opcional). Benchmark v2 (5.5): NASEM equivalente até +/-0,1%, 36 de 36 casos dentro de +/-0,5%; v3 (5.4): equivalente a +/-0,5% em 240 casos.
 15. NASEM em simulação completa (seção 6, um cenário de 13 intervalos): o total do ano empata (LP -0,17% no mesmo consumo, -0,55% no consumo livre),
     com dispersão por intervalo de -2,1% a +0,67%. A busca heurística do LP pode ficar até cerca de 0,7% acima em um intervalo; o SLSQP pode parar
     em ótimo local (-2,1% nos dias 300 e 330). Todas as rações do LP atendem às restrições do RuFaS.
@@ -737,7 +688,9 @@ Próximos passos possíveis (não feitos)
 - Refazer os guias em Word da Vaca leiteira e da Sensibilidade (hoje mostram o NRC) e do Ruminante Singular (campos de metano e N urinário opcionais);
   repetir a sensibilidade de 27 simulações (seção 4) no NASEM.
 - Rever o texto "aumente a resolução" da conclusão da Dieta ótima, que a resolução fina quase não cumpre (5.7).
-- Repetir o benchmark com valores de metano e nitrogênio informados e com simulações completas do RuFaS (5.7).
+- Repetir o benchmark com simulações completas do RuFaS (5.7).
+- Investigar os 6 casos do v3 em que o LP passou da margem (5.4) e corrigir o teto de proteína dos LP não verificados; depois, repetir o benchmark com
+  outra semente de preços (--price-seed), conforme 5.2, item 10.
 
 
 ======================================================================================================================
