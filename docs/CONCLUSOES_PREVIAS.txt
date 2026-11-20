@@ -424,7 +424,7 @@ PODE SER DITO
 5. Onde o LP tem vantagem real: (a) é determinístico (o SLSQP depende do ponto inicial: o custo varia até 2,9% entre sementes e 2,5% das
    execuções falham ou ficam inviáveis; o LP resolveu os 72 casos); (b) no NRC, uma única execução do SLSQP custou mais de 0,5% além do LP em
    8 de 36 casos (22%); (c) as dietas do LP foram todas verificadas com as restrições originais (72 de 72); (d) fornece preços-sombra
-   (seção 7, item 4b).
+   (seção 8, item 4b).
 NÃO PODE SER DITO
 6. "O LP é melhor que o RuFaS no custo": não se sustenta (a diferença média é de centésimos a décimos de ponto percentual).
 7. "O LP nunca custa mais que o RuFaS": vale nas seções 3 e 4 (NRC, simulação: até +0,012%); no benchmark v2 o LP custou até +0,48% mais em 4 casos
@@ -569,7 +569,104 @@ IMPACTO: o benchmark foi refeito como v2 (5.4b): NASEM equivalente até +/-0,1%.
   cache real (runs\_cache), como as de etapas anteriores: o cache é por cenário, não por usuário.
 
 ======================================================================================================================
-7. Conclusões prévias (revisadas em 20/11/2026, depois do benchmark da seção 5 e do NASEM da seção 6)
+7. 20/11/2026 - Linearização: o método de parametrização da dieta ótima (o que, como e por quê)
+======================================================================================================================
+Esta seção descreve o método que a aba Dieta ótima do Ruminante Singular (e, com ele, a ração linear da Vaca leiteira e da Sensibilidade) usa para
+resolver o problema da ração de menor custo com programação linear (PL). Código: backend\dietopt\module\optimize.py (busca) e linear.py
+(coeficientes). Formulação completa e demonstrações: docs\LINEARIZACAO.md, seções 4 e 5.1b.
+
+7.1 O problema: por que o custo mínimo do RuFaS não é uma PL
+A pergunta é "qual a ração de menor custo que cumpre as restrições do RuFaS?". As variáveis são as quantidades x_i (kg de MS por dia de cada
+alimento). Parte das restrições já é linear em x:
+- Custo, limites de inclusão de cada alimento e consumo mínimo e máximo: lineares (classe L).
+- Cálcio e fósforo: oferta = soma de x_i vezes o teor do alimento, exigência constante: lineares (classe L).
+- FDN total, FDN de forragem e gordura (limites em % da MS): são razões. Uma razão "soma(a_i x_i) / soma(x_i) <= c" vira a linear
+  "soma((a_i - c) x_i) <= 0" sem aproximação (classe E, transformação exata).
+O que não é linear é a energia e a proteína metabolizável, porque a oferta de cada alimento depende de poucas grandezas GLOBAIS da dieta, que
+por sua vez dependem de todos os x_i ao mesmo tempo:
+- o consumo de matéria seca (DMI) e o TDN% da dieta (a soma de TDN_i x_i dividida por DMI);
+- a % de concentrado;
+- o desconto de ingestão D, função do consumo e da energia da dieta; ele muda o quanto de energia cada alimento entrega e as taxas de passagem
+  que entram na proteína metabolizável;
+- no NASEM, o total de amido da dieta (kg), que entra na digestibilidade da FDN.
+Há ainda duas dificuldades: (a) D é DESCONTÍNUO em TDN% = 60 (abaixo de 60 não há desconto, D = 1; a partir de 60, D < 1); (b) no NRC a energia é
+um "max" de três energias (mantença, lactação, crescimento) >= exigência total, uma disjunção; e a proteína metabolizável tem um "min".
+Resolver isso direto é um problema não convexo, que é o que o SLSQP do RuFaS tenta, a partir de um ponto inicial aleatório, achando um ótimo
+LOCAL.
+
+7.2 A ideia: fixar os escalares globais e deixar o resto linear
+Em vez de aproximar as curvas, o método FIXA os escalares globais como PARÂMETROS. Com DMI, TDN%, % de concentrado (e amido, no NASEM) fixos,
+D, as taxas de passagem e todos os coeficientes por alimento viram CONSTANTES, e o problema que sobra é uma PL exata, nas quantidades x_i, com
+três igualdades lineares que amarram os x_i aos escalares fixados:
+    soma(x_i)                        = DMI
+    soma(TDN_i x_i)                  = TDN% . DMI
+    soma_{i concentrado}(x_i)        = (% concentrado / 100) . DMI
+    (NASEM)  soma(amido_i x_i)       = amido total
+Pseudocódigo:
+    para cada ponto (DMI, TDN%, %conc[, amido]) de uma grade, e depois de um refinamento em torno dos melhores:
+        calcular D, taxas de passagem e coeficientes por alimento nesses escalares            (constantes)
+        resolver a PL (um LP por ramo de disjunção) com as igualdades acima                   (HiGHS)
+    ficar com o ponto de menor custo
+Propriedades:
+- EXATIDÃO: em cada ponto os escalares da PL coincidem com os da própria solução; logo a solução satisfaz as restrições ORIGINAIS do RuFaS (nos
+  testes, a menor folga foi de -5e-13). Não há erro de linearização: o único erro é o da grade (o ponto ótimo pode cair entre dois pontos).
+- É um método de PARAMETRIZAÇÃO, não uma série de Taylor: nenhuma função é aproximada por uma reta; o que se faz é transformar um problema com
+  poucas dimensões não lineares (3 no NRC, 4 no NASEM) em muitos problemas lineares nas demais (as quantidades).
+- Disjunções (técnica "enumeração de ramos"): um LP por ramo da energia total do NRC; no teto de proteína resolve-se sem ele e só se enumeram os
+  dois ramos se a solução o violar. No NASEM há uma única restrição de energia.
+- Dois REGIMES: como D é descontínuo em TDN% = 60, a busca trata TDN% < 60 e TDN% >= 60 separadamente; em cada regime a formulação é suave.
+- Os preços-sombra são os duais da PL do ponto ótimo (com os escalares fixos): valem perto do ótimo, não para extrapolar.
+- As exigências usadas são as da própria vaca, sem ração anterior (padrões do RuFaS), como na primeira formulação do RuFaS.
+
+7.3 Como a busca sobre os escalares é feita (optimize.py)
+1. Faixa de cada escalar: LPs de mínimo e máximo de DMI, TDN% e % de concentrado sobre as restrições L e E (o consumo fica entre 70% e 130% do
+   estimado, regra do RuFaS).
+2. Grade por regime: uma grade de pontos (DMI, TDN%, %conc[, amido]) em cada regime. O tamanho depende da resolução: rápida (3, 4, 3 e 2 pontos por
+   escalar, com 400 LPs de refinamento), normal (5, 6, 5, 3; 1.500) e fina (7, 9, 7, 4; 3.000). Tempo típico: cerca de 5 s, 15 s e 1 min.
+3. Refinamento: os três melhores pontos viáveis de cada regime são refinados por dois caminhos (busca por padrões e descida guiada por uma PL com
+   as quantidades livres), porque o custo, em função dos escalares, NÃO é convexo (a grade sozinha pode não cair no ótimo).
+4. Resgates, quando a grade não acha região viável (casos de região fina, como vaca seca e novilha no NASEM, e o regime sem desconto no NASEM de vaca
+   em lactação): (a) por ponto fixo dos escalares quando a grade inteira acerta menos de 6 pontos; (b) por regime (_rescue_regime, seção 5.5) quando
+   um regime tem menos de 3 pontos viáveis: uma PL com as quantidades livres indica para onde os escalares querem ir, com uma restrição linear que
+   mantém a dieta dentro do regime, e o ponto trazido é resolvido como PL exata e vira partida do refinamento.
+5. Verificação: a dieta escolhida é conferida com as funções originais do RuFaS (a mesma verificação da avaliação de dietas) e comparada com o
+   SLSQP do RuFaS em várias sementes. O selo "Confere com o RuFaS" da tela mostra o resultado dessa verificação.
+
+7.4 Por que esta técnica e não as outras (decisão de projeto, LINEARIZACAO.md, 5)
+- Ponto fixo (congelar os coeficientes na dieta atual e iterar): foi testado primeiro (estudo de 01/11/2026) e convergiu para um custo 4,8% ACIMA do
+  melhor do RuFaS, porque a iteração não enxerga a descontinuidade em TDN% = 60. Não foi adotado como método principal.
+- Taylor de 1ª ordem (programação linear sucessiva): exigiria região de confiança; ficou como alternativa, só se o ponto fixo não chegasse
+  perto do RuFaS.
+- Linearização por partes com variáveis inteiras: descartada; deixa de ser PL e quebra os preços-sombra.
+- Parametrização dos escalares globais: escolhida porque (i) cada ponto é uma PL exata; (ii) a dimensão é baixa (3 ou 4), então a grade é barata
+  (no estudo de 01/11/2026, 3.536 pontos x 6 LPs levaram 24 s); (iii) o regime de TDN% = 60 vira uma fronteira entre duas buscas; (iv) mantém o
+  trabalho dentro da programação linear que o professor pediu, com preços-sombra.
+- Custo da escolha: a busca em si é HEURÍSTICA (grade mais refinamento), não um ótimo certificado.
+
+7.5 O que foi medido sobre o método
+- Fórmula do LP: nos escalares do melhor SLSQP, o LP dá o mesmo custo (erro relativo abaixo de 1e-6) em quatro casos (NRC e NASEM; lactação, vaca
+  seca e novilha). Ou seja, quando o ponto é o mesmo, as duas formulações coincidem; as diferenças de custo vêm da busca, não da formulação.
+- Comparação de custo com o SLSQP: seção 5 (72 casos): equivalente dentro de +/-0,5% nos dois padrões (NASEM +/-0,1% depois da correção); seções 3,
+  4 e 6 (simulação completa e Sensibilidade): empate no custo.
+- Defeito da busca achado pelo benchmark (seção 5.5): a grade não tinha pontos viáveis no regime sem desconto no NASEM (o LP perdia até +1,77%);
+  corrigido com o resgate por regime (7.3, item 4) e validado em 36 casos novos (+0,003% em média).
+- Avaliação de dietas montadas (aba Linearização do Ruminante Singular): aqui NÃO se parametriza; as restrições de classe L e E são exatas e as de
+  classe A (energia, proteína) são avaliadas no ponto da dieta. O erro é medido com as quantidades a -5% e +5%: no exemplo do guia, 0,31% no máximo
+  (proteína metabolizável mínima), dentro da tolerância de 1%. Os escalares fixos tornam a PL exata na dieta ótima; fora dela o modelo vale só
+  perto do ponto.
+
+7.6 Limites (o que NÃO está garantido)
+- Não há prova de otimalidade global: a busca em grade com refinamento pode perder um ótimo estreito (já aconteceu, 7.5, e foi corrigido; outros
+  casos podem ter outro defeito que os 144 casos do benchmark não mostraram).
+- A solução é VIÁVEL para o problema original, mas só é ótima no sentido da parametrização (grade e refinamento).
+- O LP é cerca de 150 a 180 vezes mais lento que o SLSQP (seção 5): a vantagem do método não está no custo nem na velocidade, e sim no resultado
+  determinístico (o SLSQP depende do ponto inicial aleatório), na verificação contra as restrições originais e nos preços-sombra.
+- O consumo da dieta ótima pode chegar a +30% do estimado (teto do RuFaS): é uma propriedade do problema, não do método.
+- Validado em 4 vacas e 9 conjuntos de preços (mais 9 de validação no NASEM); não vale para qualquer fazenda sem repetir a medição.
+
+
+======================================================================================================================
+8. Conclusões prévias (revisadas em 20/11/2026, depois do benchmark da seção 5 e do NASEM da seção 6)
 ======================================================================================================================
 1. Fora do Ruminante Singular, o sistema roda as equações padrão do RuFaS: Vaca leiteira usa o SLSQP não linear e a curva de
    Wood; a Curva de lactação é a curva de Wood do RuFaS; a Sensibilidade repete simulações do RuFaS. O modelo linear existe só no
@@ -627,6 +724,9 @@ IMPACTO: o benchmark foi refeito como v2 (5.4b): NASEM equivalente até +/-0,1%.
 15. NASEM em simulação completa (seção 6, um cenário de 13 intervalos): o total do ano empata (LP -0,17% no mesmo consumo, -0,55% no consumo livre),
     com dispersão por intervalo de -2,1% a +0,67%. A busca heurística do LP pode ficar até cerca de 0,7% acima em um intervalo; o SLSQP pode parar
     em ótimo local (-2,1% nos dias 300 e 330). Todas as rações do LP atendem às restrições do RuFaS.
+16. Método de linearização (seção 7): a dieta ótima não aproxima as curvas do RuFaS; FIXA os escalares globais (consumo, TDN%, % de concentrado e, no
+    NASEM, amido) e resolve uma PL exata por ponto de uma grade com refinamento, em dois regimes (TDN% < 60 e >= 60). É exato por ponto e viável
+    para o RuFaS, mas a busca é heurística (sem prova de ótimo global).
 
 
 Próximos passos possíveis (não feitos)
