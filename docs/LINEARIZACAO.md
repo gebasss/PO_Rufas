@@ -374,14 +374,36 @@ preço (US$/kg MS) = preço_original / (kg por unidade comercial) / (MS do alime
 Campos por preço: valor original, unidade comercial, moeda, `câmbio`, base (matéria natural ou MS), fonte (indicador
 CEPEA e data). O mapeamento entre os indicadores do CEPEA e os alimentos da biblioteca é **a verificar**.
 
-### 7.3 Entradas do lote que o RuFaS usa na energia do NASEM
+### 7.3 Metano entérico e nitrogênio urinário: saídas da dieta (decisão de 20/11/2026)
 
-`pen_average_enteric_methane` (g/dia) e `pen_average_urine_nitrogen` (kg) são **saídas do RuFaS** para o lote. Para uma
-vaca isolada, o módulo precisa **recebê-las** ou **estimá-las** pelas equações do NASEM (metano e nitrogênio urinário,
-Eq. 3-9 e 3-10a), também congeladas na referência. No RuFaS esses dois valores são a **média do lote** dos valores do dia
-anterior de cada animal (só o NASEM os usa), e não existem para uma vaca isolada. **Decisão pendente (L-Q2).** Enquanto isso, o módulo
-os recebe como campos opcionais (`enteric_methane`, em g/dia, e `urinary_nitrogen`, em kg/dia); sem eles a restrição de energia
-do NASEM fica "indisponível" e a dieta é marcada como incompleta, em vez de usar um valor inventado.
+`pen_average_enteric_methane` (g/dia) e `pen_average_urine_nitrogen` (kg/dia) descontam a energia metabolizável do NASEM
+(`ME = DE − 13,28 Mcal/kg · CH4 − 0,0146 Mcal/g · N urinário`, vezes a eficiência de uso da ME). No RuFaS são a **média do lote** dos
+valores do dia anterior de cada animal. Para uma vaca isolada o módulo **calcula os dois da dieta**, com as equações do próprio RuFaS,
+que são **lineares nas quantidades** `x` (kg de MS por dia de cada alimento) e por isso entram na restrição de energia sem aproximação
+(implementado em `backend/dietopt/module/emissions.py`):
+
+```
+metano (g/dia) = (0,065 / 0,05565) · Σ xᵢ · GEᵢ                          modelo IPCC (o configurado no RuFaS)
+GEᵢ = 0,263·PB + 0,522·EE + 0,198·FDN + 0,160·(100 − cinzas − FDN − PB − EE)       (MJ/kg de MS; concentrações em % da MS)
+
+N urinário (kg/dia) = N do esterco − N fecal, com S = Σ xᵢ·PBᵢ e k = 1000·0,16·0,01 = 1,6 g de N por kg·%
+  vaca em lactação:    (20,3 + 0,654·k·S)/1000 − (−18,5 + 10,1·Σx)/1000
+  vaca seca e novilha: (15,1 + 0,83·k·S)/1000 − (0,345 + 0,317·k·S)/1000
+```
+
+A oferta de energia do NASEM fica `eficiência · (Σ xᵢ·DEᵢ − 13,28·0,001·CH4(x) − 0,0146·1000·UrN(x))`, afim em `x` com os escalares
+congelados, como as demais restrições de classe A. **Conferência:** as equações lineares reproduzem as funções originais do RuFaS
+(`EntericMethaneCalculator._calculate_IPCC_methane` e `ManureExcretionCalculator`) até o último dígito (`tests/test_emissions.py`,
+5 tipos de animal, dietas aleatórias). Ficam fora o piso do RuFaS no N urinário (0,022 kg na lactação, 0,017 kg nas demais), que só vale
+para consumos muito baixos, e os modelos de metano Mutian e Mills, que não são os configurados (o Mills é não linear).
+
+Se o usuário **informar** o metano e o nitrogênio urinário (campos opcionais `enteric_methane` e `urinary_nitrogen`, os dois ou
+nenhum), os valores valem como constantes para todas as dietas (medida do lote). Onde o otimizador do RuFaS entra (a comparação da
+Dieta ótima), ele só aceita **constantes**: recebe os da dieta do LP, as duas buscas resolvem o mesmo problema de energia e cada ração
+do SLSQP é conferida com as constantes que ele usou. Se não houvesse equação nem entrada, os valores de partida seriam **450 g/dia e
+0,25 kg/dia** (decisão do usuário; hoje só valem como ponto de partida do SLSQP quando se chama `run_rufas` sem dieta do LP).
+Na Vaca leiteira e na Sensibilidade, onde há simulação do RuFaS, os valores são **saídas da simulação** (média do lote por vaca, lida das
+saídas do RuFaS) e entram como constantes na comparação com o LP.
 
 ### 7.4 Comparação de dietas (L-D4)
 
@@ -430,7 +452,7 @@ redução de leite do RuFaS (0,25 kg por tentativa, quando a ração é inviáve
 | Caso | Custo do LP (US$/dia) | Melhor do RuFaS | Diferença | Tempo |
 |---|---|---|---|---|
 | NRC, vaca em lactação | 3,8345 | 3,8342 | +0,008% | ≈ 18 s |
-| NASEM, vaca em lactação (metano 400 g/dia, N urinário 0,2 kg/dia) | 3,08318 | 3,08318 | 0,000% | ≈ 11 s |
+| NASEM, vaca em lactação (medido em 03/11/2026 com metano 400 g/dia e N urinário 0,2 kg/dia informados; hoje os dois são calculados da dieta) | 3,08318 | 3,08318 | 0,000% | ≈ 11 s |
 
 Com a resolução "rápida" (≈ 5 s) a diferença no NRC foi de +0,005% a +0,03%. Nas categorias de vaca seca e de novilha, com a
 resolução rápida, o LP ficou igual ao RuFaS no NASEM e nas novilhas do NRC e 0,07% a 0,11% abaixo no NRC de vaca seca (o SLSQP
@@ -506,7 +528,7 @@ certificado; por isso a Sensibilidade usa a normal. De 20 a 45 s por simulação
 | ID | Questão | Proposta (a confirmar) |
 |---|---|---|
 | L-Q1 | Tolerâncias de convergência e de erro de linearização (seções 5.1 e 6) | Valores propostos acima; o estudo numérico sustenta ≤ 1% para variações de até ±5% |
-| L-Q2 | Metano e nitrogênio urinário do lote para uma vaca isolada (7.3) | Estimar pelo NASEM e congelar |
+| L-Q2 | Metano e nitrogênio urinário do lote para uma vaca isolada (7.3) | **Resolvida em 20/11/2026:** saídas da dieta, pelas equações lineares do RuFaS; opcionalmente informados |
 | L-Q3 | Mapeamento CEPEA × biblioteca de alimentos; arroz em grão (RF-26) | A verificar com o professor |
 | L-Q4 | O amido em kg (4.7) deve ser replicado em todas as comparações? | Sim (L-D5); registrar a diferença quando o módulo estiver completo |
 | L-Q5 | Critério final de ordenação das dietas (7.4) | Proposta acima |

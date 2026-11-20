@@ -115,7 +115,7 @@ tipos `Milk` e `Starter`. Os 130 alimentos restantes formam a biblioteca exibida
 
 ### 4.4 Cenário (`Scenario`)
 Todos os parâmetros que alteram o RuFaS (`rufas_adapter.py`): `name`, `start_date` (`2013:1`), `end_date`,
-`random_seed` (42), `nutrient_standard` (`NRC` ou `NASEM`; a aplicação usa `NRC`), `cow_num` (`None` mantém o rebanho
+`random_seed` (42), `nutrient_standard` (`NRC` ou `NASEM`; a interface usa só o NASEM; o NRC só pelo back-end), `cow_num` (`None` mantém o rebanho
 do exemplo `freestall`), `lac_cow_ration`, `ration_tolerance`, `lac_cow_feeds`, `feed_limits` (kg/vaca/dia),
 `feed_prices` (US$/kg), `milk_reduction_maximum` e `filters` (filtros de saída). Cada cenário vira a pasta
 `runs/<nome>/` com cópias editadas de `config.json`, `animal.json`, `feed.json`, `NRC_comp.csv`, `metadata.json`,
@@ -182,7 +182,7 @@ de energia na simulação é calculada pelo RuFaS.
 
 ### 5.3 Montagem do cenário (`scenario_from`, `build_scenario`)
 - **Período:** `years` é limitado a 1–3 (a interface oferece 1 ou 2). A simulação vai de `2013:1` a `<2012+years>:365`.
-- **Padrão nutricional:** sempre `NRC`. Para NRC, alimentos do exemplo que só existem no NASEM são trocados:
+- **Padrão nutricional:** `NASEM` na interface (o back-end aceita também `NRC`, usado pelo benchmark e pelas execuções antigas). Só no NRC, alimentos do exemplo que só existem no NASEM são trocados:
   301 → 230 (carbonato de cálcio) e 302 → 167 (farelo de soja 48% PB), em todo campo de id (`feed_type`,
   `purchased_feed` e listas `*_feeds`).
 - **Ração:** o sistema **não** impõe percentuais. Informa ao otimizador do RuFaS apenas a lista de alimentos
@@ -292,7 +292,7 @@ abortar, e mostra o leite perdido.
 
 Esta ferramenta **não tem**: perfis de usuário, permissões, autenticação, banco de dados, auditoria, múltiplas
 fazendas ou rebanhos salvos, leitura automática de cotações (CEPEA ou outra fonte; há importação de preços por CSV),
-o padrão NASEM 2021 na **simulação** das telas Vaca leiteira e Sensibilidade (ele existe só no Ruminante Singular),
+a escolha do padrão NRC 2001 na interface (só o NASEM 2021; o back-end aceita o NRC),
 alimentos personalizados, otimização por fase da lactação, modelo próprio de resposta do leite à dieta, linha de comando,
 nem hospedagem em nuvem. Na simulação, a ração é sempre formulada pelo otimizador do RuFaS; o sistema não a recalcula
 nem a altera (a dieta ótima do Ruminante Singular é outro cálculo, por programação linear, comparado com o RuFaS).
@@ -348,7 +348,7 @@ verificações de consistência foram implementados; os alimentos personalizados
 | Fonte | Como foi usada | Onde está |
 |---|---|---|
 | **NRC (2001)**, *Nutrient Requirements of Dairy Cattle*, 7ª ed. | Padrão nutricional do sistema, aplicado **pelo RuFaS** (`nutrient_standard = "NRC"`). O PDF tem camada de texto. | `Downloads/NRC 2001.pdf` (fora do projeto) |
-| **NASEM (2021)**, 8ª ed. revisada, tradução da Santafé Agroinstituto (errata de 08/2022 incorporada) | **Padrão do Ruminante Singular** (calculado pelo RuFaS com `nutrient_standard = "NASEM"`) e referência para conferência; a simulação das telas Vaca leiteira e Sensibilidade usa só o NRC. O PDF é uma digitalização sem texto; as notas foram feitas por OCR e auditadas | `docs/nasem2021_notas/` (local, não versionada) |
+| **NASEM (2021)**, 8ª ed. revisada, tradução da Santafé Agroinstituto (errata de 08/2022 incorporada) | **Padrão do Ruminante Singular** (calculado pelo RuFaS com `nutrient_standard = "NASEM"`) e padrão único da interface, inclusive da simulação das telas Vaca leiteira e Sensibilidade. O PDF é uma digitalização sem texto; as notas foram feitas por OCR e auditadas | `docs/nasem2021_notas/` (local, não versionada) |
 | **RuFaS v1.0.6** | Simulador; implementa as equações dos dois padrões e traz as bibliotecas de alimentos | `vendor/RuFaS` |
 
 O livro do NASEM afirma que, em caso de divergência entre o texto e o modelo, **prevalece o código R oficial** (p. 472).
