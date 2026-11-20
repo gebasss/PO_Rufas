@@ -36,3 +36,7 @@ cd backend
 - **v1** (72 casos, NASEM e NRC): fixava metano e nitrogênio urinário em valores de teste; achou um defeito na busca do LP (até +1,77% no NASEM), corrigido depois. As pastas guardam os resultados antes da correção e a validação com preços novos.
 - **v2** (72 casos): metano e nitrogênio calculados da dieta; 4 vacas, 1 cardápio, dois padrões.
 - O v3 recomeça do zero: só NASEM, mais animais e cardápios, um critério único e um único diretório de saída.
+
+## Depois do v3
+
+Os 6 casos em que o LP passou da margem e as 8 dietas não verificadas foram investigados em `docs/CONCLUSOES_PREVIAS.txt`, seção 5.8: 2 são mínimos locais da busca do LP, 4 são diferença de problema (o SLSQP recebe metano e nitrogênio como constantes) e o teto da proteína foi corrigido. Os arquivos de `v3/` guardam a medição **antes** dessa correção.

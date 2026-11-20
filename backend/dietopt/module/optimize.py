@@ -28,7 +28,7 @@ from ..standards import get_standard
 from . import linear
 from .categories import parse_animal_type, parse_category
 from . import emissions
-from .evaluate import Diet, evaluate_diet, pen_inputs, resolve_limits
+from .evaluate import VIOLATION_TOLERANCE, Diet, evaluate_diet, pen_inputs, resolve_limits
 from .library import build_feeds
 from .requirements import RequirementsResult, compute_requirements
 from .rufas import rufas
@@ -87,7 +87,9 @@ class Row:
     rhs: float
 
     def holds(self, x: np.ndarray) -> bool:
-        value, margin = float(self.a @ x), 1e-6 * max(1.0, abs(self.rhs))
+        # A mesma tolerância com que a avaliação chama uma restrição de "violada" (``evaluate.VIOLATION_TOLERANCE``, pela metade): uma margem
+        # maior deixaria passar um teto de proteína excedido por arredondamento, e a dieta sairia "não verificada" (benchmark v3).
+        value, margin = float(self.a @ x), 0.5 * VIOLATION_TOLERANCE * max(1.0, abs(self.rhs))
         return value >= self.rhs - margin if self.sense == "ge" else value <= self.rhs + margin
 
 
