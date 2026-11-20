@@ -227,3 +227,18 @@ def test_payload_da_rota_mapeia_o_corpo_e_usa_cinco_sementes_por_padrao():
     resposta = optimize_payload(corpo, should_stop=None)
     assert resposta["status"] == "ok" and resposta["rufas"]["n_runs"] == 5
     assert optimize_payload({**corpo, "seeds": 0})["status"] == "ok"
+
+
+def test_dieta_no_teto_da_proteina_sai_verificada():
+    """Caso do benchmark v3 (novilha II, cardápio amplo, conjunto de preços 1), congelado: o ótimo sem o teto da proteína metabolizável o excedia
+    por 5,7e-6 g (1e-8 do teto), dentro da margem do LP (1e-6) mas além da tolerância da avaliação (1e-9). A dieta saía "não verificada"."""
+    cow = dict(body_weight=350, mature_body_weight=680, average_daily_gain_heifer=0.8, housing="Barn", distance=100)
+    prices = {23: 0.7775, 44: 0.4002, 50: 0.1679, 110: 0.2094, 138: 0.3862, 167: 0.4837, 230: 0.074, 107: 0.4056, 163: 0.2982, 193: 0.1499, 194: 0.2109, 231: 1.3831}
+    result = optimize_diet("NASEM", "GROWING", cow, sorted(prices), prices, None, None, "HEIFER_II", "normal", 0)
+    assert result["status"] == "ok" and result["diet"]["verified"] and result["diet"]["evaluation"]["violated"] == []
+    assert result["diet"]["cost"] == pytest.approx(1.33584, rel=1e-4)  # o custo não muda: só a violação mínima sai
+
+
+def test_linha_so_aceita_violacao_dentro_da_tolerancia_da_avaliacao():
+    row = optimize.Row("protein_max", np.array([1.0]), "le", 972.0)
+    assert row.holds(np.array([972.0 + 1e-7])) and not row.holds(np.array([972.0 + 3e-5]))

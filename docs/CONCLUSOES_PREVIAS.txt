@@ -319,12 +319,12 @@ POR CARDÁPIO: enxuto (+0,020%) e base (+0,015%) equivalentes; amplo (+0,012%) n
   o IC de 90% vai de -0,013% a +0,038%, dentro da margem).
 CASOS FORA DA MARGEM (8 de 240): LP mais caro em 6 (novilha-pre-parto/amplo/p7 +1,03%; lac-final/amplo/p3 +0,94%; lac-primipara/amplo/p7 +0,81%;
   novilha-pre-parto/enxuto/p5 +0,76%; lac-media/base/p3 +0,58%; novilha-pre-parto/enxuto/p11 +0,53%) e mais barato em 2 (lac-primipara/amplo/p11 -0,93%;
-  lac-media/amplo/p11 -0,68%). Em 5 dos 6 casos em que o LP ficou mais caro, o LP terminou no regime com desconto de ingestão, o mesmo padrão
-  do defeito de busca da seção 5.5. NÃO investiguei esses casos (o desenho proíbe ajustar a busca olhando os resultados; ver 5.6, item 9).
+  lac-media/amplo/p11 -0,68%). Investigados depois (5.8): 2 dos 6 são defeito da busca do LP (mínimo local do mesmo regime); os outros 4 são diferença de
+  problema (o SLSQP resolve com constantes de metano e nitrogênio que a dieta dele não reproduz); nos 2 em que o LP foi mais barato, o SLSQP parou em ótimo local.
 DIETAS DO LP VERIFICADAS COM AS RESTRIÇÕES DO RuFaS: 232 de 240. As 8 restantes têm custo igual ao do melhor SLSQP e uma violação mínima do TETO da
   proteína metabolizável; nos dois casos que inspecionei, 2,8e-5 g e 5,7e-6 g contra tetos de 972 g e 403 g (cerca de 3e-8 e 1e-8 em termos
-  relativos): o LP fica exatamente no teto e o arredondamento passa da tolerância de 1e-5. É numérico, sem efeito no custo, mas é um defeito
-  do LP a corrigir (por exemplo, com uma folga de 1e-6 no teto).
+  relativos): o LP fica exatamente no teto e o arredondamento passa da tolerância de 1e-5. Corrigido depois (5.8): a margem do LP para aceitar a dieta no teto era mais folgada que a tolerância da avaliação.
+  Os 8 casos passam a ser verificados com o mesmo custo; os arquivos de v3 guardam a medição ANTES da correção.
 ANÁLISE POSTERIOR (não prevista no desenho; indicação, não veredito): sem os 60 casos de diferença nula (vaca seca e novilhas I e II), as 180 vacas
   em lactação e novilha pré-parto dão média +0,020% (IC 90% +0,003% a +0,038%), 95,6% dentro da margem e 8 casos fora: o resultado é o mesmo.
 
@@ -374,15 +374,16 @@ PODE SER DITO
    métodos é de centésimos de ponto percentual na média.
 4. O LP não é mais rápido: cerca de 180 vezes mais lento (9,2 s contra 0,05 s).
 5. Onde o LP tem vantagem real: (a) é determinístico (entre as sementes do SLSQP o custo chega a +17% em um caso, e a pior semente custa em média
-   0,13% mais); (b) 232 das 240 dietas do LP atendem às restrições originais do RuFaS e as 8 restantes violam só o teto da proteína por
-   arredondamento (5.4); (c) fornece preços-sombra (seção 8, item 4b). Neste desenho o SLSQP não falhou em nenhuma das 2.400 execuções (nos
+   0,13% mais); (b) 232 das 240 dietas do LP atendiam às restrições originais do RuFaS e as 8 restantes violavam só o teto da proteína por
+   arredondamento (5.4; corrigido em 5.8); (c) fornece preços-sombra (seção 8, item 4b). Neste desenho o SLSQP não falhou em nenhuma das 2.400 execuções (nos
    desenhos anteriores falhava em 0,3% no NASEM e 3,3% no NRC).
 6. Onde o SLSQP não acha dieta, o LP também não: nos 48 casos sem solução o SLSQP não convergiu em nenhuma semente.
 NÃO PODE SER DITO
 7. "O LP é melhor que o RuFaS no custo": não se sustenta.
-8. "O LP nunca custa mais que o RuFaS": em 10 casos custou mais que o empate e em 6 passou da margem (até +1,03%).
-9. Que a busca do LP está livre de defeitos: 5 dos 6 casos em que o LP passou da margem estão no regime com desconto de ingestão, o padrão do
-   defeito da seção 5.5, e não foram investigados. Se a busca for revista, o benchmark deve ser repetido com outra semente de preços (5.2, item 10).
+8. "O LP nunca custa mais que o RuFaS": em 10 casos custou mais que o empate e em 6 passou da margem (até +1,03%); 4 desses 6 são diferença de
+   problema, não de método (5.8).
+9. Que a busca do LP está livre de defeitos: em 2 dos 240 casos a busca "normal" parou em um mínimo local (+0,58% e +0,94%; a resolução fina achou o
+   ótimo; 5.8). Se a busca for revista, o benchmark deve ser repetido com outra semente de preços (5.2, item 10).
 10. Que o resultado vale para qualquer fazenda ou dieta: são casos projetados, de um dia, com preços ilustrativos.
 11. Que o critério vale para cada animal ou cardápio isolado: o critério é do conjunto; as linhas por animal e por cardápio têm poucos casos e são
     indicação. Três animais e um cardápio não passaram sozinhos na condição dos 95%.
@@ -395,13 +396,50 @@ NÃO PODE SER DITO
 - 48 dos 288 casos (novilhas I e II com os cardápios enxuto e base) não têm solução em nenhum dos métodos; o desenho os mantém e os conta. O cardápio
   amplo é o único que atende a essas novilhas, então elas têm só 12 casos cada.
 - A análise posterior sem os 60 casos de diferença nula (5.4) NÃO estava prevista; foi feita depois de ver os resultados e serve só de indicação.
-- Metano e nitrogênio urinário: calculados da dieta; o SLSQP recebe os da dieta do LP (uma rodada, sem iterar até a consistência). Valores
-  informados pelo usuário não foram variados.
+- Metano e nitrogênio urinário: calculados da dieta; o SLSQP recebe os da dieta do LP (uma rodada, sem iterar até a consistência). Isso faz o
+  SLSQP resolver um problema MENOS restrito que o do LP (5.8): em 4 de 240 casos o SLSQP foi mais barato só por isso. O veredito é conservador contra
+  o LP. Valores informados pelo usuário não foram variados.
 - Tempos: variam entre rodadas e máquinas; citar a ordem de grandeza (cerca de 180 vezes), não um valor único.
 - A interface diz, quando o RuFaS acha custo menor, "aumente a resolução (rápida, normal ou fina)". A resolução fina quase não ajuda nos casos
   investigados (5.5); o texto promete mais do que a resolução entrega e deveria ser revisto (não alterado).
 - Falhas de procedimento no v3: nenhuma que tenha invalidado resultado. No desenho anterior a primeira execução parou porque a vaca primípara tinha
   dia de gestação 0 (o campo aceita de 1 a 285); isso foi corrigido antes do v3.
+
+5.8 Investigação dos 6 casos fora da margem e do teto da proteína (20/11/2026, depois do v3)
+Roteiro (script de investigação, não versionado): para cada caso, rodar optimize_diet (normal, 10 sementes); tomar o melhor SLSQP e calcular os escalares
+dele (consumo, TDN%, % de concentrado, amido); (a) resolver o LP FIXANDO esses escalares; (b) rodar a busca do LP na resolução fina; (c) avaliar a
+dieta do SLSQP com o metano e o nitrogênio urinário calculados da PRÓPRIA dieta (a definição do módulo), e não com as constantes que o SLSQP recebeu.
+Os dois casos em que o LP foi mais barato (-0,93% e -0,68%) entraram no mesmo roteiro.
+  caso                           diferença  LP nos escalares do SLSQP   LP fina   dieta do SLSQP com as emissões dela
+  lac-final/amplo/p3             +0,94%     1,81546 (= SLSQP)           1,81546   viável
+  lac-media/base/p3              +0,58%     3,65285 (= SLSQP)           3,65285   viável
+  novilha-pre-parto/amplo/p7     +1,03%     inviável                    0,97334   VIOLA a energia (-0,98 Mcal/dia)
+  lac-primipara/amplo/p7         +0,81%     inviável                    2,02419   VIOLA a energia (-0,44)
+  novilha-pre-parto/enxuto/p5    +0,76%     inviável                    0,81954   VIOLA a energia (-0,78)
+  novilha-pre-parto/enxuto/p11   +0,53%     inviável                    1,72981   VIOLA a energia (-0,14)
+  lac-primipara/amplo/p11        -0,93%     1,39280 (= SLSQP)           1,38132   viável
+  lac-media/amplo/p11            -0,68%     1,32885 (= SLSQP)           1,32271   viável
+Leitura:
+1. DOIS casos são defeito da busca "normal" do LP (lac-final/amplo/p3 e lac-media/base/p3). A fórmula confere (o LP nos escalares do SLSQP reproduz o
+   custo dele) e a resolução fina acha o ótimo, mas a normal para num mínimo local do mesmo regime (o SLSQP e o ótimo estão no regime com desconto). Não é
+   o defeito de 5.5 (regime). São 2 de 240 casos (0,8%). Corrigir exigiria mais pontos de partida ou refinamento na busca e uma nova rodada do benchmark
+   com outra semente de preços (5.2, item 10); não foi feito.
+2. QUATRO casos NÃO são defeito do LP, e sim uma assimetria do desenho (três de novilha pré-parto e uma primípara). O SLSQP do RuFaS só aceita o metano e
+   o nitrogênio urinário como constantes e recebe os da dieta do LP (uma rodada); o LP os calcula da PRÓPRIA dieta. A dieta do SLSQP nesses casos é bem
+   diferente da do LP (TDN% de 56 a 60 contra 60 a 64, amido muito menor) e, com as emissões dela mesma, viola a energia do NASEM (de -0,14 a
+   -0,98 Mcal/dia); com as constantes do LP ela parece viável e mais barata. O LP não acha esses pontos porque são inviáveis no problema dele. O SLSQP
+   resolve um problema MENOS restrito, então "o LP custou mais" é diferença de problema, não de método. Consequência: o veredito de equivalência é
+   conservador contra o LP. Um desenho mais justo (não implementado) conferiria também cada dieta do SLSQP com as emissões da própria dieta, ou compararia
+   com o LP resolvido com as mesmas constantes.
+3. Nos DOIS casos em que o LP foi mais barato, a fórmula também confere (o LP nos escalares do SLSQP dá o custo dele) e o LP achou um ponto mais barato no
+   regime sem desconto (TDN% de 59,8 a 60): o SLSQP parou em ótimo local, o mesmo padrão que o NRC mostrou.
+4. A resolução fina não é sempre melhor: em lac-primipara/amplo/p11 a fina (1,38132) ficou acima da normal (1,37992), porque a busca é heurística.
+TETO DA PROTEÍNA (as 8 dietas "não verificadas" de 5.4). Causa: "o menor de dois valores de proteína fica abaixo do teto" é uma disjunção; o LP resolve sem
+o teto e só enumera os ramos se a solução o excede além de uma margem (Row.holds). Essa margem era de 1e-6 relativo, mais folgada que a tolerância com que
+a avaliação chama uma restrição de violada (1e-9). As 8 dietas excediam o teto por 1e-8 a 3e-8 relativo, dentro da margem do LP e fora da tolerância da
+avaliação. Correção (backend\dietopt\module\optimize.py): Row.holds passa a usar metade da tolerância da avaliação (VIOLATION_TOLERANCE). Conferido nos 8
+casos: todos ficam verificados e com o mesmo custo (5 casas). Testes novos em test_module_optimize.py (um caso congelado e a regra da tolerância). O
+benchmark v3 NÃO foi repetido: os arquivos de docs\benchmark\v3 mostram a medição antes da correção (232 de 240 verificadas).
 
 ======================================================================================================================
 6. 20/11/2026 - NASEM na Vaca leiteira e na Sensibilidade (RF-24): o que, como e por quê
@@ -606,8 +644,8 @@ Propriedades:
   perto do ponto.
 
 7.6 Limites (o que NÃO está garantido)
-- Não há prova de otimalidade global: a busca em grade com refinamento pode perder um ótimo estreito (já aconteceu, 7.5, e foi corrigido; outros
-  casos podem ter outro defeito que os 144 casos do benchmark não mostraram).
+- Não há prova de otimalidade global: a busca em grade com refinamento pode perder um ótimo estreito (já aconteceu, 7.5, e foi corrigido) ou parar
+  em um mínimo local (2 dos 240 casos do v3, +0,58% e +0,94%, que a resolução fina evita; 5.8).
 - A solução é VIÁVEL para o problema original, mas só é ótima no sentido da parametrização (grade e refinamento).
 - O LP é cerca de 150 a 180 vezes mais lento que o SLSQP (seção 5): a vantagem do método não está no custo nem na velocidade, e sim no resultado
   determinístico (o SLSQP depende do ponto inicial aleatório), na verificação contra as restrições originais e nos preços-sombra.
@@ -663,7 +701,7 @@ Propriedades:
     36 de 36 empates); nenhum caso do NRC mudou. A busca continua heurística, sem garantia de ótimo.
 12. O que se pode afirmar na apresentação: (i) não há vantagem de custo do LP, medida com critério definido antes; (ii) o preço dos alimentos pesa
     muito mais que o método (175% contra centésimos de ponto percentual); (iii) as vantagens do LP são o determinismo (o SLSQP variou até 17% entre
-    sementes em um caso), a verificação de cada dieta pelas restrições originais (232 de 240; as demais violam o teto da proteína por arredondamento)
+    sementes em um caso), a verificação de cada dieta pelas restrições originais (232 de 240 no v3; as demais violavam o teto da proteína por arredondamento, corrigido em 5.8)
     e os preços-sombra; (iv) o LP é cerca de 180 vezes mais lento. Dizer "dentro de +/-0,5% em todos os casos medidos", e não "o LP nunca custa mais".
 13. Decisões de 20/11/2026 e porquês (5.2): margem de +/-0,5% (economicamente desprezível, 1/350 do efeito dos preços, entre o ruído do SLSQP e
     o ótimo local); tempo de execução aceito, com a resolução "normal" do LP (sem alegar velocidade); NASEM levado à Vaca leiteira e à
@@ -689,8 +727,9 @@ Próximos passos possíveis (não feitos)
   repetir a sensibilidade de 27 simulações (seção 4) no NASEM.
 - Rever o texto "aumente a resolução" da conclusão da Dieta ótima, que a resolução fina quase não cumpre (5.7).
 - Repetir o benchmark com simulações completas do RuFaS (5.7).
-- Investigar os 6 casos do v3 em que o LP passou da margem (5.4) e corrigir o teto de proteína dos LP não verificados; depois, repetir o benchmark com
-  outra semente de preços (--price-seed), conforme 5.2, item 10.
+- Decidir como tratar as constantes do SLSQP no benchmark (conferir também com as emissões da própria dieta, ou comparar com o LP resolvido com as
+  mesmas constantes; 5.8) e, se a busca "normal" do LP for melhorada (2 mínimos locais em 240 casos), repetir o benchmark com outra semente de preços
+  (--price-seed), conforme 5.2, item 10.
 
 
 ======================================================================================================================
