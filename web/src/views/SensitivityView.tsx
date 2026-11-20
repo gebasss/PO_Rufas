@@ -21,6 +21,7 @@ import { DEFAULT_HERD, herdProblem, secondsPerSimulation } from '@/lib/herd'
 import { DEFAULT_SENS_LIMITS, maxLevels, sensitivityPlan, sensitivityProblem } from '@/lib/sensitivity'
 import type { RunMeta, SensFactor, SensFactorState as FactorState, SensResult } from '@/lib/types'
 import { useApp } from '@/providers/AppProvider'
+import { COW_STANDARD, standardName } from '@/views/module/model'
 import { simulationBody } from '@/views/CowView'
 import SensLinearRationCard from '@/views/sensitivity/LinearRationCard'
 import SensResults from '@/views/sensitivity/Results'
@@ -175,7 +176,7 @@ export default function SensitivityView() {
           {factors.length
             ? `${plan.scenarios} cenários, até ${plan.simulations} simulações do RuFaS (cerca de ${Math.max(1, Math.ceil((plan.simulations * secondsPerSimulation(params.cowNum)) / 60))} min).`
             : 'Marque ao menos um fator.'}{' '}
-          Rebanho de {params.cowNum} vacas, como na tela Vaca leiteira.
+          Rebanho de {params.cowNum} vacas e padrão {standardName(COW_STANDARD)}, como na tela Vaca leiteira.
         </p>
       )}
       {herdError && (

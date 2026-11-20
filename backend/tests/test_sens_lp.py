@@ -53,7 +53,7 @@ def comparacao_falsa(deltas):
     """Substitui ``compare_sample``: devolve diferenças canônicas, uma por chamada."""
     it = iter(deltas)
 
-    def fake(simulation, feeds, prices, limits, sample, should_stop):
+    def fake(simulation, feeds, prices, limits, sample, should_stop, standard="NRC"):
         diff = next(it)
         return {"intervals_sampled": sample, "intervals_used": sample, "slsqp_cost": 4.0, "lp_cost": 4.0 * (1 + diff / 100), "diff_pct": diff, "verified": True}
 
@@ -94,6 +94,15 @@ def test_progresso_e_cancelamento(monkeypatch):
         sens_lp.compare_sensitivity(BASE, [ARROZ], ECONOMICS, "grid", 3, should_cancel=lambda: True)
 
 
-def test_nasem_e_recusado():
-    with pytest.raises(ValueError, match="NRC"):
-        sens_lp.compare_sensitivity(Scenario(name="x", nutrient_standard="NASEM"), [ARROZ], ECONOMICS, "grid", 3)
+def test_nasem_passa_o_padrao_a_comparacao_e_ao_resultado(monkeypatch):
+    chamadas = []
+
+    def fake(simulation, feeds, prices, limits, sample, should_stop, standard="NRC"):
+        chamadas.append(standard)
+        return {"intervals_sampled": sample, "intervals_used": sample, "slsqp_cost": 4.0, "lp_cost": 4.0, "diff_pct": 0.0, "verified": True}
+
+    monkeypatch.setattr(sens_lp, "evaluate", AvaliacaoFalsa())
+    monkeypatch.setattr(sens_lp, "compare_sample", fake)
+    base = Scenario(name="x", nutrient_standard="NASEM", lac_cow_feeds=[50, 110, 44], feed_prices={50: 0.09, 110: 0.12, 44: 0.28})
+    out = sens_lp.compare_sensitivity(base, [ARROZ], ECONOMICS, "grid", 3)
+    assert out["standard"] == "NASEM" and set(chamadas) == {"NASEM"}

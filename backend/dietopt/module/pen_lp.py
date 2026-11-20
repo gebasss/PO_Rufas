@@ -11,7 +11,9 @@ Duas variantes do LP, para não confundir economia de ração com mais consumo:
 * **consumo livre**: o consumo pode variar na faixa que o RuFaS permite (estimativa ± 30%), como no SLSQP;
 * **mesmo consumo**: o consumo é o que o SLSQP escolheu naquele intervalo (a comparação mais conservadora).
 
-Só vale para o padrão NRC: no NASEM a oferta de energia exige metano e nitrogênio urinário do lote, que a simulação não informa.
+Vale para o NRC e para o NASEM. No NASEM a oferta de energia exige o metano entérico e o nitrogênio urinário médios do lote: o RuFaS
+os calcula a cada intervalo (``pen.py``) e a simulação os grava (``SimulationResult.pen_averages``); sem eles (resultado guardado antes do
+suporte ao NASEM) a comparação é recusada com a instrução de simular de novo.
 """
 
 from __future__ import annotations
@@ -39,23 +41,42 @@ SAMPLE_RESOLUTION = "normal"  # com o consumo fixo a busca normal custa pouco ma
 RESOLUTION = "rapida"  # a normal custa 2,5 vezes mais e muda o custo em menos de 0,1%
 
 
-def _cow(requirements: Mapping[str, Any]) -> dict[str, Any]:
-    """Vaca só para satisfazer a calculadora: as exigências vêm do RuFaS (sobrescritas) e só o peso entra na oferta."""
+def _cow(requirements: Mapping[str, Any], pen: tuple[float, float] | None = None) -> dict[str, Any]:
+    """Vaca só para satisfazer a calculadora: as exigências vêm do RuFaS (sobrescritas) e só o peso (e, no NASEM, o metano e o
+    nitrogênio urinário do lote, em ``pen``) entram na oferta. O escore de condição corporal só é exigido pelo NASEM."""
     weight = max(float(requirements.get("avg_BW") or 0.0), MIN_BODY_WEIGHT)
-    return {
+    cow: dict[str, Any] = {
         "body_weight": weight, "mature_body_weight": max(700.0, weight), "parity": 2, "days_in_milk": 150, "housing": "Barn",
         "distance": 0, "milk_production": 35.0, "milk_fat": 3.7, "milk_true_protein": 3.1, "milk_lactose": 4.85,
+        "body_condition_score_5": 3.0,
     }  # fmt: skip
+    if pen:
+        cow |= {"enteric_methane": pen[0], "urinary_nitrogen": pen[1]}
+    return cow
+
+
+def _pens(simulation: Any, standard: str, indices: Sequence[int]) -> dict[int, tuple[float, float] | None]:
+    """Metano (g/dia) e nitrogênio urinário (kg/dia) médios do lote em cada intervalo, só no NASEM (o NRC não os usa)."""
+    if standard != "NASEM":
+        return {i: None for i in indices}
+    pens = {i: simulation.pen_averages(int(simulation.interval_days[i])) for i in indices}
+    if any(p is None for p in pens.values()):
+        raise ValueError(
+            "Esta simulação NASEM não trouxe o metano e o nitrogênio urinário do lote (foi guardada antes do suporte ao NASEM na "
+            "comparação com o LP). Rode a simulação de novo."
+        )
+    return pens
 
 
 def _solve(
     requirements: Mapping[str, Any], ids: Sequence[int], prices: Mapping[int, float], limits: Mapping[int, tuple[float, float]],
     dmi_range: tuple[float, float] | None, should_stop: Callable[[], bool] | None, resolution: str = RESOLUTION,
+    standard: str = "NRC", pen: tuple[float, float] | None = None,
 ) -> dict[str, Any] | None:  # fmt: skip
-    cow = _cow(requirements)
+    cow = _cow(requirements, pen)
     overrides = {name: float(requirements[key]) for key, name in REQUIREMENT_MAP.items()}
-    required = compute_requirements("NRC", "LAC_COW", cow, overrides, "LAC_COW")
-    problem = build_problem("NRC", "LAC_COW", "LAC_COW", cow, list(ids), prices, limits, required, dmi_range)
+    required = compute_requirements(standard, "LAC_COW", cow, overrides, "LAC_COW")
+    problem = build_problem(standard, "LAC_COW", "LAC_COW", cow, list(ids), prices, limits, required, dmi_range)
     best, _ = search(problem, resolution, None, should_stop)
     if best is None:
         return None
@@ -99,8 +120,8 @@ def compare_with_simulation(
 
     ``simulation`` é um ``SimulationResult``; ``feed_ids``, ``prices`` e ``limits`` são os do cenário simulado.
     """
-    if standard != "NRC":
-        raise ValueError("A comparação com a ração linear só está disponível para o padrão NRC.")
+    if standard not in ("NRC", "NASEM"):
+        raise ValueError(f"Padrão desconhecido: {standard!r}")
     ids = sorted({int(i) for i in feed_ids})
     missing = [i for i in ids if i not in prices]
     if missing:
@@ -112,6 +133,7 @@ def compare_with_simulation(
     bounds = {i: (float(limits[i][0]), float(limits[i][1])) if i in limits else (0.0, 100.0) for i in ids}
     lengths = _interval_lengths(simulation.interval_days, len(simulation.days))
     cows = list(simulation.cows_in_pen) + [0] * (steps - len(simulation.cows_in_pen))
+    pens = _pens(simulation, standard, range(steps))
 
     total = 2 * steps
     done = 0
@@ -127,7 +149,7 @@ def compare_with_simulation(
         requirements = simulation.requirements[index]
         variants = []
         for dmi_range in (None, (slsqp_dmi, slsqp_dmi)):
-            variants.append(_solve(requirements, ids, price, bounds, dmi_range, should_stop))
+            variants.append(_solve(requirements, ids, price, bounds, dmi_range, should_stop, RESOLUTION, standard, pens[index]))
             done += 1
             if on_progress:
                 on_progress(done, total)
@@ -210,6 +232,7 @@ def compare_sample(
     limits: Mapping[int, tuple[float, float]],
     sample: int = 4,
     should_stop: Callable[[], bool] | None = None,
+    standard: str = "NRC",
 ) -> dict[str, Any]:
     """Versão curta de ``compare_with_simulation`` para muitas simulações (Sensibilidade): só a variante de **mesmo consumo**
     (a conservadora) e só ``sample`` intervalos igualmente espaçados.
@@ -225,12 +248,14 @@ def compare_sample(
     bounds = {i: (float(limits[i][0]), float(limits[i][1])) if i in limits else (0.0, 100.0) for i in ids}
     lengths = _interval_lengths(simulation.interval_days, len(simulation.days))
     rows = []
-    for index in sample_indices(steps, sample):
+    chosen = sample_indices(steps, sample)
+    pens = _pens(simulation, standard, chosen)
+    for index in chosen:
         ration = simulation.ration_kg_per_cow[index]
         amounts = {str(k): float(v) for k, v in ration.items() if k != "dry_matter_intake_total" and float(v) > 0}
         dmi = float(ration.get("dry_matter_intake_total") or sum(amounts.values()))
         slsqp_cost = sum(v * price.get(int(k), 0.0) for k, v in amounts.items())
-        lp = _solve(simulation.requirements[index], ids, price, bounds, (dmi, dmi), should_stop, SAMPLE_RESOLUTION)
+        lp = _solve(simulation.requirements[index], ids, price, bounds, (dmi, dmi), should_stop, SAMPLE_RESOLUTION, standard, pens[index])
         rows.append({"day": int(simulation.interval_days[index]), "days": lengths[index], "slsqp": slsqp_cost, "lp": lp})
     usable = [r for r in rows if r["lp"] is not None]
     days = sum(r["days"] for r in usable)

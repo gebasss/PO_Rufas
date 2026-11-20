@@ -25,7 +25,7 @@ import SensResults from '@/views/sensitivity/Results'
 
 type Params = Record<string, unknown>
 
-/** Padrão nutricional da execução: simulações e sensibilidades usam a NRC; avaliação e dieta ótima gravam o escolhido. */
+/** Padrão nutricional da execução: todas gravam o padrão (hoje só NASEM); as execuções antigas, sem o campo, eram NRC. */
 const standardOf = (run: RunFull): NutrientStandard => ((run.params as Params).standard === 'NASEM' ? 'NASEM' : 'NRC')
 
 /** Nome do alimento, com a descrição, na biblioteca do padrão da execução (os identificadores dos dois padrões são diferentes). */

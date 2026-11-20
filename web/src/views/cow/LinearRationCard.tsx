@@ -315,7 +315,7 @@ export default function LinearRationCard({ sim, simKey, stale }: Props) {
                   O leite não é simulado de novo: o RuFaS só reduz o leite quando a ração não atende, e as rações do LP atendem. O
                   custo é o da ração formulada (preço × quantidade), como no indicador da aba Visão geral.
                 </li>
-                <li>Só vale para o padrão NRC 2001 e para as vacas em lactação.</li>
+                <li>Vale para as vacas em lactação, no padrão NASEM 2021.</li>
               </ul>
             </AlertDescription>
           </Alert>

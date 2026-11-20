@@ -35,7 +35,7 @@ export default function AboutView() {
           </li>
           <li>
             Na <Strong>Vaca leiteira</Strong> você escolhe alimentos, preços e limites e o sistema roda o <Strong>RuFaS</Strong>,
-            um simulador de fazenda leiteira, com a NRC (2001). O otimizador do RuFaS formula a ração de{' '}
+            um simulador de fazenda leiteira, com o NASEM (2021). O otimizador do RuFaS formula a ração de{' '}
             <Strong>custo mínimo</Strong> das vacas em lactação, respeitando o preço e os limites de cada alimento.
           </li>
           <li>
@@ -67,7 +67,7 @@ export default function AboutView() {
             carne, peixe, sangue e penas, glúten de milho e, no NASEM, ureia). Você pode alterar qualquer um.
           </li>
           <li>
-            A biblioteca NRC do RuFaS só traz <Strong>farelo de arroz</Strong>, não o arroz em grão.
+            A biblioteca NASEM do RuFaS só traz <Strong>farelo de arroz</Strong>, não o arroz em grão.
           </li>
           <li>
             Simulação de 1 ou 2 anos, 100 vacas por padrão (de 60 a 500; exemplo freestall do RuFaS) e semente aleatória
@@ -81,7 +81,7 @@ export default function AboutView() {
             <Strong>Ruminante Singular, cada restrição:</Strong> <Strong>Atende</Strong>; <Strong>No limite</Strong> (folga de até
             0,5% da exigência); <Strong>Violada</Strong>; ou <Strong>Indisponível</Strong> (falta um dado). A dieta é{' '}
             <Strong>Viável</Strong> (todas atendidas), <Strong>Inviável</Strong> ou <Strong>Viável incompleta</Strong> (alguma
-            restrição sem dado, como a energia do NASEM sem metano e nitrogênio urinário). A melhor é a viável de menor custo.
+            restrição sem dado). A melhor é a viável de menor custo.
           </li>
           <li>
             <Strong>Restrições aproximadas:</Strong> as que não são lineares são calculadas no ponto da dieta e têm erro; a aba
@@ -113,13 +113,12 @@ export default function AboutView() {
             com uma referência profissional.
           </li>
           <li>
-            A simulação das telas Vaca leiteira e Sensibilidade usa só o padrão <Strong>NRC (2001)</Strong>; o NASEM (2021) está no
-            Ruminante Singular.
+            Todas as telas usam só o padrão <Strong>NASEM (2021)</Strong>; o NRC (2001), a edição anterior, saiu das telas.
           </li>
           <li>
-            No Ruminante Singular, a energia do NASEM exige <Strong>metano entérico</Strong> e <Strong>nitrogênio urinário</Strong>
-            ; sem eles a restrição fica indisponível. A vaca é avaliada em um único dia, com o consumo estimado pela equação do
-            padrão escolhido.
+            A energia do NASEM desconta o <Strong>metano entérico</Strong> e o <Strong>nitrogênio urinário</Strong>. No Ruminante
+            Singular, se você não os informa, o sistema os calcula de cada dieta com as equações do RuFaS; a vaca é avaliada em um
+            único dia, com o consumo estimado pela equação do NASEM.
           </li>
           <li>
             O otimizador do RuFaS pode não convergir para certos preços. Nesse caso o cenário aparece como{' '}
@@ -139,9 +138,8 @@ export default function AboutView() {
           <li>
             Simulador: <Strong>RuFaS</Strong> v1.0.6 (Ruminant Farm Systems), licença GPLv3, usado sem modificações.
           </li>
-          <li>Exigências e composição dos alimentos: NRC, Nutrient Requirements of Dairy Cattle (2001).</li>
           <li>
-            Exigências e restrições do Ruminante Singular: National Academies of Sciences, Engineering, and Medicine,{' '}
+            Exigências, composição dos alimentos e restrições (Vaca leiteira, Sensibilidade e Ruminante Singular): National Academies of Sciences, Engineering, and Medicine,{' '}
             <em>Nutrient Requirements of Dairy Cattle</em>, 8ª ed. revisada, 2021. Washington, DC: The National Academies Press.
             doi:10.17226/25806.
           </li>

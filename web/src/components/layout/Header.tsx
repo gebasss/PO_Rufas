@@ -72,7 +72,7 @@ const Header = () => {
                 )}
               />
               {connectionLabel[connection]}
-              {connection === 'online' && <span className='hidden lg:inline'>· {feeds.length} alimentos NRC</span>}
+              {connection === 'online' && <span className='hidden lg:inline'>· {feeds.length} alimentos NASEM</span>}
             </span>
           </div>
         </div>

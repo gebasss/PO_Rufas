@@ -82,9 +82,56 @@ def test_duracao_dos_intervalos_vai_ate_o_fim_da_simulacao():
     assert _interval_lengths([0, 30, 60], 75) == [30, 30, 15]
 
 
-def test_nasem_e_recusado():
-    with pytest.raises(ValueError, match="NRC"):
-        compare_with_simulation(simulacao(), FEEDS, PRICES, LIMITS, "NASEM")
+# Terceiro intervalo (dia 60) de uma simulação real no NASEM (100 vacas, 1 ano, os mesmos preços e limites): as exigências médias do
+# lote, a ração do SLSQP e o metano e o nitrogênio urinário do lote que o RuFaS grava (total do lote / vacas, no dia anterior).
+REQUIREMENTS_NASEM = {
+    "NEmaint_requirement": 12.598828056762212, "NEa_requirement": 0.0, "NEg_requirement": 0.7055866257710725,
+    "NEpreg_requirement": 3.387441226539528, "NEl_requirement": 31.05055912676956, "MP_requirement": 2751.246603732121,
+    "Ca_requirement": 66.84056194717414, "P_req": 63.195963443468685, "P_req_process": 38.266452721439094,
+    "DMIest_requirement": 24.605916453605744, "avg_BW": 634.9297300425717,
+}  # fmt: skip
+RATION_NASEM = {"23": 0.10519, "44": 0.0, "50": 11.636345, "110": 20.245724, "138": 0.000432, "167": 0.0, "230": 0.0, "dry_matter_intake_total": 31.987691}
+
+
+def simulacao_nasem(com_lote=True):
+    dias = 61
+    return SimulationResult(
+        days=list(range(dias)),
+        interval_days=[60],
+        ration_kg_per_cow=[dict(RATION_NASEM)],
+        requirements=[dict(REQUIREMENTS_NASEM)],
+        cows_in_pen=[90],
+        pen_animals=[90.0] * dias if com_lote else [],
+        pen_methane_g=[90 * 708.58] * dias if com_lote else [],
+        pen_urine_n_kg=[90 * 0.254557] * dias if com_lote else [],
+    )
+
+
+def test_nasem_usa_o_metano_e_o_nitrogenio_do_lote_e_o_lp_fica_perto_do_slsqp():
+    out = compare_with_simulation(simulacao_nasem(), FEEDS, PRICES, LIMITS, "NASEM")
+    row = out["intervals"][0]
+    assert out["standard"] == "NASEM"
+    for variant in ("lp_free", "lp_same"):
+        assert row[variant]["verified"], row[variant]["violated"]
+        assert row[variant]["cost"] <= row["slsqp"]["cost"] * 1.002  # nunca bem acima do SLSQP (CONCLUSOES_PREVIAS, 5)
+    assert row["lp_same"]["dmi"] == pytest.approx(RATION_NASEM["dry_matter_intake_total"], rel=1e-6)
+
+
+def test_nasem_sem_o_metano_do_lote_e_recusado_com_instrucao():
+    with pytest.raises(ValueError, match="metano"):
+        compare_with_simulation(simulacao_nasem(com_lote=False), FEEDS, PRICES, LIMITS, "NASEM")
+
+
+def test_media_do_lote_vem_do_total_dividido_pelos_animais_do_dia_anterior():
+    sim = SimulationResult(pen_animals=[10.0, 20.0, 20.0], pen_methane_g=[7000.0, 14000.0, 15000.0], pen_urine_n_kg=[2.0, 5.0, 6.0])
+    assert sim.pen_averages(2) == (700.0, 0.25)  # dia 2 usa o dia 1 (formulada antes da atualização do dia)
+    assert sim.pen_averages(0) == (700.0, 0.2)  # no dia 0, o dia 0
+    assert SimulationResult().pen_averages(5) is None
+
+
+def test_padrao_desconhecido_e_recusado():
+    with pytest.raises(ValueError, match="Padrão"):
+        compare_with_simulation(simulacao(), FEEDS, PRICES, LIMITS, "XYZ")
 
 
 def test_alimento_sem_preco_e_recusado():

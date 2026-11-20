@@ -178,15 +178,23 @@ export default function CowCard({
 
             {groups.lote.length > 0 && (
               <div className='space-y-2'>
-                <h3 className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>Lote (energia do NASEM)</h3>
+                <h3 className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
+                  Metano e nitrogênio urinário (opcional)
+                </h3>
                 <p className='text-muted-foreground text-xs'>
-                  O NASEM desconta da energia o metano e o nitrogênio urinário. Esses valores vêm do lote simulado pelo RuFaS e
-                  não existem para uma vaca isolada. Sem eles, a restrição de energia fica “indisponível” e a dieta é marcada
-                  como incompleta.
+                  O NASEM desconta da energia o metano entérico e o nitrogênio urinário. Vazio = o sistema os calcula de cada dieta
+                  com as equações do RuFaS (metano pelo modelo IPCC; nitrogênio pelo balanço do esterco) e os mostra como
+                  resultado. Preencha os dois para fixar valores medidos; vale para todas as dietas.
                 </p>
                 <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
                   {groups.lote.map(field => (
-                    <FieldInput key={field.key} field={field} value={state.cow[field.key]} onChange={v => onCow(field.key, v)} />
+                    <FieldInput
+                      key={field.key}
+                      field={field}
+                      value={state.cow[field.key]}
+                      hint='calculado da dieta'
+                      onChange={v => onCow(field.key, v)}
+                    />
                   ))}
                 </div>
               </div>

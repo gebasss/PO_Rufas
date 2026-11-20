@@ -16,6 +16,7 @@ import { DEFAULT_HERD } from '@/lib/herd'
 import { shortDate } from '@/lib/history'
 import { nf, shortName, usd } from '@/lib/format'
 import type { RunMeta, SensResult } from '@/lib/types'
+import { standardName } from '@/views/module/model'
 
 interface Props {
   result: SensResult
@@ -170,7 +171,7 @@ export default function SensResults({ result, stale = false, base = null, years,
               </TabsTab>
             ) : null}
           </TabsList>
-          <ExportButtons screen='sensitivity' data={result} meta={{ standard: 'NRC 2001' }} />
+          <ExportButtons screen='sensitivity' data={result} meta={{ standard: standardName(result.standard ?? 'NRC') }} />
         </div>
 
         <div className={stale ? 'space-y-6 opacity-60 transition-opacity' : 'space-y-6 transition-opacity'}>

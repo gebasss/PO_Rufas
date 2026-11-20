@@ -20,6 +20,7 @@ from typing import Any, Literal, Sequence
 
 import numpy as np
 
+from . import emissions
 from .categories import Constraint, constraints_for
 from .rufas import rufas
 
@@ -130,7 +131,8 @@ def build(
     """Restrições do padrão e do tipo de animal, linearizadas em ``x_ref``.
 
     ``requirements`` é o ``NutritionRequirements`` do RuFaS (já com as sobrescritas); ``pen`` = (metano entérico em g/dia,
-    nitrogênio urinário em kg/dia), só para a energia do NASEM.
+    nitrogênio urinário em kg/dia) informados, só para a energia do NASEM. Sem ``pen`` (``None``), o NASEM calcula os dois da
+    própria dieta (``emissions.py``, equações lineares do RuFaS).
     """
     return build_at(standard, animal_type, feeds, reference(feeds, x_ref, body_weight), requirements, body_weight, pen)
 
@@ -195,14 +197,15 @@ def build_at(
         pieces = tuple(Piece(energy[k]) for k in ("maintenance", "growth", "lactation"))
         add(LinearConstraint("ne_total", "", "Mcal/dia", "A", "ge", req.total_energy_requirement, pieces, combine="max"))
     else:
-        missing = None if pen is not None else "Informe o metano entérico e o nitrogênio urinário do lote (LINEARIZACAO.md, 7.3)."
-        constant = 0.0 if pen is None else -const.EFF_OF_ME_USE * (METHANE_ENERGY * pen[0] * 0.001 + URINE_ENERGY * pen[1] * 1000)
-        add(
-            LinearConstraint(
-                "ne_nasem", "", "Mcal/dia", "A", "ge", req.total_energy_requirement,
-                (Piece(const.EFF_OF_ME_USE * nasem_digestible, constant),), unavailable=missing,
-            )  # fmt: skip
-        )
+        eff = const.EFF_OF_ME_USE
+        if pen is not None:  # metano e nitrogênio urinário informados (ou do lote simulado): constantes
+            coefficients = eff * nasem_digestible
+            constant = -eff * (METHANE_ENERGY * pen[0] * 0.001 + URINE_ENERGY * pen[1] * 1000)
+        else:  # saídas da dieta: lineares em x, então a oferta de energia continua afim (LINEARIZACAO.md, 7.3)
+            out = emissions.coefficients(feeds, animal_type)
+            coefficients = eff * (nasem_digestible - METHANE_ENERGY * 0.001 * out.methane - URINE_ENERGY * 1000 * out.urine_n)
+            constant = -eff * URINE_ENERGY * 1000 * out.urine_n_constant
+        add(LinearConstraint("ne_nasem", "", "Mcal/dia", "A", "ge", req.total_energy_requirement, (Piece(coefficients, constant),)))
     protein = (
         Piece(MICROBIAL_EFFICIENCY * via_tdn + rup_part),
         Piece(MICROBIAL_EFFICIENCY * via_rdp + rup_part),

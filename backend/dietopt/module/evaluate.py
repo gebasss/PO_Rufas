@@ -15,7 +15,7 @@ import numpy as np
 
 from ..feeds import feed_library
 from ..standards import get_standard, library_ids
-from . import linear
+from . import emissions, linear
 from .categories import constraints_for, parse_animal_type, parse_category
 from .fields import DIET_FIELDS
 from .library import build_feeds
@@ -139,17 +139,23 @@ def evaluate_diet(
     else:
         required = fixed
     nutrition = required.nutrition_requirements
+    computed = standard == "NASEM" and pen is None  # metano e N urinário são saídas da dieta (emissions.py)
 
-    config = rf.ration_config(
-        nutrient_standard=rf.standard[standard],
-        animal_requirements=nutrition,
-        pen_available_feeds=feeds,
-        initial_dry_matter_requirement=nutrition.dry_matter,
-        initial_protein_requirement=nutrition.metabolizable_protein,
-        pen_average_body_weight=body_weight,
-        pen_average_enteric_methane=pen[0] if pen else None,
-        pen_average_urine_nitrogen=pen[1] if pen else None,
-    )
+    def config_at(amounts: np.ndarray) -> Any:
+        """Configuração do otimizador do RuFaS; no NASEM calculado, com o metano e o N urinário da própria dieta ``amounts``."""
+        used = emissions.of_diet_rufas(feeds, amounts, animal_type, {**cow, "body_weight": body_weight}) if computed else pen
+        return rf.ration_config(
+            nutrient_standard=rf.standard[standard],
+            animal_requirements=nutrition,
+            pen_available_feeds=feeds,
+            initial_dry_matter_requirement=nutrition.dry_matter,
+            initial_protein_requirement=nutrition.metabolizable_protein,
+            pen_average_body_weight=body_weight,
+            pen_average_enteric_methane=used[0] if used else None,
+            pen_average_urine_nitrogen=used[1] if used else None,
+        )
+
+    config = config_at(x)
     constraints = linear.build(standard, animal_type, feeds, x, nutrition, body_weight, pen)
     specs = {spec.id: spec for spec in constraints_for(standard, animal_type)}
 
@@ -165,11 +171,12 @@ def evaluate_diet(
         if constraint.kind == "A":  # erro fora do ponto: coeficientes congelados em x, quantidades escaladas
             for scale in PERTURBATION:
                 moved = x * scale
+                probe_config = config_at(moved) if computed else config
                 probes.append(
                     {
                         "scale": scale,
                         "supply_linear": float(constraint.supply(moved)),
-                        "supply_nonlinear": float(_nonlinear_supply(specs[constraint.id].rufas_name, constraint, moved, config)),
+                        "supply_nonlinear": float(_nonlinear_supply(specs[constraint.id].rufas_name, constraint, moved, probe_config)),
                     }
                 )
         error = max((abs(p["supply_linear"] - p["supply_nonlinear"]) / max(abs(p["supply_nonlinear"]), 1e-9) * 100 for p in probes), default=0.0)
@@ -190,6 +197,7 @@ def evaluate_diet(
 
     cost = float(sum(prices[i] * a for i, a in zip(ids, x)))
     reference = linear.reference(feeds, x, body_weight)
+    shown = pen if pen else (emissions.of_diet_rufas(feeds, x, animal_type, {**cow, "body_weight": body_weight}) if computed else None)
     violated = [r["id"] for r in rows if r["status"] == "violada"]
     unavailable = [r["id"] for r in rows if r["status"] == "indisponivel"]
     warnings = list(required.warnings)
@@ -214,6 +222,10 @@ def evaluate_diet(
             "concentrate_percentage": reference.concentrate_percentage,
             "intake_discount": reference.discount if standard == "NRC" else None,
             "total_starch_kg": reference.total_starch if standard == "NASEM" else None,
+            # NASEM: metano entérico (g/dia) e nitrogênio urinário (kg/dia) que entram na energia; "calculado" = saída da dieta
+            "enteric_methane_g": shown[0] if shown else None,
+            "urinary_nitrogen_kg": shown[1] if shown else None,
+            "emissions_source": ("calculado" if computed else "informado") if standard == "NASEM" else None,
         },
         "requirements": required.requirements,
         "constraints": rows,
@@ -304,6 +316,11 @@ def evaluate_diets(
         for diet in parsed
     ]
     if nutrient_standard == "NASEM":
+        if pen is None:
+            warnings.append(
+                "O metano entérico e o nitrogênio urinário foram calculados de cada dieta (equações do RuFaS: modelo IPCC e nitrogênio do "
+                "esterco menos o fecal); informe-os na aba Vaca para fixar valores medidos."
+            )
         warnings += [
             "Replicado do RuFaS: o amido total entra em kg (e não em % da MS) na digestibilidade da FDN; a oferta de "
             "proteína segue o método do NRC; a FDN da ração anterior vai às exigências como fração.",

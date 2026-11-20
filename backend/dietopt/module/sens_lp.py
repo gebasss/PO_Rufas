@@ -32,8 +32,7 @@ def compare_sensitivity(
     should_cancel: Callable[[], bool] | None = None,
 ) -> dict[str, Any]:
     """Compara a ração do LP com a do SLSQP em cada simulação da análise; a lista de cenários é a mesma da sensibilidade."""
-    if base.nutrient_standard != "NRC":
-        raise ValueError("A comparação com a ração linear só está disponível para o padrão NRC.")
+    standard = base.nutrient_standard
     points, scenarios, sim_index = plan_scenarios(base, factors, method, n, seed)
     feed_factors = [f for f in factors if not f.is_milk]
     labels_by_scenario: dict[int, list[str]] = {}
@@ -57,12 +56,12 @@ def compare_sensitivity(
             row["erro"] = evaluation.detail or "a simulação do RuFaS falhou"
         else:
             row |= compare_sample(
-                evaluation.result, scenario.lac_cow_feeds or [], scenario.feed_prices, scenario.feed_limits, sample, should_cancel
+                evaluation.result, scenario.lac_cow_feeds or [], scenario.feed_prices, scenario.feed_limits, sample, should_cancel, standard
             )
         rows.append(row)
         if on_progress:
             on_progress(index + 1, total)
-    return {"standard": "NRC", "sample": sample, "rows": rows, "summary": _summary(rows)}
+    return {"standard": standard, "sample": sample, "rows": rows, "summary": _summary(rows)}
 
 
 def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:

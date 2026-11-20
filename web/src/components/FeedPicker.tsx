@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { nf } from '@/lib/format'
 import type { Feed } from '@/lib/types'
 import { PRESET_BASE, PRESET_WIDE, useApp } from '@/providers/AppProvider'
+import { COW_STANDARD, standardName } from '@/views/module/model'
 
 export const feedTitle = (feed: Feed) =>
   feed.description && feed.description.toLowerCase() !== 'no' ? `${feed.name} — ${feed.description}` : feed.name
@@ -53,7 +54,7 @@ export default function FeedPicker() {
         />
       </div>
 
-      <div className='max-h-60 overflow-y-auto rounded-lg border' role='listbox' aria-label='Alimentos da NRC 2001'>
+      <div className='max-h-60 overflow-y-auto rounded-lg border' role='listbox' aria-label={`Alimentos do ${standardName(COW_STANDARD)}`}>
         {results.slice(0, MAX_RESULTS).map(feed => (
           <label
             key={feed.id}
@@ -63,7 +64,7 @@ export default function FeedPicker() {
             <span className='min-w-0 flex-1'>
               <span className='block truncate'>{feedTitle(feed)}</span>
               <span className='text-muted-foreground block text-xs'>
-                {feed.kind} · PB {nf(feed.cp, 0)}% · FDN {nf(feed.ndf, 0)}% · NEL {nf(feed.nel, 2)} Mcal/kg
+                {feed.kind} · PB {nf(feed.cp, 0)}% · FDN {nf(feed.ndf, 0)}% · amido {nf(feed.starch ?? 0, 0)}% · ED base {nf(feed.de_base ?? 0, 2)} Mcal/kg
               </span>
             </span>
           </label>
@@ -76,7 +77,7 @@ export default function FeedPicker() {
         )}
       </div>
 
-      <PriceImport standard='NRC' selectedIds={selectedIds} onApply={applyPrices} />
+      <PriceImport standard={COW_STANDARD} selectedIds={selectedIds} onApply={applyPrices} />
 
       <div className='space-y-2'>
         <h3 className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>

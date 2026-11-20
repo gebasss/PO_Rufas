@@ -71,7 +71,8 @@ export function cowScenarioOf(params: Params): CowScenario {
   const feeds = feedsOf(params)
   const factors = (params.factors ?? []) as { key: string; low: number; high: number }[]
   const base: CowScenario = {
-    standard: 'NRC',
+    // execuções antigas, sem o campo, eram NRC (a Vaca leiteira recusa o cenário ao duplicar)
+    standard: params.standard === 'NASEM' ? 'NASEM' : 'NRC',
     params: {
       milkPrice: Number(params.milk_price ?? 0.45),
       years: Number(params.years ?? 1),

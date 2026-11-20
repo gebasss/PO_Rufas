@@ -18,6 +18,10 @@ from statistics import mean
 from typing import Any, Mapping, Sequence
 
 TOLERANCE = 1e-3  # a otimização do RuFaS deixa a FDN em 45,0000006%
+# No NASEM o RuFaS avalia só a energia TOTAL: não separa mantença, lactação e crescimento (a oferta dessas partes vem 0 e a diferença seria um
+# "déficit de 100%" que não existe), então essas linhas não entram no balanço.
+NASEM_HIDDEN = frozenset({"maintenance_energy", "lactation_energy", "growth_energy"})
+NASEM_NOTE = "No NASEM o RuFaS calcula só a energia total (não separa mantença, lactação e crescimento)."
 
 
 @dataclass(frozen=True)
@@ -77,14 +81,17 @@ def build_balance(
     evaluations: Sequence[Mapping[str, Any]],
     requirements: Sequence[Mapping[str, Any]],
     observed: Mapping[str, float] | None = None,
+    standard: str = "NRC",
 ) -> list[dict[str, Any]]:
     """Linhas do balanço (média dos intervalos e pior intervalo); vazio se o RuFaS não devolveu a avaliação.
 
     ``observed`` traz os valores da ração média onde a oferta não sai da diferença (``dry_matter``, ``ndf``,
-    ``forage_ndf`` e ``fat``, em kg ou % da MS).
+    ``forage_ndf`` e ``fat``, em kg ou % da MS). No ``standard`` NASEM só a energia total fica (``NASEM_HIDDEN``).
     """
     out: list[dict[str, Any]] = []
     for row in ROWS:
+        if standard == "NASEM" and row.id in NASEM_HIDDEN:
+            continue
         pairs = [(e, r) for e, r in zip(evaluations, requirements) if e.get(row.difference) is not None]
         if not pairs:
             continue
@@ -103,7 +110,7 @@ def build_balance(
             "difference": average,
             "worst_difference": worst,
             "status": _status(row, worst),
-            "note": row.note,
+            "note": NASEM_NOTE if standard == "NASEM" and row.id == "total_energy" else row.note,
         }
         if requirement is not None and row.kind == "surplus":
             item["supply"] = requirement + average

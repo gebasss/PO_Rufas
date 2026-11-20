@@ -269,6 +269,16 @@ export default function OptimalCard({
             />
           </div>
 
+          {diet.emissions?.methane_g != null && diet.emissions.urinary_nitrogen_kg != null && (
+            <p className='text-muted-foreground text-xs'>
+              Metano entérico de {nf(diet.emissions.methane_g, 0)} g/dia e nitrogênio urinário de{' '}
+              {nf(diet.emissions.urinary_nitrogen_kg, 3)} kg/dia ({diet.emissions.source === 'calculado' ? 'calculados da dieta' : 'informados'}
+              ), que descontam a energia do NASEM.
+              {rufas?.emissions_used &&
+                ' O SLSQP do RuFaS só aceita esses dois como constantes: recebeu os da dieta do LP, e as duas buscas resolvem o mesmo problema de energia.'}
+            </p>
+          )}
+
           <p className='flex flex-wrap items-center gap-2 text-sm'>
             {diet.verified ? (
               <Badge variant='secondary'>

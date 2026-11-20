@@ -104,6 +104,32 @@ def test_nasem_chega_ao_mesmo_custo_do_rufas():
     assert abs(result["rufas"]["lp_gap_pct"]) < 0.01
 
 
+def test_nasem_acha_o_otimo_estreito_junto_de_tdn_60_que_a_grade_nao_toca():
+    """Caso do benchmark (CONCLUSOES_PREVIAS, 5.5): a grade não tem ponto viável no regime sem desconto, mas o ótimo do SLSQP
+    do RuFaS (2,13518 US$/dia, TDN% = 59,9993) está nele. Sem o resgate por regime o LP parava em 2,17287 (+1,77%)."""
+    from dietopt import benchmark
+
+    case = next(c for c in benchmark.cases() if c["id"] == "NASEM-alta-p1")
+    ids = sorted(benchmark.FEEDS)
+    prices = {int(k): v for k, v in case["prices"].items()}
+    required = compute_requirements("NASEM", "LAC_COW", case["cow"], None, "LAC_COW")
+    problem = optimize.build_problem("NASEM", "LAC_COW", "LAC_COW", case["cow"], ids, prices, resolve_limits("NASEM", ids, None), required)
+    grid, _ = optimize._grid(problem, optimize.RESOLUTIONS["normal"])
+    assert not any(optimize.solve_point(problem, p) for p in grid if p.regime == "sem_desconto")  # a grade não acerta
+    best, _ = optimize.search(problem, "normal")
+    assert best.point.regime == "sem_desconto" and best.point.tdn > 59.9
+    assert best.cost == pytest.approx(2.13518, rel=5e-4)
+
+
+def test_lp_livre_dentro_do_regime_fica_do_lado_certo_de_tdn_60():
+    problem = problema("NASEM", "LAC_COW", "LAC_COW", {**LACTACAO, **LOTE})
+    point = optimize.Point(27.0, 59.0, 3.0, 3.0)
+    for regime, ok in (("sem_desconto", lambda t: t < 60), ("com_desconto", lambda t: t >= 60)):
+        free = optimize.solve_point(problem, optimize.Point(27.0, 59.0 if regime == "sem_desconto" else 62.0, 3.0, 3.0), fix_scalars=False, regime=regime)
+        assert free is None or ok(optimize.scalars_of(problem, free.x).tdn)
+    assert point.regime == "sem_desconto"
+
+
 def test_precos_sombra_tem_o_sinal_certo_e_preveem_a_variacao_do_custo():
     result = optimize_diet("NRC", "LAC_COW", LACTACAO, CONJUNTO_BASE, PRECOS, resolution="rapida", seeds=0)
     assert "rufas" not in result
@@ -126,9 +152,29 @@ def test_alimentos_insuficientes_dao_status_inviavel_com_mensagem():
     assert "diet" not in result and "rufas" not in result
 
 
-def test_nasem_sem_metano_e_nitrogenio_e_recusado():
-    with pytest.raises(ValueError, match="metano"):
-        optimize_diet("NASEM", "LAC_COW", LACTACAO, CONJUNTO_BASE, PRECOS, resolution="rapida", seeds=0)
+def test_nasem_sem_metano_e_nitrogenio_calcula_os_dois_da_dieta_e_o_slsqp_recebe_os_do_lp():
+    result = optimize_diet("NASEM", "LAC_COW", LACTACAO, CONJUNTO_BASE, PRECOS, resolution="rapida", seeds=3)
+    diet = result["diet"]
+    assert result["status"] == "ok" and diet["verified"]
+    emissions = diet["emissions"]
+    assert emissions["source"] == "calculado" and 300 < emissions["methane_g"] < 900 and 0.05 < emissions["urinary_nitrogen_kg"] < 0.5
+    used = result["rufas"]["emissions_used"]  # o SLSQP só aceita constantes: recebe os valores da dieta do LP
+    assert used == {"methane_g": emissions["methane_g"], "urinary_nitrogen_kg": emissions["urinary_nitrogen_kg"]}
+
+
+def test_nasem_com_metano_e_nitrogenio_informados_nao_recalcula_nada():
+    result = optimize_diet("NASEM", "LAC_COW", {**LACTACAO, **LOTE}, CONJUNTO_BASE, PRECOS, resolution="rapida", seeds=2)
+    assert result["diet"]["emissions"]["source"] == "informado" and result["rufas"]["emissions_used"] is None
+
+
+def test_slsqp_recebe_450_g_e_0_25_kg_quando_nao_ha_dieta_do_lp():
+    """Sem entrada manual e sem dieta (chamada direta de ``run_rufas``), os valores de partida do usuário: 450 g/dia e 0,25 kg/dia."""
+    from dietopt.module.evaluate import resolve_limits as limites
+
+    ids = sorted(CONJUNTO_BASE)
+    required = compute_requirements("NASEM", "LAC_COW", LACTACAO, None, "LAC_COW")
+    problem = optimize.build_problem("NASEM", "LAC_COW", "LAC_COW", LACTACAO, ids, PRECOS, limites("NASEM", ids, None), required)
+    assert problem.pen is None and optimize.rufas_pen(problem) == (450.0, 0.25)
 
 
 def test_cancelamento_interrompe_a_busca():

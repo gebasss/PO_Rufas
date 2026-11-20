@@ -185,13 +185,30 @@ def test_nasem_replica_amido_em_kg_e_avisa():  # B.9-8
     assert any("amido total entra em kg" in aviso for aviso in resultado["warnings"])
 
 
-def test_nasem_sem_metano_e_nitrogenio_deixa_a_energia_indisponivel():
+def test_nasem_sem_metano_e_nitrogenio_calcula_os_dois_da_dieta():
     resultado = avaliar("NASEM", "LAC_COW", LACTACAO, [RACAO_RUFAS])
     dieta = resultado["diets"][0]
     energia = next(c for c in dieta["constraints"] if c["id"] == "ne_nasem")
-    assert energia["status"] == "indisponivel" and dieta["incomplete"] and "metano" in energia["note"]
-    with pytest.raises(ValueError, match="os dois"):
+    assert energia["status"] != "indisponivel" and not dieta["incomplete"]
+    assert energia["supply_linear"] == pytest.approx(energia["supply_nonlinear"], rel=1e-9)
+    intake = dieta["intake"]
+    assert intake["emissions_source"] == "calculado"
+    assert 300 < intake["enteric_methane_g"] < 900 and 0.1 < intake["urinary_nitrogen_kg"] < 0.5
+    assert any("calculados de cada dieta" in aviso for aviso in resultado["warnings"])
+
+
+def test_nasem_com_metano_e_nitrogenio_informados_usa_os_valores_dados():
+    dada = avaliar("NASEM", "LAC_COW", {**LACTACAO, **LOTE}, [RACAO_RUFAS])["diets"][0]["intake"]
+    assert dada["emissions_source"] == "informado" and (dada["enteric_methane_g"], dada["urinary_nitrogen_kg"]) == (400, 0.2)
+    with pytest.raises(ValueError, match="os dois"):  # só um dos dois: recusado
         avaliar("NASEM", "LAC_COW", {**LACTACAO, "enteric_methane": 400}, [RACAO_RUFAS])
+
+
+def test_energia_do_nasem_fica_menor_com_mais_metano_informado():
+    base = avaliar("NASEM", "LAC_COW", {**LACTACAO, "enteric_methane": 400, "urinary_nitrogen": 0.2}, [RACAO_RUFAS])["diets"][0]
+    mais = avaliar("NASEM", "LAC_COW", {**LACTACAO, "enteric_methane": 800, "urinary_nitrogen": 0.2}, [RACAO_RUFAS])["diets"][0]
+    oferta = lambda d: next(c for c in d["constraints"] if c["id"] == "ne_nasem")["supply_nonlinear"]  # noqa: E731
+    assert oferta(mais) < oferta(base)
 
 
 def test_exigencias_da_dieta_vem_da_propria_dieta_e_sobrescritas_valem():

@@ -96,12 +96,14 @@ def test_folga_original_e_a_oferta_original_menos_a_exigencia():
     assert calcio["slack_linear"] == pytest.approx(calcio["slack_original"])
 
 
-def test_restricao_indisponivel_fica_fora_dos_numeros_com_a_nota():
-    report = build_report(avaliar("NASEM", LACTACAO))  # sem metano e N urinário
+def test_nasem_sem_metano_e_nitrogenio_informados_calcula_os_dois_da_dieta_e_a_energia_entra_na_comparacao():
+    report = build_report(avaliar("NASEM", LACTACAO))  # metano e N urinário são saídas da dieta (emissions.py)
     d = diet(report, "RuFaS")
     energia = row(report, "RuFaS", "ne_nasem")
-    assert energia["status_linear"] == "indisponivel" and "max_error_pct" not in energia and energia["note"]
-    assert d["n_unavailable"] == 1 and d["incomplete"] and d["n_compared"] == len(d["constraints"]) - 1
+    assert energia["status_linear"] != "indisponivel" and "max_error_pct" in energia
+    assert d["n_unavailable"] == 0 and not d["incomplete"] and d["n_compared"] == len(d["constraints"])
+    assert energia["supply_linear"] == pytest.approx(energia["supply_original"], rel=1e-9)  # identidade no ponto da dieta
+    assert report["summary"]["identity_ok"]
 
 
 def test_estado_igual_nas_sondas_quando_a_folga_nao_cruza_zero():
