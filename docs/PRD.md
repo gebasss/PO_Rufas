@@ -1,7 +1,7 @@
 # Documento de Requisitos do Produto (PRD)
 
 **Produto:** Dieta Ótima com RuFaS
-**Versão do documento:** 0.27 (rascunho para avaliação)
+**Versão do documento:** 0.28 (rascunho para avaliação)
 **Data:** 02/11/2026
 **Status:** Versão web implementada; documento em revisão
 **Autor(es):** _[a preencher]_
@@ -70,7 +70,7 @@ seções 5.2.5, 14 e 15.
 | Plataforma | Windows 10/11; Python 3.12 ou 3.13; navegador moderno |
 | Usuário-alvo | Nutricionista de rebanho leiteiro e produtor de leite (persona principal e secundária, seção 4) |
 | Avaliador | Professor de Pesquisa Operacional |
-| Núcleo científico | RuFaS v1.0.6 (GPLv3, usado sem modificação), padrão NRC (2001) |
+| Núcleo científico | RuFaS v1.0.6 (GPLv3, usado sem modificação), padrão NASEM (2021) na interface; o back-end aceita também o NRC (2001) |
 | Núcleo de otimização | Programação linear (SciPy/HiGHS) para a dieta ótima do Ruminante Singular; otimizador SLSQP do próprio RuFaS para a ração da vaca |
 | Entrega principal | Seis telas: Ruminante Singular, vaca leiteira, curva de lactação, sensibilidade, execuções, premissas e limites |
 | Estado | Implementado e testado (281 testes automatizados); validação científica pendente |
@@ -251,7 +251,7 @@ O exercício simples (PL de arroz e milho com tabela de cenários) saiu do siste
 | RF-21 | O sistema deve **salvar e carregar** configurações de cenário. | S | Implementado | Reuso entre sessões. Feito em 03/11/2026 (etapa E8f): arquivo JSON local e versionado, nas telas Vaca leiteira (com a sensibilidade) e Avaliar dietas (FSD, A.11). |
 | RF-22 | O sistema deve permitir **importar preços** (CSV) para cenários com cotações reais, por exemplo do CEPEA. | S | Implementado | Hoje os preços são digitados à mão e os valores iniciais são ilustrativos. Preços em US$; a regra de conversão está em `LINEARIZACAO.md`, seção 7.2. Feito em 03/11/2026 (etapa E8d): importação de CSV nas telas Vaca leiteira e Avaliar dietas, com conversão para US$/kg MS e lista do que não casou (FSD, A.9). |
 | RF-23 | O sistema deve permitir adicionar **nutrientes** ao exercício do quadro. | C | Retirado | Retirado em 11/11/2026, junto com o exercício simples. |
-| RF-24 | O sistema deve oferecer o padrão **NASEM 2021** como alternativa à NRC 2001 e permitir **comparar os dois padrões** no mesmo cenário. | S | Parcial | Previsto no quadro do professor. **Especificado** no FSD, Anexo A.3; **back-end implementado em 02/11/2026** (`standard` nos cenários, biblioteca por padrão, `GET /api/feeds?standard=`, preços restritos à biblioteca); faltam o seletor na interface, o aviso de alimentos removidos e a comparação dos dois padrões; viabilidade técnica verificada (o RuFaS já aceita `NASEM`; todos os alimentos dos presets existem na biblioteca NASEM; o modo NASEM roda o "Conjunto base" desde que os preços sejam restritos à biblioteca, FSD A.7.1). Depende da decisão Q6. |
+| RF-24 | O sistema deve oferecer o padrão **NASEM 2021** como alternativa à NRC 2001 e permitir **comparar os dois padrões** no mesmo cenário. | S | Parcial | **20/11/2026: a Vaca leiteira e a Sensibilidade passaram a usar só o NASEM 2021, sem seletor (decisão do usuário; o NRC saiu da interface), e a aba Ração linear vale no NASEM (FSD, A.3). A comparação NRC × NASEM do mesmo cenário deixou de ser pretendida.** Previsto no quadro do professor. **Especificado** no FSD, Anexo A.3; **back-end implementado em 02/11/2026** (`standard` nos cenários, biblioteca por padrão, `GET /api/feeds?standard=`, preços restritos à biblioteca); faltam o seletor na interface, o aviso de alimentos removidos e a comparação dos dois padrões; viabilidade técnica verificada (o RuFaS já aceita `NASEM`; todos os alimentos dos presets existem na biblioteca NASEM; o modo NASEM roda o "Conjunto base" desde que os preços sejam restritos à biblioteca, FSD A.7.1). Depende da decisão Q6. |
 | RF-25 | O sistema deve ter uma tela de **premissas e limites** que explique o que o modelo assume e não faz. | S | Atendido | Tela `/sobre/`, com cinco blocos (funcionamento, premissas, como ler os resultados, limites, créditos). |
 | RF-26 | O sistema deve permitir cadastrar **alimentos personalizados**, começando pelo **arroz em grão** (Tabela 19-1 do NASEM, p. 427), que não existe nas bibliotecas do RuFaS. | S | Pendente | O quadro do professor usa arroz; hoje o "arroz" é farelo de arroz (RN-07). **Especificado** no FSD, Anexo A.5; depende de RF-24 (dados completos só no NASEM) e da decisão Q9. |
 | RF-27 | O sistema deve exibir um **painel de verificações de consistência** da ração obtida: consumo × estimado, FDN total, FDN de forragem e amido × Tabela 5-1 do NASEM, gordura e leite perdido. | S | Implementado | Nas simulações já guardadas a ração ficou 3 a 8 kg acima do consumo estimado e várias bateram no teto de +30% do RuFaS. **Especificado** no FSD, Anexo A.4; os limiares dependem da decisão Q8. Feito em 03/11/2026 (etapa E8a): cartão **Verificações** V1 a V5, calculado no servidor; os limiares marcados (a confirmar) seguem como propostos. |
@@ -273,7 +273,7 @@ de qualquer uso profissional (seção 15).
 | Item | Motivo | Quando / dependência |
 |---|---|---|
 | Linha de comando e relatório em PDF | Entrega combinada em duas fases: primeiro a web completa | Fase seguinte, após a conclusão da web |
-| Implementação do padrão NASEM 2021 (RF-24) | Especificado (FSD, Anexo A.3), mas não implementado nesta versão | Depende da resposta à questão Q6 |
+| Comparar NRC × NASEM do mesmo cenário (RF-24, A.3.5) | Fora do escopo desde 20/11/2026: a interface só tem o NASEM 2021 (decisão do usuário) | Q6 |
 | Sugestão da dieta ótima para uma vaca e uma fase (RF-30) | Fase 2 do módulo ampliado do Ruminante Singular | Implementada em 03/11/2026 (sem o laço de redução de leite) |
 | Conversão automática de moeda (R$ para US$) e leitura automática de indicadores do CEPEA | Os preços do módulo ampliado são em US$; o mapeamento e a conversão ficam para depois | Q11, `LINEARIZACAO.md` 7.2 |
 | Preços automáticos do CEPEA | Exige fonte de dados e licença de uso; hoje os preços são digitados | Importação por CSV (RF-22) é o passo intermediário (Q5), implementado em 03/11/2026 |
@@ -465,7 +465,7 @@ ilustrativos.
 | HU9 | nutricionista | guardar e exportar cenários e resultados | documentar a recomendação | **Feito** (RF-20 e RF-21) |
 | HU10 | nutricionista | ver o balanço entre o que a ração oferece e o que a vaca exige | auditar a ração | **Feito** (RF-19) |
 | HU11 | nutricionista | importar cotações reais de uma planilha | usar preços de mercado sem digitar | **Feito** (RF-22; CSV com conversão de reais, saca e matéria natural) |
-| HU12 | professor, nutricionista | simular o mesmo cenário em NRC 2001 e NASEM 2021 e ver as diferenças | comparar os dois padrões do quadro | **Pendente** (RF-24; FSD, Anexo A.3) |
+| HU12 | professor, nutricionista | simular o mesmo cenário em NRC 2001 e NASEM 2021 e ver as diferenças | comparar os dois padrões do quadro | **Retirada** (RF-24; decisão de 20/11/2026: a interface só tem o NASEM 2021; o back-end ainda aceita o NRC) |
 | HU13 | professor | usar o arroz em grão do exercício na simulação com o RuFaS | representar fielmente o "arroz" do quadro | **Pendente** (RF-26; FSD, Anexo A.5) |
 | HU14 | nutricionista | ver se a ração obtida é coerente com o consumo estimado e com os limites de fibra, amido e gordura | desconfiar de uma ração irreal | **Feito** (RF-27; FSD, Anexo A.4) |
 | HU15 | professor | ver as equações do RuFaS linearizadas e o erro da linearização, e comparar o otimizador linear com o do RuFaS | verificar que o simulador/otimizador próprio é linear e equivalente | **Feito** (RF-29 e RF-30: erro de linearização na tela e em CSV; dieta ótima comparada com o SLSQP do RuFaS) |
@@ -606,7 +606,7 @@ Limitações conhecidas, para que ninguém leia mais certeza do que o sistema en
 | L4 | O resultado não foi comparado com uma referência profissional. | Não se deve usar a ração para alimentar animais sem revisão. | M6, RNF-10, R9 |
 | L5 | Não há balanço de nutrientes (oferta × exigência) da ração obtida. | Só as exigências são exibidas; o profissional não audita a ração por completo. | RF-19 |
 | L6 | ~~Não há exportação nem salvamento de cenários.~~ Resolvida em 03/11/2026: há exportação (RF-20) e cenários em arquivo (RF-21). | Não há histórico de cenários nem salvamento automático no servidor; a tela Vaca leiteira ainda guarda a última seleção no navegador. | RF-20, RF-21 |
-| L7 | Só a NRC 2001 está disponível. | O NASEM 2021, citado no quadro, não é oferecido. Já há especificação (FSD, Anexo A.3). | RF-24, Q6 |
+| L7 | A interface só tem o padrão NASEM 2021. | O NRC 2001 saiu das telas em 20/11/2026 (decisão do usuário); o back-end ainda o aceita (usado pelo benchmark e pelas execuções antigas). Não há comparação NRC × NASEM. | RF-24, Q6 |
 | L8 | As bibliotecas NRC 2001 e NASEM 2021 **do RuFaS** só têm farelo de arroz; o livro do NASEM traz o arroz em grão (Tabela 19-1, p. 427), que o RuFaS não carrega. | O "arroz" do exercício é representado pelo farelo de arroz. | C2, RN-07, RF-26 |
 | L9 | ~~O tamanho do rebanho não é ajustável na interface.~~ Resolvida em 10/11/2026; permanece o mínimo de 60 vacas por um defeito do RuFaS (FSD, A.13). | O rebanho vai de 60 a 500 vacas. | RF-13 |
 | L10 | ~~O exercício do quadro tem apenas dois nutrientes (carboidrato e proteína).~~ Retirada em 11/11/2026, com o exercício simples. | | RF-02, RF-23 |
@@ -637,7 +637,7 @@ A coluna "Proposta" é o que o autor assumiria se não houver resposta; **precis
 | Q3 | Como a resposta do leite à dieta deve ser tratada, já que no RuFaS ela é fraca (R1)? | Professor | Define o trade-off central do produto | **Sim** | Manter o leite do RuFaS (P1) |
 | Q4 | Qual referência profissional usar para validar a ração (M6)? | Professor | Aceite científico | Não | Comparar com as tabelas da NRC 2001 |
 | Q5 | Preços do CEPEA serão fornecidos? Em que moeda e unidade? | Equipe | RF-22, M7 | Não | Importação por CSV em US$/kg MS |
-| Q6 | O NASEM 2021 é requisito de entrega? Hoje é **viável** e está **especificado** (FSD, Anexo A.3) | Professor | RF-24 | Não | Implementar o seletor e a comparação |
+| Q6 | O NASEM 2021 é requisito de entrega? Hoje é **viável** e está **especificado** (FSD, Anexo A.3) | Professor | RF-24 | Não | Retirada: só NASEM na interface (20/11/2026) |
 | Q8 | Quais limiares usar nas verificações de consistência (consumo da ração × estimado: atenção em +12%, alerta em +24%; leite perdido em alerta a partir de 50% da redução máxima)? | Professor | RF-27 | Não | Múltiplos (1× e 2×) do erro de 12,1% da equação de consumo do NASEM |
 | Q9 | Como tratar o arroz em grão no padrão NRC, que não tem composição nem TDN para ele? | Professor | RF-26 | Não | Disponível só no NASEM |
 | Q10 | O limite de consumo +30% sobre o estimado, do RuFaS, é intencional? O sistema não modifica o RuFaS; o professor participou do projeto do RuFaS | Professor | L16, RF-27 | Não | Perguntar e registrar a resposta |
@@ -660,7 +660,7 @@ A coluna "Proposta" é o que o autor assumiria se não houver resposta; **precis
 | RF-22 | Importar preços | Layout do CSV, mapeamento de nomes para ids do RuFaS, tratamento de itens sem correspondência |
 | RF-13 | Tamanho do rebanho | Limites mínimo e máximo, efeito no tempo e na memória |
 | RF-23 | Mais nutrientes | Retirado em 11/11/2026, com o exercício simples |
-| RF-24, RF-26, RF-27 | NASEM, alimentos personalizados, verificações | **Já especificados** no FSD, Anexo A; faltam as decisões Q6, Q8, Q9 e Q10 |
+| RF-24, RF-26, RF-27 | NASEM, alimentos personalizados, verificações | RF-24: só NASEM na interface (20/11/2026); RF-26 e RF-27 como no FSD, Anexo A; faltam as decisões Q8, Q9 e Q10 |
 | RF-28 a RF-30 | Módulo ampliado do Ruminante Singular (avaliação de dietas, modelo linear, dieta ótima) | **Já especificados** no FSD, Anexo B e `LINEARIZACAO.md`; falta a decisão Q11 |
 
 ### 15.4 Verificações técnicas ainda em aberto
@@ -929,3 +929,4 @@ próprio RuFaS.
 | 0.25 | 17/11/2026 | _[a preencher]_ | Sensibilidade (RF-32, FSD A.15): aba **Ração linear**, que compara a ração do SLSQP do RuFaS com a do modelo linear (LP) em cada simulação da análise; medido em 27 simulações: empate (o LP nunca custou mais que 0,012% além do SLSQP), e a busca normal do LP substitui a rápida nesta comparação; só NRC. |
 | 0.26 | 18/11/2026 | _[a preencher]_ | Comparações do LP com o RuFaS (RF-29, RF-31 e RF-32): **avisos** e **conclusão curta** no topo dos resultados da Vaca leiteira, da Sensibilidade, da Dieta ótima e da Linearização; na Sensibilidade, aviso de fatores sem efeito (todas as simulações com o mesmo custo: a comparação vale por uma só). |
 | 0.27 | 18/11/2026 | _[a preencher]_ | Ruminante Singular (RF-28): o padrão nutricional fica **só o NASEM 2021**; a escolha do NRC sai da tela (o back-end continua aceitando o NRC, usado pela Vaca leiteira e pelas comparações do LP com o RuFaS) e cenários de outro padrão são recusados. |
+| 0.28 | 20/11/2026 | _[a preencher]_ | (1) **Benchmark estatístico** LP × SLSQP do RuFaS em 72 casos (margem de equivalência de ±0,5%): o custo é equivalente nos dois padrões; relatório e comandos em `docs/benchmark/` e `docs/CONCLUSOES_PREVIAS.txt`, seção 5. (2) **Correção da busca do LP** (resgate por regime de desconto de ingestão), que perdia até 1,77% no NASEM. (3) **RF-24:** a Vaca leiteira e a Sensibilidade usam só o NASEM 2021 (sem seletor), e a aba Ração linear vale no NASEM, com o metano e o nitrogênio urinário do lote lidos das saídas do RuFaS (FSD, A.3). (4) **Metano e nitrogênio urinário como saídas da dieta** no Ruminante Singular (equações lineares do RuFaS, `module/emissions.py`; LINEARIZACAO, 7.3), com a opção de informar valores medidos. |

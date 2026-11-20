@@ -19,6 +19,9 @@ def rufas() -> SimpleNamespace:
     from RUFAS.biophysical.animal.animal_module_constants import AnimalModuleConstants
     from RUFAS.biophysical.animal.data_types.animal_combination import AnimalCombination
     from RUFAS.biophysical.animal.data_types.animal_types import AnimalType
+    from RUFAS.biophysical.animal.data_types.nutrition_data_structures import NutritionSupply
+    from RUFAS.biophysical.animal.digestive_system.enteric_methane_calculator import EntericMethaneCalculator
+    from RUFAS.biophysical.animal.digestive_system.manure_excretion_calculator import ManureExcretionCalculator
     from RUFAS.biophysical.animal.nutrients.nasem_requirements_calculator import NASEMRequirementsCalculator
     from RUFAS.biophysical.animal.nutrients.nrc_requirements_calculator import NRCRequirementsCalculator
     from RUFAS.biophysical.animal.nutrients.nutrition_supply_calculator import FeedInRation, NutritionSupplyCalculator
@@ -30,7 +33,9 @@ def rufas() -> SimpleNamespace:
         NRCFeed,
     )
     from RUFAS.data_structures.feed_storage_to_animal_connection import NutrientStandard as RufasStandard
+    from RUFAS.general_constants import GeneralConstants
     from RUFAS.units import MeasurementUnits
+    from RUFAS.user_constants import UserConstants
 
     return SimpleNamespace(
         constants=AnimalModuleConstants,
@@ -46,4 +51,9 @@ def rufas() -> SimpleNamespace:
         feed_component_type=FeedComponentType,
         standard={"NRC": RufasStandard.NRC, "NASEM": RufasStandard.NASEM},
         units=MeasurementUnits,
+        general_constants=GeneralConstants,
+        user_constants=UserConstants,
+        methane=EntericMethaneCalculator,
+        manure=ManureExcretionCalculator,
+        nutrition_supply=NutritionSupply,
     )

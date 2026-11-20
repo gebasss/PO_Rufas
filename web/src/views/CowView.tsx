@@ -18,6 +18,7 @@ import { api, runJob } from '@/lib/api'
 import { DEFAULT_HERD, herdNote, herdProblem } from '@/lib/herd'
 import type { CowScenario, RunMeta, SimResult } from '@/lib/types'
 import { useApp } from '@/providers/AppProvider'
+import { COW_STANDARD, standardName } from '@/views/module/model'
 import LinearRationCard from '@/views/cow/LinearRationCard'
 import Results from '@/views/cow/Results'
 
@@ -39,6 +40,7 @@ export function simulationBody(
   }
 
   return {
+    standard: COW_STANDARD,
     feeds: Object.keys(selected).map(Number),
     prices,
     limits,
@@ -145,7 +147,7 @@ export default function CowView() {
     <>
       <PageHeader
         title='Vaca leiteira (RuFaS)'
-        description='Escolha os alimentos, informe preços e limites e simule com o RuFaS (padrão NRC 2001). O otimizador do RuFaS formula a ração de custo mínimo e o sistema calcula custo, leite e margem.'
+        description={`Escolha os alimentos, informe preços e limites e simule com o RuFaS (padrão ${standardName(COW_STANDARD)}). O otimizador do RuFaS formula a ração de custo mínimo e o sistema calcula custo, leite e margem.`}
       />
 
       <div className='grid items-start gap-6 max-xl:pb-20 xl:grid-cols-[24rem_minmax(0,1fr)]'>

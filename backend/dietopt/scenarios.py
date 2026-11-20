@@ -104,7 +104,9 @@ def simulate(scenario: Scenario) -> tuple[bool, float, SimulationResult | None, 
     if path.exists():
         with open(path, encoding="utf-8") as handle:
             cached = result_from_dict(json.load(handle))
-        if cached.evaluations:  # resultados guardados antes do balanço (RF-19) não o têm: a simulação roda de novo
+        # Resultados guardados antes do balanço (RF-19) ou, no NASEM, antes do metano e do nitrogênio urinário do lote (que a comparação
+        # com o LP precisa) não os têm: a simulação roda de novo.
+        if cached.evaluations and (scenario.nutrient_standard != "NASEM" or cached.pen_animals):
             return True, 0.0, cached, "cache"
     run: RunResult = run_scenario(scenario)
     if not run.ok:

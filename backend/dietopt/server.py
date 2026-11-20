@@ -155,11 +155,12 @@ def simulation_payload(scenario: Scenario, economics: Economics) -> dict[str, An
             "wood_from_rufas": bool(result.wood),
             "milestones": lactation.milestones(),
         },
+        "standard": scenario.nutrient_standard,
         "average_ration": evaluation.ration,
         "limits": {str(feed_id): list(bounds) for feed_id, bounds in scenario.feed_limits.items()},
         "checks": checks,
         "checks_summary": summarize(checks),
-        "balance": build_balance(result.evaluations, result.requirements, _observed(evaluation.ration, library)),
+        "balance": build_balance(result.evaluations, result.requirements, _observed(evaluation.ration, library), scenario.nutrient_standard),
     }
 
 
@@ -236,7 +237,10 @@ def sensitivity_work(job: Job) -> dict[str, Any]:
         workers=int(job.params.get("workers", 2)),
         on_progress=progress,
         should_cancel=lambda: job.cancel_requested,
-    ) | {"feeds": [{"id": int(i), "label": feed_label(i, scenario.nutrient_standard)} for i in job.params["feeds"]]}
+    ) | {
+        "feeds": [{"id": int(i), "label": feed_label(i, scenario.nutrient_standard)} for i in job.params["feeds"]],
+        "standard": scenario.nutrient_standard,
+    }
 
 
 # ----------------------------------------------------------------------------------------------------------------

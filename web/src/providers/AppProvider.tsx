@@ -25,9 +25,9 @@ import type {
   SimParams,
   SimResult
 } from '@/lib/types'
-import { initialModuleState, type ModuleState } from '@/views/module/model'
+import { assertCowStandard, COW_STANDARD, initialModuleState, type ModuleState } from '@/views/module/model'
 
-/** Conjunto validado de alimentos: volumosos, concentrados e minerais da biblioteca NRC. */
+/** Conjunto validado de alimentos: volumosos, concentrados e minerais (os ids existem nas bibliotecas NASEM e NRC). */
 export const PRESET_BASE = [50, 110, 44, 167, 138, 230, 23]
 export const PRESET_WIDE = [50, 51, 110, 104, 95, 44, 47, 138, 167, 164, 169, 58, 193, 194, 24, 1, 230, 23]
 
@@ -141,8 +141,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Carrega a biblioteca e restaura a última configuração (localStorage, quando disponível).
   useEffect(() => {
     let cancelled = false
+    let saved: { selected?: Selected; params?: Partial<SimParams> } | null = null
 
-    Promise.all([api.feeds(), api.defaults()])
+    try {
+      saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null')
+    } catch {
+      // sem localStorage: segue com os valores padrão
+    }
+
+    Promise.all([api.feeds(COW_STANDARD), api.defaults()])
       .then(([library, defs]) => {
         if (cancelled) return
 
@@ -150,22 +157,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setDefaults(defs)
         setParamsState(p => ({ ...p, milkPrice: defs.milk_price }))
 
+        // o que foi salvo antes do NASEM (biblioteca NRC) perde os alimentos que o NASEM não tem
+        const known = new Set(library.map(f => f.id))
         let restored: Selected | null = null
 
-        try {
-          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null') as {
-            selected?: Selected
-            params?: SimParams
-          } | null
-
-          if (saved?.selected && Object.keys(saved.selected).length) restored = saved.selected
-          // o que foi salvo antes do RF-13 não tem o número de vacas: completa com o padrão
-          if (saved?.params) setParamsState({ ...INITIAL_PARAMS, ...saved.params })
-        } catch {
-          // sem localStorage: segue com os valores padrão
+        if (saved?.selected && Object.keys(saved.selected).length) {
+          restored = Object.fromEntries(Object.entries(saved.selected).filter(([id]) => known.has(Number(id))))
         }
 
-        setSelected(restored ?? buildSelection(PRESET_BASE, library, defs))
+        // o que foi salvo antes do RF-13 não tem o número de vacas: completa com o padrão
+        if (saved?.params) setParamsState({ ...INITIAL_PARAMS, ...saved.params })
+
+        setSelected(restored && Object.keys(restored).length ? restored : buildSelection(PRESET_BASE, library, defs))
         setConnection('online')
       })
       .catch(() => !cancelled && setConnection('offline'))
@@ -224,7 +227,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const cowScenario = useCallback(
     () => ({
-      standard: 'NRC',
+      standard: COW_STANDARD,
       params,
       feeds: Object.entries(selected).map(([id, feed]) => ({ id: Number(id), ...feed })),
       sensitivity: { method: sensSetup.method, levels: sensSetup.levels, factors: sensSetup.overrides }
@@ -233,6 +236,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   )
 
   const loadCowScenario = useCallback((scenario: CowScenario) => {
+    assertCowStandard(scenario) // recusa cenário de outro padrão (o erro vira aviso no ScenarioFile e na duplicação)
     setSelected(Object.fromEntries(scenario.feeds.map(({ id, ...feed }) => [id, feed])))
     setParamsState(scenario.params)
     setSensSetup(

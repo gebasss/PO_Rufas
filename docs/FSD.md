@@ -136,7 +136,7 @@ Itens que não existem e não devem ser assumidos, nem implementados sem decisã
 - Modificação do código do RuFaS (`vendor/RuFaS`).
 - Um modelo próprio de resposta do leite à dieta ou a otimização por fase da lactação (dependem de decisão do professor: PRD Q2 e Q3).
 - Um otimizador **não linear** próprio (por exemplo, um `SLSQP` do sistema): o otimizador do sistema é linear.
-- O NASEM 2021 como fonte do cálculo atual (é só referência; o cálculo é do RuFaS no padrão NRC) e a leitura automática de preços do CEPEA (PRD Q5).
+- A comparação **Comparar NRC × NASEM** do mesmo cenário (A.3.5) e a leitura automática de preços do CEPEA (PRD Q5). O NASEM 2021 já é um padrão da Vaca leiteira e da Sensibilidade (A.3).
 - CI/CD, ambiente de homologação ou fluxo de revisão formal: não existem; não presumir que existem.
 - Testes automatizados de integração com o RuFaS e de interface: não existem; só os do back-end.
 - Preços como cotações reais: os valores iniciais são ilustrativos.
@@ -315,7 +315,7 @@ aplicacao RuFaS/
 | Exportação de tabelas e relatórios; salvar e carregar cenários | RF-20 e RF-21, implementados em 03/11/2026 (A.10 e A.11). |
 | Importação de preços (CEPEA ou CSV) | RF-22, pendente. Preços são digitados. |
 | Mais nutrientes no exercício do quadro | RF-23, retirado em 11/11/2026 junto com o exercício simples. |
-| Padrão NASEM 2021 | RF-24, pendente; especificado no Anexo A.3. O sistema usa só a NRC 2001. |
+| Padrão NASEM 2021 | RF-24, implementado em 20/11/2026 (A.3): a Vaca leiteira e a Sensibilidade usam só o NASEM 2021, sem seletor (decisão do usuário). Sem comparação NRC × NASEM. |
 | Módulo ampliado do Ruminante Singular (avaliação de dietas montadas, modelo linear das equações do RuFaS) | RF-28 e RF-29, pendentes; especificados no Anexo B. |
 | Sugestão e previsão da dieta ótima de uma vaca e fase (RF-30) | Fase 2, implementada em 03/11/2026 (Anexo B, B.8 e B.11; `LINEARIZACAO.md`, 7.6); falta o laço de redução de leite. |
 | Ajuste do tamanho do rebanho pela interface | RF-13, implementado em 10/11/2026 (A.13): de 60 a 500 vacas, com o rebanho e as baias escalados juntos. |
@@ -552,7 +552,7 @@ Cinco cartões de texto, em duas colunas a partir de 1.280 px (o terceiro ocupa 
 1. **Como o sistema funciona** — "Do cenário à margem." Cobre as cinco telas (Ruminante Singular, Vaca leiteira, Sensibilidade, Curva de lactação e Execuções), a margem, o limite de 100 simulações da sensibilidade e que tudo roda localmente (`runs/`).
 2. **O que o modelo assume** — leite pela curva de Wood do RuFaS; tetos padrão de inclusão (0,6 kg minerais, 0,9 kg gorduras, 1 kg para alimentos com 60% ou mais de PB); só farelo de arroz na biblioteca NRC; 1 ou 2 anos, 100 vacas (60 a 500), semente fixa; uma única ração para as vacas em lactação.
 3. **Como ler os resultados** — versão curta: estados Atende / No limite (folga ≤ 0,5%) / Violada / Indisponível e Viável / Inviável / Viável incompleta; restrições aproximadas e a aba Linearização; a dieta ótima pode usar até 30% a mais de consumo; margem, leite perdido, verificações V1 a V5 e balanço; variação em US$ (tamanho) × Spearman (direção). Aponta para `docs/guias/GUIA_RUMINANTE_SINGULAR.docx`.
-4. **O que ele não faz** — preços ilustrativos; não substitui software de formulação nem nutricionista, sem comparação com referência profissional; NASEM só no Ruminante Singular; energia do NASEM exige metano e N urinário; o otimizador do RuFaS pode não convergir ("falhou" ou "leite perdido", nunca resultado válido); tempo e memória por simulação e o mínimo de 60 vacas; limiares V1 a V5, tolerância e a leitura de PEV + gestação em avaliação com o professor.
+4. **O que ele não faz** — preços ilustrativos; não substitui software de formulação nem nutricionista, sem comparação com referência profissional; no NASEM o metano e o N urinário do lote vêm do RuFaS (A.3); o otimizador do RuFaS pode não convergir ("falhou" ou "leite perdido", nunca resultado válido); tempo e memória por simulação e o mínimo de 60 vacas; limiares V1 a V5, tolerância e a leitura de PEV + gestação em avaliação com o professor.
 5. **Créditos e licenças** — RuFaS v1.0.6 (GPLv3, sem modificações), NRC 2001, NASEM 2021 (National Academies Press, doi:10.17226/25806), template AdminCN (MIT). O rodapé de todas as telas cita NRC (2001) e NASEM (2021).
 
 ### 10.8 Identidade visual
@@ -652,7 +652,7 @@ Solucionador do PL da dieta ótima do Ruminante Singular (`scipy.optimize.linpro
 
 ### 12.3 Dados nutricionais (NRC 2001)
 
-A composição dos alimentos vem das tabelas do RuFaS (`NRC_comp.csv`, `user_feeds.csv`). O PDF da NRC não é lido pelo sistema. O NASEM 2021 não é oferecido (especificado no Anexo A, RF-24).
+A composição dos alimentos vem das tabelas do RuFaS (`NRC_comp.csv`, `user_feeds.csv`). O PDF da NRC não é lido pelo sistema. O NASEM 2021 tem a biblioteca `NASEM_Comp` do RuFaS (Anexo A.3).
 
 ### 12.4 Preços de mercado
 
@@ -690,7 +690,7 @@ Arquivos locais (pacote `geist`). Nenhuma requisição externa em tempo de uso.
 - **Pré-condições:** servidor ativo.
 - **Passo a passo:** abrir a tela 1; escolher o padrão e informar a vaca; montar as dietas e os preços; acionar **Avaliar dietas**; em _Linearização_, **Comparar com o RuFaS**; em _Dieta ótima_, **Calcular dieta ótima** (Anexo B).
 - **Resultado esperado:** ranking das dietas, restrições por dieta, erro de linearização e dieta ótima, com exportação.
-- **Erros possíveis:** dados da vaca incompletos ou dieta sem alimentos (o botão fica bloqueado e a tela diz o motivo); servidor fora do ar; metano e nitrogênio urinário ausentes no NASEM (a energia fica indisponível).
+- **Erros possíveis:** dados da vaca incompletos ou dieta sem alimentos (o botão fica bloqueado e a tela diz o motivo); servidor fora do ar.
 - **Logs:** a execução é gravada no histórico (A.12).
 
 ### F4. Gerar a tabela de cenários do quadro (retirado)
@@ -1285,9 +1285,30 @@ Ordem de implementação sugerida: RF-27, RF-24, RF-26. O RF-27 usa só dados qu
 
 ### A.3 RF-24: padrão nutricional NASEM 2021
 
+> **Implementado em 20/11/2026: Vaca leiteira e Sensibilidade usam só o NASEM 2021 (sem seletor).** Decisão do usuário: **não há seletor de
+> padrão** nessas telas; o padrão é fixo em NASEM 2021 (o NRC 2001 saiu da interface, como no Ruminante Singular; o back-end continua
+> aceitando `standard = "NRC"`, usado pelo benchmark e pelas execuções antigas). Como ficou, nas partes que diferem do texto abaixo:
+> - **Sem seletor.** A biblioteca de alimentos é a do NASEM (`GET /api/feeds?standard=NASEM`); a linha de cada alimento traz amido e ED base
+>   no lugar da NEL; o estado salvo no navegador antes disso (biblioteca NRC) perde os alimentos que o NASEM não tem. Um cenário salvo, ou uma
+>   execução duplicada, do padrão NRC é recusado ("Este cenário usa o padrão NRC 2001, que não está mais disponível na Vaca leiteira (só o
+>   NASEM 2021)"). O padrão vai no corpo das simulações e das sensibilidades (`standard`), no arquivo de cenário, no histórico e no resultado
+>   (`standard`), de onde saem o rótulo "Exigências (NASEM 2021)" e o `meta` dos relatórios (uma execução antiga, sem o campo, é rotulada NRC).
+>   O selo do cabeçalho mostra "· N alimentos NASEM".
+> - **Ração linear (RF-31 e RF-32) no NASEM.** O NASEM exige o metano entérico e o nitrogênio urinário médios do lote. O RuFaS os calcula a
+>   cada intervalo (`pen.py`: média dos animais do lote) e **grava** o metano total do lote (g/dia), o nitrogênio urinário (kg/dia) e o
+>   número de animais; o sistema pede esses três ao RuFaS (filtro `pens`, `rufas_results.RESULT_FILTERS`) e usa **total ÷ animais do dia
+>   anterior** à formulação (`SimulationResult.pen_averages`). Não se inventa valor nem se altera o RuFaS. Conferência: com esses valores a
+>   ração que o SLSQP usou nos 13 intervalos de uma simulação de 1 ano fica viável (violação relativa máxima 2e-6). Um resultado
+>   guardado no cache antes disso não tem os valores: a simulação NASEM roda de novo (`scenarios.simulate`).
+> - **Não feito, e fora do escopo agora:** o botão **Comparar NRC × NASEM** (A.3.5) e o seletor de A.3.1 (retirado por decisão do usuário).
+> - **Medido** (preços ilustrativos, 100 vacas, 1 ano, o "Conjunto base"): a comparação da aba Ração linear no NASEM dá, com o mesmo consumo,
+>   LP 0,17% mais barato que o SLSQP (US$ 141 no rebanho em 365 dias; consumo livre, 0,54%); por intervalo o LP fica de -2,1% a +0,67% (a
+>   busca "rápida" do LP é heurística). Sensibilidade NASEM (2 simulações): LP de -0,15% a 0,00%. O benchmark estatístico dos dois padrões está em
+>   `docs/CONCLUSOES_PREVIAS.txt`, seção 5.
+
 **Objetivo.** Permitir simular o mesmo cenário (alimentos, preços, limites, preço do leite) no padrão NRC 2001 ou NASEM 2021, e comparar os dois lado a lado.
 
-**A.3.1 Seletor de padrão (tela Vaca leiteira)**
+**A.3.1 Seletor de padrão (tela Vaca leiteira)** — *não implementado: retirado por decisão do usuário em 20/11/2026; ver a nota no início de A.3.*
 - Novo campo **Padrão nutricional** no painel "Cenário", com as opções "NRC 2001" (padrão) e "NASEM 2021". Valor guardado em `params.standard` e em `dietopt.v1`. Ao restaurar um estado salvo sem esse campo, usar "NRC".
 - A escolha vale também para a tela Sensibilidade (usa o mesmo `params`).
 - Ao trocar o padrão, a interface recarrega a biblioteca (`GET /api/feeds?standard=<NRC|NASEM>`) e mantém os alimentos selecionados que existem nos dois padrões. Alimentos ausentes na nova biblioteca são **removidos da seleção** e listados em um aviso: "Removidos por não existirem no padrão <X>: <lista>." Se restarem menos de 3 alimentos, o botão Simular fica desabilitado com a mensagem já existente de mínimo de 3.
@@ -1740,8 +1761,9 @@ histórico de execuções. O resultado traz `standard`, `feed_ids`, `feeds` (`id
 | `warnings` | Intervalos em que o LP não achou ração viável ou violou uma restrição original além da tolerância |
 
 **Regras.**
-- Só vale para o padrão **NRC** (no NASEM a energia exige metano e nitrogênio urinário do lote, que a simulação não informa): outro
-  padrão é recusado com a mensagem "A comparação com a ração linear só está disponível para o padrão NRC."
+- Vale para o **NRC e o NASEM** (desde 20/11/2026). No NASEM a energia exige o metano e o nitrogênio urinário médios do lote, que a
+  simulação agora grava (A.3); um resultado NASEM guardado sem eles é recusado com "Esta simulação NASEM não trouxe o metano e o
+  nitrogênio urinário do lote ... Rode a simulação de novo." e a simulação é refeita pelo cache. Outro padrão é recusado ("Padrão desconhecido").
 - As exigências de cada intervalo são as da saída do RuFaS (energia de mantença, atividade, crescimento, gestação e lactação,
   proteína metabolizável, cálcio, fósforo e consumo estimado), passadas como sobrescritas; só o peso médio do lote entra na oferta.
 - A ração do LP é a de menor custo da busca do módulo (`optimize.search`, resolução **rápida**: cerca de 11 s por intervalo, 2 a 3
@@ -1812,7 +1834,7 @@ e `total` (um passo por simulação) e cancelamento por `POST /api/jobs/<id>/can
 | `summary` | `scenarios`, `compared`, `failed`, `mean_diff_pct`, `min_diff_pct`, `max_diff_pct`, `lp_cheaper`, `tie`, `lp_dearer`, `all_verified`, `tie_pct` (0,1) |
 
 **Regras.**
-- Só vale para o padrão **NRC** (outro padrão é recusado: "A comparação com a ração linear só está disponível para o padrão NRC.").
+- Vale para o padrão da análise, **NASEM ou NRC** (desde 20/11/2026; no NASEM usa o metano e o nitrogênio urinário do lote de cada simulação, A.3).
 - Simulações que falharam no RuFaS ficam na tabela como "falhou" e fora das médias; intervalos sem ração viável no LP ficam fora do custo da simulação, e uma
   simulação sem nenhum é mostrada como "sem ração viável no LP".
 - Os cenários vêm de `sensitivity.plan_scenarios`, a mesma função da análise (semente 42), então a numeração S1..SN coincide.
@@ -1885,7 +1907,7 @@ dólares (conversões depois); categorias só as que o RuFaS otimiza; o RuFaS é
 uma dieta já montada.
 
 **Dependências.** RF-24 (padrão NASEM) para o modo NASEM; RF-27 (verificações) reaproveita parte das regras; RF-26 para o
-arroz em grão. Sem RF-24, o módulo funciona só no padrão NRC.
+arroz em grão. O RF-24 (NASEM na Vaca leiteira e na Sensibilidade, sem seletor) foi implementado em 20/11/2026; o Ruminante Singular também usa só o NASEM 2021.
 
 ### B.2 Interface
 
@@ -1914,7 +1936,7 @@ Onde a tela difere ou completa o texto acima:
 - **Vaca:** o padrão (NASEM, principal, ou NRC), a categoria e o tipo de animal (vaca seca ou novilha pré-parto; novilha I ou
   II) ficam neste cartão. Os campos vêm de `GET /api/module/defaults` (obrigatórios com `*`, faixas validadas) e abrem com uma
   vaca de **exemplo** da categoria; trocar de categoria ou de tipo volta ao exemplo do novo tipo. Os campos do lote (metano e N
-  urinário, só NASEM) e da ração anterior (opcionais; vazio = vem da dieta) têm blocos próprios. As exigências vêm de
+  urinário, só NASEM; opcionais, vazio = calculados da dieta) e da ração anterior (opcionais; vazio = vem da dieta) têm blocos próprios. As exigências vêm de
   `POST /api/module/requirements` (com atraso de 0,4 s após a digitação), com a coluna **Sobrescrever** por exigência.
 - **Dietas:** tabela com uma linha por alimento e uma coluna por dieta (nome editável, até 10), total por dieta e o consumo
   estimado; busca para adicionar alimentos da biblioteca do padrão; botão **Dietas de exemplo** (três dietas cujo total é o
@@ -1926,7 +1948,7 @@ Onde a tela difere ou completa o texto acima:
   quantidades, nome repetido, preço ausente, mínimo maior que o máximo). O ranking mostra a **posição 1 como a mais
   recomendada** (a API devolve a lista da menos para a mais recomendada); a dieta viável de menor custo leva o selo "Melhor
   entre as informadas". Estados em texto e ícone: **Viável**, **Inviável** e **Viável, incompleta** (alguma restrição sem
-  dados, como a energia do NASEM sem metano e N urinário); por restrição: **Atende**, **No limite**, **Violada** e
+  dados); por restrição: **Atende**, **No limite**, **Violada** e
   **Indisponível** (com a nota do que falta). O detalhe de uma dieta (clique no nome) traz consumo, TDN%, % de concentrado,
   desconto de ingestão e a tabela de restrições com exigência, oferta linear, oferta do RuFaS, erro de linearização
   (destacado acima de 1%), folga e estado. Se as entradas mudarem depois de avaliar, o resultado fica esmaecido com o aviso
@@ -1966,7 +1988,8 @@ campo nas calculadoras NRC e NASEM; "NASEM" e "NRC" indicam que só aquele padr�
 As calculadoras rodam **sem iniciar uma simulação** (verificado). O TDN% e os demais campos exclusivos do NRC dependem da
 dieta e, no módulo, vêm da própria dieta avaliada. O metano entérico e o nitrogênio urinário do lote (última linha da tabela) são
 **saídas do RuFaS**: médias do lote dos valores do dia anterior de cada animal, usadas só no NASEM; para uma vaca isolada o
-módulo os recebe ou os estima pelas equações do NASEM (`LINEARIZACAO.md`, 7.3, decisão pendente L-Q2). Validações: valores numéricos positivos onde aplicável; campos
+módulo os **calcula da dieta** com as equações lineares do RuFaS e os mostra como resultado (`LINEARIZACAO.md`, 7.3; L-Q2 resolvida em
+20/11/2026), ou usa os valores que o usuário informar (os dois ou nenhum). Validações: valores numéricos positivos onde aplicável; campos
 vazios usam o padrão do RuFaS apenas onde o RuFaS define um **(a verificar)**; nenhum valor inventado.
 
 ### B.4 Entradas: dietas montadas
@@ -2059,7 +2082,7 @@ quantidades escaladas por 0,95 e 1,05 (só a classe A; vazio nas classes L e E).
   no ponto e a −5% e +5%, o maior erro em módulo, se está dentro da tolerância, a igualdade no ponto (1e-6), o estado (viável ou
   violada) nos dois modelos e se ele coincide nas sondagens; por dieta, o maior erro, a restrição de maior erro e quantas passam
   da tolerância; e um resumo geral. Os limites por alimento não entram (não têm função equivalente no RuFaS). Restrições sem
-  dados (energia do NASEM sem metano e N urinário) ficam de fora das contagens, com a nota. O relatório sai na tela (cartão
+  dados ficam de fora das contagens, com a nota. O relatório sai na tela (cartão
   "Comparação com o RuFaS", depois do resultado) e em CSV (uma linha por dieta e restrição; botão "Baixar CSV"). A disjunção
   de `LINEARIZACAO.md`, seção 6 ("o ramo escolhido continua o de maior oferta?"), não tem coluna própria: o `min` e o `max` ficam
   dentro da forma linear e uma troca de ramo aparece no erro de oferta.
@@ -2105,7 +2128,7 @@ com o otimizador do RuFaS. O método está em `LINEARIZACAO.md`, 5.1b e 7.6 (LP 
   **preços-sombra**. No cartão Resultado, a dieta ótima vira a **referência final** do ranking, com a coluna "Desvio do ótimo"
   `(custo_d − custo_ótimo)/custo_ótimo`; um desvio negativo é de dieta inviável mais barata que a ótima.
 - **Entradas:** a vaca e as sobrescritas como na avaliação; os alimentos são **todos** os da tabela de dietas (não só os usados nas
-  dietas), com preço e limites. No NASEM, metano e N urinário do lote são obrigatórios (sem eles a energia não existe).
+  dietas), com preço e limites. No NASEM, metano e N urinário do lote são opcionais (vazio = calculados da dieta; os dois ou nenhum).
 - **API:** tarefa em segundo plano `POST /api/jobs/optimize`, com o corpo de `evaluate` sem `diets` e com `feed_ids`, `resolution`
   (`rapida`, `normal` ou `fina`) e `seeds` (0 a 30); progresso em `done` e `total`; `POST /api/jobs/<id>/cancel` pede o cancelamento
   (estado `cancelled`; um job ainda na fila nem começa). O resultado traz `status` (`ok` ou `infeasible`, com `message`), `diet`
@@ -2128,7 +2151,7 @@ com o otimizador do RuFaS. O método está em `LINEARIZACAO.md`, 5.1b e 7.6 (LP 
 |---|---|---|
 | Chamar as calculadoras de exigência do RuFaS sem simulação | Dependências do pacote `RUFAS` (gerenciador de saídas, constantes) | **Verificado**: `calculate_requirements` roda isolado, em NRC e NASEM, para as seis categorias |
 | Modo NASEM para novilhas e vacas secas | As calculadoras devolvem valores plausíveis, mas o otimizador do RuFaS não foi exercitado nessas categorias; a unidade do ganho diário (kg/dia) é fácil de errar | Avaliar casos de referência do NASEM (Tabela 21-1, com cautela) e validar a faixa de entrada do ganho diário |
-| Metano e nitrogênio urinário de uma vaca isolada | Valores do lote não existem fora do RuFaS | Decisão L-Q2 |
+| Metano e nitrogênio urinário de uma vaca isolada como valor medido | Fora do RuFaS são calculados da dieta (IPCC e balanço do esterco); só se informam para fixar valores medidos | L-Q2, resolvida em 20/11/2026 |
 | Otimização linearizada (fase 2) | O ponto fixo simples parou 4,8% acima do RuFaS; o desconto de ingestão é descontínuo em TDN% = 60 | Parametrização dos escalares globais, com dois regimes (`LINEARIZACAO.md`, 5.1b e seção 10) |
 | Biblioteca de alimentos | Alimentos NRC-only ou NASEM-only (RF-24) | Aviso e remoção (A.3.1) |
 

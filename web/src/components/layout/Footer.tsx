@@ -12,7 +12,7 @@ const Footer = () => {
           >
             RuFaS
           </a>{' '}
-          v1.0.6 (GPLv3) · Exigências e composição: NRC (2001) e NASEM (2021) · Preços ilustrativos, não são cotações.
+          v1.0.6 (GPLv3) · Exigências e composição: NASEM (2021) · Preços ilustrativos, não são cotações.
         </p>
         <p>Interface adaptada do template AdminCN (shadcn/studio, licença MIT).</p>
       </div>

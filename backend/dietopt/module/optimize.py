@@ -15,7 +15,7 @@ from __future__ import annotations
 import itertools
 import random
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from statistics import median
 from typing import Any, Callable, Mapping, Sequence
 
@@ -27,6 +27,7 @@ from ..jobs import Cancelled
 from ..standards import get_standard
 from . import linear
 from .categories import parse_animal_type, parse_category
+from . import emissions
 from .evaluate import Diet, evaluate_diet, pen_inputs, resolve_limits
 from .library import build_feeds
 from .requirements import RequirementsResult, compute_requirements
@@ -40,6 +41,7 @@ MAX_SEEDS = 30
 RESCUE_POINTS = 40  # pontos da grade de onde parte o resgate
 MIN_GRID_HITS = 6  # abaixo disso a grade acertou pouco da região viável e o resgate entra
 STARTS_PER_REGIME = 3  # melhores pontos da grade de cada regime que o refinamento parte
+RESCUE_BELOW = 3  # o resgate por regime entra quando a grade deu menos que isto de pontos viáveis no regime
 # Resolução da grade inicial: pontos por escalar (consumo, TDN% por regime, % de concentrado, amido) e orçamento de LPs do refinamento.
 RESOLUTIONS: Mapping[str, tuple[int, int, int, int, int]] = {
     "rapida": (3, 4, 3, 2, 400),
@@ -187,13 +189,23 @@ def _solve_lp(problem: Problem, point: Point, rows: Sequence[Row], branch: str |
     return Solution(point, np.maximum(result.x, 0.0), float(result.fun), branch, prices)
 
 
-def solve_point(problem: Problem, point: Point, fix_scalars: bool = True) -> Solution | None:
+def _regime_row(problem: Problem, regime: str) -> Row:
+    """TDN% da dieta do lado certo de 60% (linear: ``(TDN − 60)·x`` de um sinal), para manter o LP livre dentro do regime."""
+    if regime == "sem_desconto":
+        return Row("regime", problem.tdn - (REGIME_BREAK - BREAK_EPSILON), "le", 0.0)
+    return Row("regime", problem.tdn - REGIME_BREAK, "ge", 0.0)
+
+
+def solve_point(problem: Problem, point: Point, fix_scalars: bool = True, regime: str | None = None) -> Solution | None:
     """Menor custo com os escalares fixos em ``point`` (um LP por ramo das disjunções), ou ``None`` se inviável.
 
     Com ``fix_scalars=False`` só os coeficientes ficam congelados em ``point`` e as quantidades são livres: é o LP da
     programação linear sucessiva, que indica para onde os escalares querem ir (a solução não é viável no problema original).
+    ``regime`` (só com as quantidades livres) obriga a dieta a ficar naquele regime do desconto de ingestão.
     """
     fixed, energy_branches, protein_ceiling = _split(problem.constraints_at(point))
+    if regime:
+        fixed = [*fixed, _regime_row(problem, regime)]
     best: Solution | None = None
     for index, branch in enumerate(energy_branches or [None]):
         rows = [*fixed, *([branch] if branch else [])]
@@ -389,6 +401,46 @@ def _rescue(
     return found
 
 
+def _rescue_regime(
+    problem: Problem,
+    regime: str,
+    box: Box,
+    grid: Sequence[Point],
+    known: Sequence[Solution],
+    solve: Callable[[Point], Solution | None],
+    should_stop: Callable[[], bool] | None,
+) -> list[Solution]:
+    """Pontos viáveis de um regime em que a grade acertou pouco (às vezes nenhum).
+
+    A região viável do regime sem desconto costuma ser uma fatia estreita junto de TDN% = 60 (no NASEM, o ótimo do SLSQP do RuFaS
+    chega a ficar em 59,9999%), que a grade quase não toca; sem um ponto viável a busca nunca explora o regime. Os pontos de partida
+    são os da grade no regime e as melhores soluções do outro regime projetadas para dentro deste; de cada um, o LP com as
+    quantidades livres indica os escalares que ele quer, que são trazidos para o regime e resolvidos como LP exato.
+    """
+    nasem = problem.standard == "NASEM"
+    in_regime = [p for p in grid if p.regime == regime]
+    seeds = in_regime[:: max(1, len(in_regime) // RESCUE_POINTS)]
+    seeds += [_clip(s.point, box, regime, nasem) for s in sorted(known, key=lambda s: s.cost)[:STARTS_PER_REGIME]]
+    found: list[Solution] = []
+    for point in dict.fromkeys(seeds):
+        current = point
+        for _ in range(8):
+            if should_stop and should_stop():
+                raise Cancelled
+            free = solve_point(problem, current, fix_scalars=False, regime=regime)
+            if free is None:
+                break
+            target = _clip(scalars_of(problem, free.x), box, regime, nasem)
+            exact = solve(target)
+            if exact:
+                found.append(exact)
+                break
+            if target == current:
+                break
+            current = target
+    return found
+
+
 @dataclass
 class SearchStats:
     points: int = 0
@@ -427,6 +479,10 @@ def search(
     solutions = [s for s in (solve(p) for p in grid) if s]
     if grid and len(solutions) < MIN_GRID_HITS:
         solutions += _rescue(problem, grid, solve, should_stop)
+    if box:
+        for regime in ("sem_desconto", "com_desconto"):
+            if sum(1 for s in solutions if s.point.regime == regime) < RESCUE_BELOW:
+                solutions += _rescue_regime(problem, regime, box, grid, solutions, solve, should_stop)
     best: Solution | None = None
     if solutions and box:
         steps = np.array([(hi - lo) / max(n - 1, 1) for lo, hi, n in zip(box.low, box.high, (sizes[0], 2 * sizes[1], sizes[2], sizes[3]))])
@@ -465,9 +521,7 @@ def build_problem(
     dmi_range: tuple[float, float] | None = None,
 ) -> Problem:
     feeds = build_feeds(standard, list(ids), prices, limits)
-    pen = pen_inputs(standard, cow)
-    if standard == "NASEM" and pen is None:
-        raise ValueError("Informe o metano entérico e o nitrogênio urinário do lote: sem eles a energia do NASEM não é calculada.")
+    pen = pen_inputs(standard, cow)  # None no NASEM = metano e N urinário calculados da dieta (emissions.py)
     return Problem(
         standard=standard,
         animal_type=animal_type,
@@ -501,11 +555,22 @@ def _check(
     )  # fmt: skip
 
 
+def rufas_pen(problem: Problem) -> tuple[float, float] | None:
+    """Metano (g/dia) e nitrogênio urinário (kg/dia) que o SLSQP do RuFaS recebe: ele só aceita constantes.
+
+    Os informados; no NASEM calculado da dieta (``problem.pen`` é ``None``), os valores de partida ``emissions.DEFAULT_*`` (450 g/dia e
+    0,25 kg/dia, decisão de 20/11/2026) — ``optimize_diet`` os troca pelos da dieta do LP para as duas buscas resolverem o mesmo problema."""
+    if problem.pen is not None or problem.standard != "NASEM":
+        return problem.pen
+    return emissions.DEFAULT_METHANE_G, emissions.DEFAULT_URINE_N_KG
+
+
 def run_rufas(problem: Problem, category: str, seeds: int, on_each: Callable[[int], None] | None = None) -> list[dict[str, Any]]:
     """Roda o ``RationOptimizer`` (SLSQP) do RuFaS, que parte de um ponto aleatório, com ``seeds`` sementes."""
     rf = rufas()
     nutrition = problem.requirements.nutrition_requirements
     combination = rf.animal_combination[category]
+    pen = rufas_pen(problem)
     out = []
     for seed in range(seeds):
         random.seed(seed)
@@ -513,8 +578,8 @@ def run_rufas(problem: Problem, category: str, seeds: int, on_each: Callable[[in
         attempt, _ = rf.optimizer().attempt_optimization(
             nutrient_standard=rf.standard[problem.standard],
             pen_average_body_weight=problem.body_weight,
-            pen_average_enteric_methane=problem.pen[0] if problem.pen else None,
-            pen_average_urine_nitrogen=problem.pen[1] if problem.pen else None,
+            pen_average_enteric_methane=pen[0] if pen else None,
+            pen_average_urine_nitrogen=pen[1] if pen else None,
             requirements=nutrition,
             initial_dry_matter_requirement=nutrition.dry_matter,
             initial_protein_requirement=nutrition.metabolizable_protein,
@@ -656,6 +721,11 @@ def optimize_diet(
         "status": "ok",
         "diet": {
             "amounts": amounts,
+            "emissions": {
+                "methane_g": check["intake"]["enteric_methane_g"],
+                "urinary_nitrogen_kg": check["intake"]["urinary_nitrogen_kg"],
+                "source": check["intake"]["emissions_source"],
+            },
             "cost": best.cost,
             "cost_per_kg": best.cost / float(best.x.sum()),
             "scalars": {"dmi": best.point.dmi, "tdn_percentage": best.point.tdn, "concentrate_percentage": best.point.conc},
@@ -682,7 +752,15 @@ def optimize_diet(
             if on_progress:
                 on_progress(stats.total + count, stats.total + seeds)
 
-        runs = run_rufas(problem, category_.value, seeds, tick)
-        result["rufas"] = _comparison(problem, category_.value, cow, runs, best, price_map, limit_map)
+        # O SLSQP do RuFaS só aceita o metano e o N urinário como constantes: no NASEM calculado, recebe os da dieta do LP, e as duas buscas
+        # resolvem o mesmo problema de energia (a dieta do LP é viável nele). Cada ração do SLSQP é conferida com as constantes que ele usou.
+        fixed = problem
+        if problem.standard == "NASEM" and problem.pen is None:
+            fixed = replace(problem, pen=(check["intake"]["enteric_methane_g"], check["intake"]["urinary_nitrogen_kg"]))
+        runs = run_rufas(fixed, category_.value, seeds, tick)
+        result["rufas"] = _comparison(fixed, category_.value, cow, runs, best, price_map, limit_map)
+        result["rufas"]["emissions_used"] = (
+            {"methane_g": fixed.pen[0], "urinary_nitrogen_kg": fixed.pen[1]} if fixed.pen and fixed is not problem else None
+        )
     return result
 

@@ -311,6 +311,20 @@ export function RankingView({ result, selected, onSelect, optimalCost }: ViewPro
                 label='Concentrado na dieta'
                 value={detail.intake.concentrate_percentage === null ? '—' : `${nf(detail.intake.concentrate_percentage, 1)}%`}
               />
+              {detail.intake.enteric_methane_g !== null && (
+                <KpiCard
+                  label='Metano entérico'
+                  value={`${nf(detail.intake.enteric_methane_g, 0)} g/dia`}
+                  hint={detail.intake.emissions_source === 'calculado' ? 'calculado da dieta (IPCC)' : 'informado'}
+                />
+              )}
+              {detail.intake.urinary_nitrogen_kg !== null && (
+                <KpiCard
+                  label='Nitrogênio urinário'
+                  value={`${nf(detail.intake.urinary_nitrogen_kg, 3)} kg/dia`}
+                  hint={detail.intake.emissions_source === 'calculado' ? 'calculado da dieta' : 'informado'}
+                />
+              )}
             </div>
             {detail.warnings.length > 0 && (
               <ul className='text-muted-foreground list-disc space-y-0.5 pl-4 text-xs'>

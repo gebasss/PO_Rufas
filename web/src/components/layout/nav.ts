@@ -20,14 +20,14 @@ export const navGroups: NavGroup[] = [
       {
         label: 'Ruminante Singular',
         title: 'Ruminante Singular',
-        description: 'Avalia dietas já montadas para uma vaca real e sugere a de menor custo, com exigências do NASEM ou do NRC.',
+        description: 'Avalia dietas já montadas para uma vaca real e sugere a de menor custo, com as exigências do NASEM 2021.',
         href: '/',
         icon: CalculatorIcon
       },
       {
         label: 'Vaca leiteira',
         title: 'Vaca leiteira (RuFaS)',
-        description: 'Simulação com o RuFaS, padrão NRC 2001: ração, custo, leite e margem.',
+        description: 'Simulação com o RuFaS, padrão NASEM 2021: ração, custo, leite e margem.',
         href: '/vaca',
         icon: MilkIcon
       },

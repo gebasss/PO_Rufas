@@ -236,7 +236,7 @@ export default function SensLinearRationCard({ sensKey, stale }: Props) {
                   ração. O que o linear acrescenta é um resultado que não depende do ponto inicial aleatório e os preços-sombra.
                 </li>
                 <li>O LP usa o mesmo consumo que o RuFaS escolheu e atende às restrições originais do RuFaS (coluna da tabela). O leite não é simulado de novo.</li>
-                <li>Só vale para o padrão NRC 2001.</li>
+                <li>Vale para o padrão NASEM 2021.</li>
               </ul>
             </AlertDescription>
           </Alert>

@@ -20,6 +20,16 @@ export const MAX_DIETS = 10
 /** O Ruminante Singular usa só o NASEM 2021 (o NRC 2001 saiu da tela; o back-end ainda o aceita, a Vaca leiteira o usa). */
 export const MODULE_STANDARD: NutrientStandard = 'NASEM'
 
+/** A Vaca leiteira e a Sensibilidade também usam só o NASEM 2021 (o back-end ainda aceita o NRC: o benchmark e as execuções antigas). */
+export const COW_STANDARD: NutrientStandard = 'NASEM'
+
+/** Cenário (arquivo ou execução duplicada) de outro padrão não abre na Vaca leiteira: a biblioteca de alimentos e as exigências são outras. */
+export function assertCowStandard(data: { standard: NutrientStandard }) {
+  if (data.standard !== COW_STANDARD) {
+    throw new Error('Este cenário usa o padrão NRC 2001, que não está mais disponível na Vaca leiteira (só o NASEM 2021).')
+  }
+}
+
 /** Cenário (arquivo ou execução duplicada) de outro padrão não abre nesta tela: as bibliotecas e os campos da vaca são outros. */
 export function assertModuleStandard(data: { standard: NutrientStandard }) {
   if (data.standard !== MODULE_STANDARD) {

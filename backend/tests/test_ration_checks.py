@@ -134,6 +134,14 @@ def test_balanco_marca_deficit_e_fora_da_faixa_e_usa_o_pior_intervalo():
     assert linha(balanco, "total_energy")["status"] == "ok"
 
 
+def test_nasem_so_tem_a_energia_total_no_balanco():
+    balanco = build_balance([AVALIACAO], [EXIGENCIAS], standard="NASEM")
+    ids = [linha["id"] for linha in balanco]
+    assert "total_energy" in ids and not {"maintenance_energy", "lactation_energy", "growth_energy"} & set(ids)
+    assert "calcium" in ids and "só a energia total" in next(l for l in balanco if l["id"] == "total_energy")["note"]
+    assert "maintenance_energy" in [linha["id"] for linha in build_balance([AVALIACAO], [EXIGENCIAS])]  # NRC: as quatro linhas
+
+
 def test_balanco_vazio_quando_o_rufas_nao_devolveu_a_avaliacao():
     assert build_balance([], [EXIGENCIAS]) == []
 

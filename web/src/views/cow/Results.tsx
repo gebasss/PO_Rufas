@@ -18,6 +18,7 @@ import { shortDate } from '@/lib/history'
 import type { RunMeta, SimResult } from '@/lib/types'
 import BalanceCard, { BalanceTable } from '@/views/cow/BalanceCard'
 import ChecksCard, { ChecksAlert } from '@/views/cow/ChecksCard'
+import { standardName } from '@/views/module/model'
 
 const seriesColor = (index: number) => `var(--chart-${(index % 8) + 1})`
 
@@ -268,7 +269,7 @@ export default function Results({ sim, stale = false, base = null, onSetBase, li
               </TabsTab>
             ) : null}
           </TabsList>
-          <ExportButtons screen='simulation' data={sim} meta={{ standard: 'NRC 2001' }} />
+          <ExportButtons screen='simulation' data={sim} meta={{ standard: standardName(sim.standard ?? 'NRC') }} />
         </div>
 
         {sim.run_id && (
@@ -416,7 +417,7 @@ export default function Results({ sim, stale = false, base = null, onSetBase, li
             {sim.checks && sim.checks.length > 0 && <ChecksCard checks={sim.checks} />}
             {sim.balance && sim.balance.length > 0 && <BalanceCard rows={sim.balance} />}
             <ChartCard
-              title='Exigências (NRC 2001)'
+              title={`Exigências (${standardName(sim.standard ?? 'NRC')})`}
               description='Energia e consumo (eixo esquerdo) e proteína metabolizável (direito).'
               chart={
                 <>

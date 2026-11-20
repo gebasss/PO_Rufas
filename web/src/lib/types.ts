@@ -118,6 +118,19 @@ export interface ModuleConstraint {
   status: ConstraintStatus
   note?: string
 }
+/** Consumo e escalares da dieta; no NASEM, também o metano e o nitrogênio urinário que descontam a energia. */
+export interface DietIntake {
+  dry_matter: number
+  tdn_percentage: number | null
+  concentrate_percentage: number | null
+  intake_discount: number | null
+  total_starch_kg: number | null
+  /** g/dia. `calculado` = saída da dieta (equações do RuFaS); `informado` = valor digitado pelo usuário. */
+  enteric_methane_g: number | null
+  /** kg/dia. */
+  urinary_nitrogen_kg: number | null
+  emissions_source: 'calculado' | 'informado' | null
+}
 export interface ModuleDietResult {
   name: string
   cost: number
@@ -126,7 +139,7 @@ export interface ModuleDietResult {
   violation: number
   violated: string[]
   incomplete: boolean
-  intake: Record<string, number | null>
+  intake: DietIntake
   requirements: Record<string, number | null>
   constraints: ModuleConstraint[]
   warnings: string[]
@@ -228,6 +241,8 @@ export interface RufasRun {
   violated: string[]
 }
 export interface RufasComparison {
+  /** Metano e nitrogênio urinário que o SLSQP do RuFaS recebeu como constantes (os da dieta do LP); `null` se foram informados. */
+  emissions_used?: { methane_g: number; urinary_nitrogen_kg: number } | null
   runs: RufasRun[]
   n_runs: number
   n_success: number
@@ -240,6 +255,7 @@ export interface RufasComparison {
 }
 export interface OptimalDiet {
   amounts: Record<string, number>
+  emissions?: { methane_g: number | null; urinary_nitrogen_kg: number | null; source: 'calculado' | 'informado' | null }
   cost: number
   cost_per_kg: number
   scalars: { dmi: number; tdn_percentage: number; concentrate_percentage: number; total_starch_kg?: number }
@@ -444,6 +460,8 @@ export interface BalanceRow {
 export interface SimResult {
   /** Identificador da execução no histórico. */
   run_id?: string
+  /** Padrão em que foi calculada (resultados antigos não têm o campo: eram NRC). */
+  standard?: NutrientStandard
   summary: SimSummary
   feeds: { id: number; label: string; price: number | null }[]
   daily: { day: number[]; milk_kg: number[]; milking_cows: number[]; avg_dim: number[] }
@@ -475,6 +493,8 @@ export interface SensRow {
   [column: string]: string | number | null | undefined | Record<string, number>
 }
 export interface SensResult {
+  /** Padrão em que foi calculada (análises antigas não têm o campo: eram NRC). */
+  standard?: NutrientStandard
   columns: string[]
   rows: SensRow[]
   /** `swing` (US$) e `swing_pct` só existem em análises feitas depois da variação em dólares. */
