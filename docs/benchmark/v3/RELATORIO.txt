@@ -1,0 +1,43 @@
+BENCHMARK v3: LP × SLSQP do RuFaS (padrão NASEM 2021)
+Margem de equivalência ±0,5%; empate até 0,1%; LP na resolução normal; 10 sementes do SLSQP por caso.
+Diferença = (custo do LP − melhor custo do SLSQP) / melhor custo do SLSQP, em %; negativa = o LP é mais barato. Preços ilustrativos.
+
+RESULTADO GERAL
+  Casos: 288; resolvidos pelo LP: 240; comparáveis (ao menos uma execução viável do SLSQP): 240; dietas do LP que atendem às restrições do RuFaS: 232 de 240.
+  Diferença média 0,015% (mediana 0,000%; de -0,93% a 1,03%). IC de 90% por agrupamento: 0,002% a 0,029%.
+  Dentro da margem: 96,7% dos casos (mínimo exigido 95%). LP mais barato / empate / mais caro: 4 / 226 / 10.
+  VEREDITO: EQUIVALENTE (IC dentro da margem: sim; fração dentro da margem: sim).
+  Falhas do SLSQP: 0 de 2400 execuções (0,0%), em 0 casos; o LP resolveu 240 de 288.
+  Entre as sementes do SLSQP (execuções viáveis): a pior custa, em média, 0,130% e, no máximo, 16,98% mais que a melhor.
+  Tempo (mediana): LP 9,2 s por problema; SLSQP 0,05 s por execução.
+  Os preços mexem muito mais no custo que o método: o custo ótimo varia 175% em média (até 212%) entre os conjuntos de preços; a diferença entre métodos é de centésimos a décimos.
+  Casos fora da margem (8):
+    novilha-pre-parto/amplo/p7: 1,032% (regime do LP: com_desconto)
+    lac-final/amplo/p3: 0,938% (regime do LP: com_desconto)
+    lac-primipara/amplo/p11: -0,925% (regime do LP: sem_desconto)
+    lac-primipara/amplo/p7: 0,814% (regime do LP: sem_desconto)
+    novilha-pre-parto/enxuto/p5: 0,764% (regime do LP: com_desconto)
+    lac-media/amplo/p11: -0,677% (regime do LP: sem_desconto)
+    lac-media/base/p3: 0,579% (regime do LP: com_desconto)
+    novilha-pre-parto/enxuto/p11: 0,525% (regime do LP: com_desconto)
+
+POR ANIMAL (cada linha tem seu próprio IC; poucos casos por linha, leia como indicação)
+  lac-alta             n= 36  média   0,007%  IC90 -0,001 a 0,015  mín -0,29  máx 0,27  dentro da margem 100%  LP<=/=/>: 1/33/2  equivalente
+  lac-media            n= 36  média  -0,003%  IC90 -0,037 a 0,032  mín -0,68  máx 0,58  dentro da margem 94%  LP<=/=/>: 1/34/1  NÃO demonstrado
+  lac-final            n= 36  média   0,027%  IC90 0,003 a 0,051  mín -0,15  máx 0,94  dentro da margem 97%  LP<=/=/>: 1/33/2  equivalente
+  lac-primipara        n= 36  média   0,004%  IC90 -0,004 a 0,012  mín -0,93  máx 0,81  dentro da margem 94%  LP<=/=/>: 1/33/2  NÃO demonstrado
+  vaca-seca            n= 36  média   0,000%  IC90 0,000 a 0,000  mín -0,00  máx 0,00  dentro da margem 100%  LP<=/=/>: 0/36/0  equivalente
+  novilha-pre-parto    n= 36  média   0,064%  IC90 0,029 a 0,100  mín -0,00  máx 1,03  dentro da margem 92%  LP<=/=/>: 0/33/3  NÃO demonstrado
+  novilha-ii           n= 12  média   0,000%  IC90 0,000 a 0,000  mín -0,00  máx 0,00  dentro da margem 100%  LP<=/=/>: 0/12/0  equivalente
+  novilha-i            n= 12  média   0,000%  IC90 0,000 a 0,000  mín 0,00  máx 0,00  dentro da margem 100%  LP<=/=/>: 0/12/0  equivalente
+
+POR CARDÁPIO
+  enxuto               n= 72  média   0,020%  IC90 0,000 a 0,054  mín -0,00  máx 0,76  dentro da margem 97%  LP<=/=/>: 0/69/3  equivalente
+  base                 n= 72  média   0,015%  IC90 0,004 a 0,027  mín -0,00  máx 0,58  dentro da margem 99%  LP<=/=/>: 0/69/3  equivalente
+  amplo                n= 96  média   0,012%  IC90 -0,013 a 0,038  mín -0,93  máx 1,03  dentro da margem 95%  LP<=/=/>: 4/88/4  NÃO demonstrado
+
+SEM SOLUÇÃO NO LP (48); o SLSQP também não convergiu em nenhuma semente em 48 deles: novilha-ii/enxuto/p0, novilha-ii/enxuto/p1, novilha-ii/enxuto/p2, novilha-ii/enxuto/p3, novilha-ii/enxuto/p4, novilha-ii/enxuto/p5, novilha-ii/enxuto/p6, novilha-ii/enxuto/p7, novilha-ii/enxuto/p8, novilha-ii/enxuto/p9, novilha-ii/enxuto/p10, novilha-ii/enxuto/p11, novilha-ii/base/p0, novilha-ii/base/p1, novilha-ii/base/p2, novilha-ii/base/p3, novilha-ii/base/p4, novilha-ii/base/p5, novilha-ii/base/p6, novilha-ii/base/p7, novilha-ii/base/p8, novilha-ii/base/p9, novilha-ii/base/p10, novilha-ii/base/p11, novilha-i/enxuto/p0, novilha-i/enxuto/p1, novilha-i/enxuto/p2, novilha-i/enxuto/p3, novilha-i/enxuto/p4, novilha-i/enxuto/p5
+
+Como ler: os casos são projetados (animais × cardápios × preços), não uma amostra de fazendas; a conclusão vale para essa família de casos.
+O animal é avaliado em um dia (não é uma simulação completa). O IC reamostra os grupos animal × cardápio, que compartilham exigências.
+Reprodução: cd backend; ..\.venv\Scripts\python -m dietopt.benchmark run --out ..\docs\benchmark\v3   (Python 3.12.10, numpy 2.2.0).

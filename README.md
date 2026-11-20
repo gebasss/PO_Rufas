@@ -77,7 +77,7 @@ tentativa, até o limite configurado); é assim que a dieta afeta o leite no mod
 - [`docs/DESIGN.md`](docs/DESIGN.md): Documento de Design e fonte única da linguagem visual (princípios, tokens de cor, componentes,
   gráficos por saída, telas, acessibilidade medida, origem no template e decisões).
 - [`docs/CONCLUSOES_PREVIAS.txt`](docs/CONCLUSOES_PREVIAS.txt): resultados medidos por data (com os comandos) e conclusões prévias, incluindo a comparação da ração linear com a do RuFaS (empate no custo) e o benchmark estatístico de 72 casos (seção 5).
-- [`docs/benchmark/`](docs/benchmark): resultados e relatório do benchmark LP × SLSQP do RuFaS (`python -m dietopt.benchmark run`, na pasta `backend`; cerca de 25 min).
+- [`docs/benchmark/`](docs/benchmark): resultados e relatório do benchmark LP × SLSQP do RuFaS, v3 (`python -m dietopt.benchmark run --out ..\docs\benchmark\v3`, na pasta `backend`; cerca de 1 hora); o `README.md` da pasta descreve o desenho.
 - [`docs/guias/`](docs/guias): guias de uso em Word (perguntas e respostas, com figuras), um por tela: Ruminante Singular, Vaca
   leiteira, Curva de lactação, Sensibilidade e Execuções.
 - [`docs/arquivo/`](docs/arquivo): documentos históricos, já concluídos e incorporados aos vigentes, mantidos como registro: o plano de implementação do módulo
