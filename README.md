@@ -35,7 +35,7 @@ com as exigências do **NASEM (2021)** ou da **NRC (2001)**.
 - `backend/dietopt/sensitivity.py`: amostragem dos cenários e correlação de Spearman.
 - `backend/dietopt/server.py`: API JSON com a biblioteca padrão do Python; também serve a interface.
 - `web/`: fontes da interface (Next.js, React, Tailwind e shadcn/ui, adaptados do template AdminCN, MIT). Para
-  alterar a interface: `powershell -ExecutionPolicy Bypass -File scriptsuild-web.ps1` (exige Node 20.9+; compila
+  alterar a interface: `powershell -ExecutionPolicy Bypass -File scripts\build-web.ps1` (exige Node 20.9+; compila
   fora do OneDrive e publica em `frontend/`). Quem só usa o sistema não precisa de Node.
 - `frontend/`: interface já compilada (site estático, funciona sem internet). `frontend_legacy/`: primeira versão,
   em HTML puro.
@@ -76,8 +76,8 @@ tentativa, até o limite configurado); é assim que a dieta afeta o leite no mod
   técnicas, módulo ampliado do Ruminante Singular); as duas fases do módulo estão implementadas.
 - [`docs/DESIGN.md`](docs/DESIGN.md): Documento de Design e fonte única da linguagem visual (princípios, tokens de cor, componentes,
   gráficos por saída, telas, acessibilidade medida, origem no template e decisões).
-- [`docs/CONCLUSOES_PREVIAS.txt`](docs/CONCLUSOES_PREVIAS.txt): resultados medidos por data (com os comandos) e conclusões prévias, incluindo a comparação da ração linear com a do RuFaS (empate no custo) e o benchmark estatístico de 72 casos (seção 5).
-- [`docs/benchmark/`](docs/benchmark): resultados e relatório do benchmark LP × SLSQP do RuFaS, v3 (`python -m dietopt.benchmark run --out ..\docs\benchmark\v3`, na pasta `backend`; cerca de 1 hora); o `README.md` da pasta descreve o desenho.
+- [`docs/CONCLUSOES_PREVIAS.txt`](docs/CONCLUSOES_PREVIAS.txt): resultados medidos por data (com os comandos) e conclusões prévias, incluindo a comparação da ração linear com a do RuFaS (empate no custo) e o benchmark estatístico de 288 casos (seção 5).
+- [`docs/benchmark/`](docs/benchmark): resultados e relatório do benchmark LP × SLSQP do RuFaS, v4 (`python -m dietopt.benchmark run --out ..\docs\benchmark\v4`, na pasta `backend`; cerca de 2 horas); o `README.md` da pasta descreve o desenho.
 - [`docs/guias/`](docs/guias): guias de uso em Word (perguntas e respostas, com figuras), um por tela: Ruminante Singular, Vaca
   leiteira, Curva de lactação, Sensibilidade e Execuções.
 - [`docs/arquivo/`](docs/arquivo): documentos históricos, já concluídos e incorporados aos vigentes, mantidos como registro: o plano de implementação do módulo
