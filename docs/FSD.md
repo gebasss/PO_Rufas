@@ -1304,7 +1304,8 @@ Ordem de implementação sugerida: RF-27, RF-24, RF-26. O RF-27 usa só dados qu
 > - **Medido** (preços ilustrativos, 100 vacas, 1 ano, o "Conjunto base"): a comparação da aba Ração linear no NASEM dá, com o mesmo consumo,
 >   LP 0,17% mais barato que o SLSQP (US$ 141 no rebanho em 365 dias; consumo livre, 0,54%); por intervalo o LP fica de -2,1% a +0,67% (a
 >   busca "rápida" do LP é heurística). Sensibilidade NASEM (2 simulações): LP de -0,15% a 0,00%. O benchmark estatístico (v4, NASEM, 288 casos) está em
->   `docs/CONCLUSOES_PREVIAS.txt`, seção 5.
+>   `docs/CONCLUSOES_PREVIAS.txt`, seção 5. Esses números do intervalo 0 foram medidos antes da correção do dia 0 (metano e nitrogênio urinário zero no dia 0 do RuFaS) e não foram refeitos;
+>   a camada de 40 simulações completas, depois da correção, está na seção 8 do mesmo arquivo.
 
 **Objetivo.** Permitir simular o mesmo cenário (alimentos, preços, limites, preço do leite) no padrão NRC 2001 ou NASEM 2021, e comparar os dois lado a lado.
 
@@ -1987,7 +1988,7 @@ campo nas calculadoras NRC e NASEM; "NASEM" e "NRC" indicam que só aquele padr�
 
 As calculadoras rodam **sem iniciar uma simulação** (verificado). O TDN% e os demais campos exclusivos do NRC dependem da
 dieta e, no módulo, vêm da própria dieta avaliada. O metano entérico e o nitrogênio urinário do lote (última linha da tabela) são
-**saídas do RuFaS**: médias do lote dos valores do dia anterior de cada animal, usadas só no NASEM; para uma vaca isolada o
+**saídas do RuFaS**: médias do lote dos valores do dia anterior de cada animal (no dia 0 da simulação, zero: os animais começam sem emissão registrada), usadas só no NASEM; para uma vaca isolada o
 módulo os **calcula da dieta** com as equações lineares do RuFaS e os mostra como resultado (`LINEARIZACAO.md`, 7.3; L-Q2 resolvida em
 20/11/2026), ou usa os valores que o usuário informar (os dois ou nenhum). Validações: valores numéricos positivos onde aplicável; campos
 vazios usam o padrão do RuFaS apenas onde o RuFaS define um **(a verificar)**; nenhum valor inventado.

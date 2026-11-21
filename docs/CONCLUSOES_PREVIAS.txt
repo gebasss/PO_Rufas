@@ -1,7 +1,7 @@
 CONCLUSÕES PRÉVIAS
 Dieta Ótima com RuFaS (Pesquisa Operacional)
 Registro dos resultados encontrados, por data, com os comandos usados e as conclusões.
-Última atualização: 21/11/2026 (NASEM sem seletor na Vaca e na Sensibilidade, metano e N urinário como saídas, benchmark v4: mesmo problema para os dois métodos e cardápios sorteados). Documento de trabalho, não é especificação: os requisitos estão no PRD e no FSD.
+Última atualização: 21/11/2026 (NASEM sem seletor na Vaca e na Sensibilidade, metano e N urinário como saídas, benchmark v4: mesmo problema para os dois métodos e cardápios sorteados; camada de simulações completas, seção 8, e correção do dia 0 do NASEM). Documento de trabalho, não é especificação: os requisitos estão no PRD e no FSD.
 
 Convenções
 - Todos os comandos rodam na raiz do projeto, no PowerShell ou no Git Bash do Windows.
@@ -254,7 +254,7 @@ POR QUE: as seções 3 e 4 deram medições pontuais (um cenário; 27 simulaçõ
   e casos que qualquer pessoa consiga repetir, sem um conjunto de alimentos escolhido a dedo.
 COMO: um comando refaz tudo (5.3); cada caso fica registrado em arquivo, junto com o commit e as versões; o relatório é gerado por código.
 O QUE UM CASO É: um animal em UM dia (as exigências vêm do estado do animal), não uma simulação completa da fazenda. A comparação ao longo de uma
-  simulação completa é a da seção 6 (um cenário de 13 intervalos); uma camada de simulações completas ainda não foi feita (5.7).
+  simulação completa é a da seção 6 (um cenário de 13 intervalos) e a camada de 40 simulações da seção 8.
 O PONTO QUE O v4 CORRIGE: o SLSQP do RuFaS só aceita o metano e o nitrogênio urinário como constantes, e o módulo os calcula da própria dieta. No v3 isso
   fazia o SLSQP resolver um problema um pouco diferente do do LP (5.8). No v4, cada caso roda também o LP NAS MESMAS CONSTANTES do SLSQP: a comparação
   principal é entre dois métodos no MESMO problema.
@@ -390,7 +390,7 @@ PODE SER DITO
 5. Onde o LP tem vantagem real: (a) é determinístico: entre as sementes do SLSQP o custo chega a +4,65% e o SLSQP falhou em 1,2% das execuções (29 de 2.370), enquanto o LP achou
    dieta em todos os casos em que ela existe; (b) todas as 237 dietas do LP atendem às restrições originais do RuFaS; (c) em 9,6% das execuções o SLSQP converge para uma dieta
    que viola a energia do NASEM quando as emissões são calculadas da própria dieta, e em 20 casos nenhuma semente dá uma dieta consistente: o LP não tem esse problema;
-   (d) fornece preços-sombra (seção 8, item 4b).
+   (d) fornece preços-sombra (seção 9, item 4b).
 6. Onde o LP não acha dieta, o SLSQP também não: nos 51 casos sem solução o SLSQP não convergiu em nenhuma semente.
 7. Calcular as emissões da própria dieta (em vez de constantes) custa em média 0,03% do custo e, no pior caso, 2,84% (secundária 2).
 NÃO PODE SER DITO
@@ -399,11 +399,12 @@ NÃO PODE SER DITO
 10. Que a busca do LP está livre de defeitos: ela é heurística (grade e refinamento) e já parou em mínimo local no v3. Não ter visto isso nos 237 casos do v4 não prova que foi corrigido
     (entre o v3 e o v4 só mudou a tolerância do teto da proteína, 5.8, e não a busca).
 11. Que o resultado vale para qualquer fazenda ou dieta: são casos de UM dia, com animais fixos, cardápios sorteados de um conjunto de 21 alimentos e preços ilustrativos.
-12. Que vale em simulação completa: isso não foi medido em escala (5.7); a única evidência é a da seção 6 (um cenário de 13 intervalos).
+12. Que vale em simulação completa dentro de +/-0,5%: a camada da seção 8 (30 simulações de 1 ano) deu média -0,005% (IC de 90% de -0,074% a +0,069%), mas o critério definido antes
+    NÃO foi cumprido (93,3% das simulações dentro da margem, mínimo 95%); ver 8.4 e 8.6.
 
 5.7 Limites, falhas de procedimento e o que não foi feito
-- Cada caso é um animal em UM dia; não há simulação completa do RuFaS no benchmark. A camada de 30 a 60 simulações completas (a unidade estatística seria a simulação, com
-  os intervalos como medidas repetidas) NÃO foi feita; sem ela, "vale no uso real" fica sustentado só pela seção 6.
+- Cada caso é um animal em UM dia; este benchmark não usa simulação completa do RuFaS. A camada de simulações completas (a unidade estatística é a simulação, com
+  os intervalos como medidas repetidas) foi feita depois e está na seção 8; aqui, "vale no uso real" só vale como indicação.
 - Os animais são fixos (8), os cardápios e preços são sorteados, mas de um conjunto de 21 alimentos escolhido por mim (18 da biblioteca com preço padrão e 3 acrescentados). O
   tamanho do rebanho não entra (só importa na simulação completa).
 - 51 dos 288 casos (novilhas I e II) não têm solução em nenhum dos dois métodos, então essas duas categorias têm poucos casos comparáveis (12 e 9). Os resultados valem sobretudo
@@ -476,6 +477,8 @@ O RuFaS passa ao otimizador, a cada formulação de ração, a MÉDIA POR VACA d
 linhas 1089 a 1102). Ele também GRAVA, por dia e por lote: o metano total (g), o nitrogênio urinário total (kg) e o número de animais.
 - O sistema passou a pedir esses três ao RuFaS (um filtro de saída novo, "pens", em backend\dietopt\rufas_results.py) e calcula
   média por vaca = total do lote / número de animais, no dia ANTERIOR à formulação (a ração do dia é formulada antes da atualização diária).
+  CORREÇÃO (21/11/2026, 8.3): no dia 0 não há dia anterior e o RuFaS formula com metano = 0 e nitrogênio urinário = 0 (os animais começam sem emissão registrada); o sistema usava
+  os valores gravados do próprio dia 0. Corrigido em pen_averages (devolve 0, 0 no dia 0); conferido contra a folga de energia do próprio RuFaS.
 - Cada simulação NASEM guarda esses valores; uma simulação NASEM guardada no cache ANTES disso não os tem e é refeita (scenarios.simulate); a
   comparação recusa um resultado sem eles com a instrução "rode a simulação de novo".
 - A comparação (module\pen_lp.py) monta o LP no padrão da simulação (NASEM ou NRC) com esses valores. A vaca "de apoio" que a calculadora pede
@@ -488,6 +491,8 @@ derivação é o código do RuFaS (a média dos animais do lote) e que os valore
 é que a mitigação de metano não está ligada (no exemplo, methane_mitigation_method = "None").
 
 6.3 Resultados medidos em NASEM (preços ilustrativos, 100 vacas, 1 ano, conjunto base; servidor de teste)
+ATENÇÃO (21/11/2026): esta tabela foi medida ANTES da correção do dia 0 (6.2, 8.3). A linha do dia 0 e os totais do ano usaram metano e nitrogênio urinário do dia 0 errados e NÃO foram
+refeitos; os intervalos de 30 a 360 não mudam. Para números atuais, refazer a comparação na tela ou usar a seção 8.
 Vaca leiteira, aba Ração linear (resolução rápida do LP; 13 intervalos; US$/vaca/dia; 90 s):
     Dia   SLSQP    LP mesmo consumo     LP consumo livre
       0   3,5066   3,4847 (-0,63%)      3,4830 (-0,67%)
@@ -670,7 +675,90 @@ Propriedades:
 
 
 ======================================================================================================================
-8. Conclusões prévias (revisadas em 20/11/2026, depois do benchmark da seção 5 e do NASEM da seção 6)
+8. 21/11/2026 - Camada de simulações completas: o LP contra o SLSQP dentro de 40 simulações de 1 ano do RuFaS
+======================================================================================================================
+
+8.1 O que, por que e como em uma página (para a apresentação)
+PERGUNTA: o que o benchmark da seção 5 mede (um animal em um dia) vale no uso real, isto é, dentro de uma simulação de 1 ano com o SLSQP rodando a cada intervalo?
+COMO: cada simulação é uma simulação completa do RuFaS (rebanho de vacas em lactação, 13 intervalos de 30 dias) com o SLSQP do próprio RuFaS formulando a ração em cada intervalo.
+  Depois, em cada intervalo, resolvo o LP sobre as MESMAS condições (exigências, alimentos, preços, limites e emissões do lote) e comparo o custo da ração. A unidade estatística
+  é a simulação (os 13 intervalos são medidas repetidas dentro dela, só descritos). Desenho: 20 cardápios x 2 conjuntos de preços (o padrão e um sorteado) = 40 simulações.
+RESULTADO (30 das 40 simulações; as outras 10 falharam dentro do RuFaS, 8.5): diferença média -0,005% (IC de 90% de -0,074% a +0,069%); o LP não custa nem mais nem menos que o SLSQP em média.
+  MAS o critério definido antes (IC dentro de +/-0,5% E ao menos 95% das simulações dentro da margem) NÃO foi cumprido: 28 de 30 simulações (93,3%) ficaram dentro; duas saíram
+  (uma com o LP 0,94% mais caro, outra com o LP 0,71% mais barato). Por isso o veredito registrado é "equivalência NÃO demonstrada", e não "equivalente".
+LEITURA HONESTA: a média e o IC dizem que não há diferença sistemática; a fração dizia que a diferença por simulação tem mais dispersão que no módulo (seção 5, 99,6%). Falta UMA
+  simulação (29 de 30) para o critério. Não vou ajustar o critério depois de ver o resultado.
+
+8.2 Desenho e decisões (fechado antes de rodar o v2 da camada; o v1 foi descartado por defeito, 8.3)
+- Unidade: uma simulação de 1 ano (13 intervalos), SLSQP dentro do RuFaS, UMA execução por intervalo (como no uso real; no módulo, o benchmark usa o melhor de 10 sementes).
+- O LP NÃO volta para o RuFaS (3.2): a simulação segue com a ração do SLSQP e o LP é resolvido depois, em cada intervalo, sobre as mesmas condições. A camada mede a diferença de
+  CUSTO DA RAÇÃO, não o efeito da ração do LP sobre o leite ou as exigências seguintes.
+- Primária: LP de consumo livre contra o SLSQP (o mesmo problema). Secundária: LP de mesmo consumo (o consumo de matéria seca fixado no que o SLSQP escolheu), mais conservadora.
+- Diferença da simulação = (custo médio por vaca por dia do LP - o do SLSQP) / o do SLSQP, em %, ponderada pelos dias dos 13 intervalos. Negativa = o LP é mais barato.
+- Critério (o mesmo da seção 5): IC de 90% da média dentro de +/-0,5% (bootstrap por cardápio, 10.000 reamostragens, porque as duas simulações do mesmo cardápio não são independentes)
+  E ao menos 95% das simulações dentro da margem; empate até 0,1%. Se não equivalente: LP mais barato, LP mais caro ou inconclusivo.
+- Sorteio (semente fixa 20261203): 20 cardápios sorteados do mesmo conjunto de 21 alimentos da seção 5, 2 conjuntos de preços cada (o padrão e um com fatores de 0,5 a 1,5); por cardápio sorteei o tamanho do
+  rebanho entre 60, 100, 200 e 300 vacas e a semente do RuFaS (os dois conjuntos de preços compartilham as duas coisas). Limites de alimentos da biblioteca; redução máxima de leite 5%;
+  LP na resolução normal; 3 simulações em paralelo (cerca de 1,2 GB cada).
+- Rações do LP conferidas pelas restrições ORIGINAIS do RuFaS em cada intervalo: 390 de 390 (consumo livre) e 390 de 390 (mesmo consumo).
+
+8.3 Defeito achado na primeira rodada (v1, descartada) e correção
+A primeira rodada (semente 20261202, guardada em docs\benchmark\historico\simulacao-v1) deu: 32 simulações comparadas, diferença média -0,119% (IC de 90% de -0,197% a -0,047%), 87,5%
+  dentro da margem, e no intervalo 0 desvios enormes (até +19,79% no consumo livre e +174% no mesmo consumo).
+INVESTIGAÇÃO: a energia do NASEM depende do metano (13,28 Mcal/kg) e do nitrogênio urinário (0,0146 Mcal/g) do lote. Eu tinha suposto, na seção 6.2, que no dia 0 o RuFaS usa os valores
+  gravados do próprio dia 0. Está ERRADO: no dia 0 os animais começam com emissão zero registrada e o RuFaS formula com metano = 0 e nitrogênio urinário = 0. Conferi comparando a folga
+  de energia do LP com a do próprio RuFaS (total_energy_difference): com (0, 0) bate em todas as simulações (até cerca de 0,02 a 0,03 Mcal); com os valores antigos errava até cerca de 11 Mcal.
+  Nos intervalos de 1 em diante a regra "valores do dia anterior" confere (até cerca de 0,03 Mcal).
+CORREÇÃO (backend\dietopt\rufas_results.py, pen_averages): no dia 0 devolve (0, 0). Teste atualizado. Pela regra do projeto contra remendos (benchmark\README), a camada foi REPETIDA
+  com outra semente (20261203), e a rodada com defeito ficou só como histórico.
+EFEITO FORA DESTA CAMADA: a aba Ração linear da Vaca leiteira e da Sensibilidade (NASEM) comparava o intervalo 0 com as constantes erradas. As linhas do "dia 0" e os totais da tabela
+  de 6.3 foram medidos ANTES desta correção e não foram refeitos; os demais intervalos não mudam.
+
+8.4 Resultados do v2 (semente 20261203; LP normal; relatório em docs\benchmark\simulacao\RELATORIO.txt)
+- Simulações: 40; com comparação: 30 (15 cardápios); falhas do RuFaS: 10; sem ração no LP: 0; erros: 0. Intervalos comparados: 390.
+- PRIMÁRIA (consumo livre contra SLSQP, n = 30): média -0,005% (mediana 0,000%, desvio 0,245%, de -0,71% a +0,94%); IC de 90% por cardápio de -0,074% a +0,069% (IC de 95%: -0,087% a +0,084%);
+  Wilcoxon sobre as médias dos cardápios p = 0,679; dentro da margem 28 de 30 (93,3%; mínimo 95%); LP mais barato / empate / mais caro: 4 / 22 / 4.
+  VEREDITO: equivalência NÃO demonstrada (o IC cabe na margem; a fração dentro dela não). Fora da margem: m13/p1 +0,94%; m03/p0 -0,71%.
+- SECUNDÁRIA (mesmo consumo, n = 30): média +0,107% (mediana 0,000%, de -0,59% a +2,49%); IC de 90% de -0,037% a +0,304%; dentro da margem 86,7%; 2 / 25 / 3. VEREDITO: equivalência NÃO
+  demonstrada. Fora da margem: m09/p1 +2,49%; m13/p1 +1,06%; m03/p0 -0,59%; m09/p0 +0,54%. (No mesmo consumo o LP não pode compensar escolhendo outro consumo; os casos m09 e m13 merecem investigação.)
+- INTERVALOS (390, só descrição): consumo livre, média -0,002% (de -1,80% a +1,07%), LP mais barato / empate / mais caro 28 / 319 / 43, além da margem 17 mais barato e 15 mais caro;
+  mesmo consumo, média +0,103% (de -1,80% a +4,92%), 18 / 341 / 31, além da margem 10 mais barato e 21 mais caro. Os desvios por intervalo vão para os dois lados: o SLSQP para em
+  ótimo local (até -1,80% para o LP) e a busca heurística do LP fica acima em outros.
+- ANÁLISES POSTERIORES AO DESENHO (só indicação, não estavam previstas): o limite superior do IC de 90% é +0,069% (o LP custa, em média, no máximo isso a mais); só as 26 simulações sem
+  redução de leite dão média +0,055% e IC de 90% de +0,011% a +0,119%, que seria "equivalente" pelo critério; por tamanho do rebanho (poucas simulações em 60 e 100 vacas): 60 vacas n = 2, 100 n = 2,
+  200 n = 14 (média -0,050%), 300 n = 12 (média +0,046%). Em 4 das 30 simulações o RuFaS reduziu o leite por falta de ração (17 intervalos).
+- PESO PRÁTICO: simulação do RuFaS com o SLSQP dentro, mediana de 58 s; LP, uma ração, mediana de 18,7 s. O custo da ração do SLSQP varia 21% em média (até 75%) entre os dois conjuntos de preços do mesmo cardápio;
+  a diferença entre os métodos é de 0,108% em média (máximo 0,94%): o preço pesa cerca de 200 vezes mais que o método. Economia do LP por vaca em lactação por ano: média US$ -0,05 (de -14,18 a +8,39); no rebanho, média de US$ -38 por ano
+  (negativa = o LP custa mais). Não há economia.
+
+8.5 Falhas do RuFaS (10 de 40 simulações) - um achado à parte
+- 10 simulações terminaram em erro DENTRO do RuFaS, antes de qualquer comparação: 8 delas com 60 vacas (de 10 simuladas; ZeroDivisionError em 6 e ValueError do separador screw_press_1 em 2, "tentou
+  separar mais água do que havia no esterco") e 2 com 100 vacas (ZeroDivisionError, de 4 simuladas). Nenhuma com 200 ou 300 vacas (0 de 26). Não investiguei a causa; ela não tem relação com o LP (a simulação falha
+  com o SLSQP dentro). O mínimo de 60 vacas é o da interface (herd.py, MIN_COWS). Consequência: o resultado vale para rebanhos de 200 e 300 vacas (26 das 30 simulações comparadas); rebanhos de 60 e 100 vacas
+  quase não entram, e as falhas deveriam ser reportadas à equipe do RuFaS.
+
+8.6 Conclusões da camada (o que pode e o que não pode ser dito)
+PODE: (1) em 30 simulações de 1 ano (rebanhos de 200 e 300 vacas, em sua maioria), o custo da ração do LP é, em média, igual ao do SLSQP: -0,005% (IC de 90% de -0,074% a +0,069%). (2) Não há vantagem de custo do
+  LP em simulação completa, como no módulo (seção 5). (3) As rações do LP atendem às restrições originais do RuFaS em 390 de 390 intervalos. (4) O preço dos alimentos pesa cerca de 200 vezes mais que o método.
+NÃO PODE: (a) "equivalente em simulação completa dentro de +/-0,5%": o critério definido antes não foi cumprido (93,3% contra 95%); diga "o IC cabe na margem, mas 2 de 30 simulações saíram". (b) "O LP nunca custa mais":
+  1 simulação ficou +0,94% e, no mesmo consumo, uma chegou a +2,49%. (c) Que vale para rebanhos pequenos: 8 de 10 simulações de 60 vacas falharam no RuFaS. (d) Efeito sobre leite, saúde ou o ano seguinte: a ração do LP
+  não volta para a simulação. (e) Qualquer afirmação de que o LP é melhor no custo.
+
+8.7 Limites, falhas de procedimento e o que não foi feito
+- Os dados foram gerados com código NÃO commitado (o relatório diz "com alterações não commitadas"); depois do commit, rodar "report" de novo para gravar o commit certo (os dados não mudam).
+- 40 simulações é o piso do plano (30 a 60); 30 comparadas. Mais simulações dariam mais precisão sobre a fração dentro da margem, que ficou a UMA simulação do critério.
+- SLSQP uma vez por intervalo: parar em ótimo local favorece o LP em alguns intervalos; não há como saber o ótimo verdadeiro. O tempo do SLSQP por intervalo não é medido aqui.
+- A análise posterior (sem redução de leite; por tamanho do rebanho) NÃO estava no desenho; serve só como indicação.
+- Os casos m09 e m13 do mesmo consumo (+2,49% e +1,06%) e o m13/p1 da primária (+0,94%) não foram investigados.
+- Falha de procedimento: a v1 foi descartada pelo defeito do dia 0 (8.3); nenhuma outra.
+- Reprodução (cerca de 75 min com 3 processos em paralelo; retoma o que já foi feito):
+    cd backend
+    ..\.venv\Scripts\python -m dietopt.benchmark_sim run --out ..\docs\benchmark\simulacao
+    ..\.venv\Scripts\python -m dietopt.benchmark_sim report --out ..\docs\benchmark\simulacao    (só refaz o resumo, os CSVs e o relatório)
+
+
+======================================================================================================================
+9. Conclusões prévias (revisadas em 21/11/2026, depois do benchmark da seção 5, do NASEM da seção 6 e da camada de simulações completas da seção 8)
 ======================================================================================================================
 1. Fora do Ruminante Singular, o sistema roda as equações padrão do RuFaS: Vaca leiteira usa o SLSQP não linear e a curva de
    Wood; a Curva de lactação é a curva de Wood do RuFaS; a Sensibilidade repete simulações do RuFaS. O modelo linear existe só no
@@ -730,6 +818,10 @@ Propriedades:
 16. Método de linearização (seção 7): a dieta ótima não aproxima as curvas do RuFaS; FIXA os escalares globais (consumo, TDN%, % de concentrado e, no
     NASEM, amido) e resolve uma PL exata por ponto de uma grade com refinamento, em dois regimes (TDN% < 60 e >= 60). É exato por ponto e viável
     para o RuFaS, mas a busca é heurística (sem prova de ótimo global).
+17. Simulação completa (seção 8, 30 simulações comparadas de 40, 390 intervalos, semente 20261203): o LP e o SLSQP empatam em média (-0,005%, IC de 90% de -0,074% a +0,069%) e não há vantagem de custo.
+    O critério de equivalência definido antes NÃO foi cumprido (28 de 30 simulações dentro de +/-0,5%, 93,3%, contra 95% exigidos); dizer "o IC cabe na margem, mas 2 de 30 simulações saíram",
+    e não "equivalente". 10 das 40 simulações falharam dentro do RuFaS (8 de 10 com 60 vacas), então o resultado vale para rebanhos de 200 e 300 vacas. Uma primeira rodada foi descartada por um defeito
+    no dia 0 (metano e N urinário zero no dia 0 do RuFaS, 8.3), corrigido e repetido com outra semente. A ração do LP não volta para a simulação (3.2).
 
 
 Próximos passos possíveis (não feitos)
@@ -740,7 +832,9 @@ Próximos passos possíveis (não feitos)
 - Refazer os guias em Word da Vaca leiteira e da Sensibilidade (hoje mostram o NRC) e do Ruminante Singular (campos de metano e N urinário opcionais);
   repetir a sensibilidade de 27 simulações (seção 4) no NASEM.
 - Rever o texto "aumente a resolução" da conclusão da Dieta ótima, que a resolução fina quase não cumpre (5.7).
-- Camada de simulações completas do RuFaS (30 a 60 simulações, a simulação como unidade estatística) e relatório de uma página com gráficos para a apresentação (5.7).
+- Relatório de uma página com 3 gráficos (histograma das diferenças, diferença contra custo, distribuição dos tempos) e um slide para a apresentação.
+- Investigar os casos fora da margem da camada de simulações completas (m13/p1 e m03/p0 na primária; m09 e m13 no mesmo consumo; 8.7) e mais simulações para decidir o critério dos 95%.
+- Reportar à equipe do RuFaS as falhas de simulação com 60 e 100 vacas (ZeroDivisionError e screw_press_1; 8.5).
 - Se a busca "normal" do LP for melhorada (2 mínimos locais em 240 casos no v3), repetir o benchmark com outra semente (--seed), conforme 5.2, item 12.
 
 
