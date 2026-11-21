@@ -1303,7 +1303,7 @@ Ordem de implementação sugerida: RF-27, RF-24, RF-26. O RF-27 usa só dados qu
 > - **Não feito, e fora do escopo agora:** o botão **Comparar NRC × NASEM** (A.3.5) e o seletor de A.3.1 (retirado por decisão do usuário).
 > - **Medido** (preços ilustrativos, 100 vacas, 1 ano, o "Conjunto base"): a comparação da aba Ração linear no NASEM dá, com o mesmo consumo,
 >   LP 0,17% mais barato que o SLSQP (US$ 141 no rebanho em 365 dias; consumo livre, 0,54%); por intervalo o LP fica de -2,1% a +0,67% (a
->   busca "rápida" do LP é heurística). Sensibilidade NASEM (2 simulações): LP de -0,15% a 0,00%. O benchmark estatístico (v3, NASEM, 288 casos) está em
+>   busca "rápida" do LP é heurística). Sensibilidade NASEM (2 simulações): LP de -0,15% a 0,00%. O benchmark estatístico (v4, NASEM, 288 casos) está em
 >   `docs/CONCLUSOES_PREVIAS.txt`, seção 5.
 
 **Objetivo.** Permitir simular o mesmo cenário (alimentos, preços, limites, preço do leite) no padrão NRC 2001 ou NASEM 2021, e comparar os dois lado a lado.

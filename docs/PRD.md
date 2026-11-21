@@ -1,7 +1,7 @@
 # Documento de Requisitos do Produto (PRD)
 
 **Produto:** Dieta Ótima com RuFaS
-**Versão do documento:** 0.29 (rascunho para avaliação)
+**Versão do documento:** 0.30 (rascunho para avaliação)
 **Data:** 02/11/2026
 **Status:** Versão web implementada; documento em revisão
 **Autor(es):** _[a preencher]_
@@ -931,3 +931,4 @@ próprio RuFaS.
 | 0.27 | 18/11/2026 | _[a preencher]_ | Ruminante Singular (RF-28): o padrão nutricional fica **só o NASEM 2021**; a escolha do NRC sai da tela (o back-end continua aceitando o NRC, usado pela Vaca leiteira e pelas comparações do LP com o RuFaS) e cenários de outro padrão são recusados. |
 | 0.28 | 20/11/2026 | _[a preencher]_ | (1) **Benchmark estatístico** LP × SLSQP do RuFaS em 72 casos (margem de equivalência de ±0,5%): o custo é equivalente nos dois padrões; relatório e comandos em `docs/benchmark/` e `docs/CONCLUSOES_PREVIAS.txt`, seção 5. (2) **Correção da busca do LP** (resgate por regime de desconto de ingestão), que perdia até 1,77% no NASEM. (3) **RF-24:** a Vaca leiteira e a Sensibilidade usam só o NASEM 2021 (sem seletor), e a aba Ração linear vale no NASEM, com o metano e o nitrogênio urinário do lote lidos das saídas do RuFaS (FSD, A.3). (4) **Metano e nitrogênio urinário como saídas da dieta** no Ruminante Singular (equações lineares do RuFaS, `module/emissions.py`; LINEARIZACAO, 7.3), com a opção de informar valores medidos. |
 | 0.29 | 20/11/2026 | _[a preencher]_ | **Benchmark refeito do zero (v3)**: 288 casos no NASEM (8 animais × 3 cardápios × 12 conjuntos de preços), critério único definido antes (IC de 90% por agrupamento dentro de ±0,5% e ao menos 95% dos casos dentro da margem). Resultado: equivalente (média +0,015%); relatório em `docs/benchmark/v3/`, desenho em `docs/benchmark/README.md`, resultados e limites em `docs/CONCLUSOES_PREVIAS.txt`, seção 5. Os desenhos v1 e v2 foram para `docs/benchmark/historico/`. |
+| 0.30 | 21/11/2026 | _[a preencher]_ | **Benchmark v4**: cardápios e preços sorteados (288 casos no NASEM) e comparação no **mesmo problema** (LP nas mesmas constantes de metano e nitrogênio do SLSQP); commit, versões e CSV gravados. Resultado: equivalente (diferença média -0,003%, 99,6% dos casos dentro de ±0,5%). Correção do teto da proteína do LP e investigação dos casos do v3 (`docs/CONCLUSOES_PREVIAS.txt`, 5.8). O v3 foi para `docs/benchmark/historico/`. |

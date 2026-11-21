@@ -1,0 +1,51 @@
+BENCHMARK v4: LP × SLSQP do RuFaS (padrão NASEM 2021)
+Margem de equivalência ±0,5%; empate até 0,1%; LP na resolução normal; 10 sementes do SLSQP por caso.
+Diferença = (custo do LP − melhor custo do SLSQP) / melhor custo do SLSQP, em %; negativa = o LP é mais barato. Preços ilustrativos.
+Casos: 288; com dieta no LP: 237. Dietas verificadas com as restrições do RuFaS: LP do módulo 237 de 237; LP nas mesmas constantes 237 de 237.
+
+COMPARAÇÃO PRIMÁRIA (o mesmo problema: LP nas mesmas constantes do SLSQP contra o melhor SLSQP)
+  n = 237 casos em 79 grupos animal × cardápio; média -0,003% (mediana 0,000%, desvio 0,071%; de -0,96% a 0,29%)
+  IC de 90% por agrupamento: -0,011% a 0,004%; IC de 95%: -0,013% a 0,005%; Wilcoxon sobre as médias dos grupos: p = 0,000
+  dentro da margem: 99,6% (mínimo 95%); LP mais barato / empate / mais caro: 4 / 230 / 3
+  VEREDITO: EQUIVALENTE (IC dentro da margem: sim; fração dentro da margem: sim)
+  fora da margem (1): lac-media/m09/p1 -0,96%
+
+SECUNDÁRIA 1 (o produto: LP do módulo, com emissões da própria dieta, contra o melhor SLSQP que também as respeita)
+  n = 217 casos em 79 grupos animal × cardápio; média -0,011% (mediana 0,000%, desvio 0,098%; de -0,96% a 0,12%)
+  IC de 90% por agrupamento: -0,023% a -0,001%; IC de 95%: -0,026% a 0,000%; Wilcoxon sobre as médias dos grupos: p = 0,000
+  dentro da margem: 98,6% (mínimo 95%); LP mais barato / empate / mais caro: 5 / 210 / 2
+  VEREDITO: EQUIVALENTE (IC dentro da margem: sim; fração dentro da margem: sim)
+  fora da margem (3): lac-media/m09/p1 -0,96%; lac-final/m00/p2 -0,79%; lac-alta/m06/p2 -0,63%
+
+SECUNDÁRIA 2 (custo de usar emissões consistentes: LP do módulo contra LP nas mesmas constantes)
+  n = 237 casos em 79 grupos animal × cardápio; média 0,030% (mediana 0,000%, desvio 0,203%; de -0,01% a 2,84%)
+  IC de 90% por agrupamento: 0,013% a 0,055%; IC de 95%: 0,011% a 0,060%; Wilcoxon sobre as médias dos grupos: p = 0,000
+  dentro da margem: 98,3% (mínimo 95%); LP mais barato / empate / mais caro: 0 / 224 / 13
+  VEREDITO: EQUIVALENTE (IC dentro da margem: sim; fração dentro da margem: sim)
+  fora da margem (4): novilha-pre-parto/m00/p1 2,84%; novilha-pre-parto/m07/p0 0,70%; lac-primipara/m07/p0 0,66%; lac-alta/m07/p0 0,52%
+
+SLSQP E TEMPO
+  Falhas do SLSQP: 29 de 2370 execuções (1,2%), em 6 casos; 228 execuções convergiram mas violam a energia com as emissões da própria dieta.
+  Entre sementes (execuções viáveis): a pior custa em média 0,087% e no máximo 4,65% mais que a melhor; coeficiente de variação médio 0,027% (máx. 1,34%).
+  Tempo, LP do módulo: mediana 10,65 s (quartis 7,40 a 13,19 s).
+  Tempo, LP nas mesmas constantes: mediana 10,49 s (quartis 7,60 a 13,02 s).
+  Tempo, SLSQP (por execução): mediana 0,07 s (quartis 0,05 a 0,09 s).
+  Razão das medianas (LP do módulo / SLSQP): 158 vezes.
+  Peso prático: o custo ótimo varia 49% em média (até 150%) entre os conjuntos de preços do mesmo animal e cardápio; a diferença entre os métodos é de 0,011% em média (máx. 0,96%).
+
+POR ANIMAL (comparação primária; poucos casos por linha, leia como indicação)
+  lac-alta           n= 36  média   0,000%  IC90 -0,015 a 0,011  dentro da margem 100%  equivalente
+  lac-media          n= 36  média  -0,017%  IC90 -0,071 a 0,018  dentro da margem 97%  equivalente
+  lac-final          n= 36  média  -0,002%  IC90 -0,018 a 0,009  dentro da margem 100%  equivalente
+  lac-primipara      n= 36  média   0,001%  IC90 -0,006 a 0,009  dentro da margem 100%  equivalente
+  vaca-seca          n= 36  média   0,001%  IC90 0,000 a 0,004  dentro da margem 100%  equivalente
+  novilha-pre-parto  n= 36  média   0,000%  IC90 0,000 a 0,001  dentro da margem 100%  equivalente
+  novilha-ii         n= 12  média   0,000%  IC90 0,000 a 0,000  dentro da margem 100%  equivalente
+  novilha-i          n=  9  média   0,000%  IC90 0,000 a 0,000  dentro da margem 100%  equivalente
+
+SEM SOLUÇÃO NO LP (51 casos); o SLSQP também não convergiu em nenhuma semente em 51 deles.
+
+Como ler: os casos são sorteados (animais fixos × cardápios e preços sorteados com semente fixa), não uma amostra de fazendas; a conclusão vale para essa família.
+O animal é avaliado em um dia (não é uma simulação completa). O IC reamostra os grupos animal × cardápio, que compartilham exigências.
+Versões: commit ffd0f80; RuFaS 1.0.6; Python 3.12.10, numpy 2.2.0, scipy 1.16.2; Windows-11-10.0.26300-SP0; 2026-11-21.
+Reprodução: cd backend; ..\.venv\Scripts\python -m dietopt.benchmark run --out ..\docs\benchmark\v4
