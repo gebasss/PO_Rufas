@@ -745,7 +745,7 @@ NÃO PODE: (a) "equivalente em simulação completa dentro de +/-0,5%": o crité
   não volta para a simulação. (e) Qualquer afirmação de que o LP é melhor no custo.
 
 8.7 Limites, falhas de procedimento e o que não foi feito
-- Os dados foram gerados com código NÃO commitado (o relatório diz "com alterações não commitadas"); depois do commit, rodar "report" de novo para gravar o commit certo (os dados não mudam).
+- Os dados foram gerados com código ainda não commitado; o relatório foi regenerado depois do commit 659a816 (que o resumo registra), sem mudar nenhum dado.
 - 40 simulações é o piso do plano (30 a 60); 30 comparadas. Mais simulações dariam mais precisão sobre a fração dentro da margem, que ficou a UMA simulação do critério.
 - SLSQP uma vez por intervalo: parar em ótimo local favorece o LP em alguns intervalos; não há como saber o ótimo verdadeiro. O tempo do SLSQP por intervalo não é medido aqui.
 - A análise posterior (sem redução de leite; por tamanho do rebanho) NÃO estava no desenho; serve só como indicação.
