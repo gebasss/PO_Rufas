@@ -1,0 +1,398 @@
+{
+ "version": "sim-v1",
+ "standard": "NASEM",
+ "margin_pct": 0.5,
+ "tie_pct": 0.1,
+ "share_min": 0.95,
+ "primary": {
+  "simulations": 40,
+  "compared": 32,
+  "mean": -0.11929273986541072,
+  "median": -6.9339197841543756e-06,
+  "sd": 0.3315079257084194,
+  "min": -1.0958198436931177,
+  "max": 0.46942381726880844,
+  "ci90": [
+   -0.19691650527980745,
+   -0.04701229680611507
+  ],
+  "ci95": [
+   -0.21492435794619835,
+   -0.03586605669023922
+  ],
+  "groups": 16,
+  "share_within_margin": 0.875,
+  "ci_within_margin": true,
+  "equivalent": false,
+  "lp_cheaper": 9,
+  "tie": 20,
+  "lp_dearer": 3,
+  "wilcoxon_p_groups": 0.14385986328125,
+  "outliers": [
+   {
+    "id": "m03/p0",
+    "gap_pct": -1.0958198436931177
+   },
+   {
+    "id": "m06/p0",
+    "gap_pct": -1.0705406244951787
+   },
+   {
+    "id": "m17/p1",
+    "gap_pct": -0.6949226346973034
+   },
+   {
+    "id": "m01/p1",
+    "gap_pct": -0.514632436330602
+   }
+  ],
+  "verdict": "inconclusive"
+ },
+ "same_dmi": {
+  "simulations": 40,
+  "compared": 32,
+  "mean": 1.001087987400509,
+  "median": 9.465092056319313e-07,
+  "sd": 2.993986438872968,
+  "min": -0.45145224506311254,
+  "max": 14.389740652381585,
+  "ci90": [
+   0.22854133516151748,
+   1.9363460989870602
+  ],
+  "ci95": [
+   0.16251670701443544,
+   2.1248738531906883
+  ],
+  "groups": 16,
+  "share_within_margin": 0.8125,
+  "ci_within_margin": false,
+  "equivalent": false,
+  "lp_cheaper": 3,
+  "tie": 23,
+  "lp_dearer": 6,
+  "wilcoxon_p_groups": 0.19281005859375,
+  "outliers": [
+   {
+    "id": "m06/p1",
+    "gap_pct": 14.389740652381585
+   },
+   {
+    "id": "m04/p1",
+    "gap_pct": 6.811012618519562
+   },
+   {
+    "id": "m11/p0",
+    "gap_pct": 6.419647306580897
+   },
+   {
+    "id": "m05/p1",
+    "gap_pct": 3.705608239403352
+   },
+   {
+    "id": "m06/p0",
+    "gap_pct": 0.8546237410857768
+   },
+   {
+    "id": "m03/p0",
+    "gap_pct": 0.7223463243399532
+   }
+  ],
+  "verdict": "inconclusive"
+ },
+ "intervals_free": {
+  "intervals": 416,
+  "compared": 416,
+  "mean": -0.07139376061668064,
+  "median": -1.2252073662159857e-06,
+  "min": -1.9730662941794792,
+  "max": 19.79304202318851,
+  "share_within_margin": 0.8413461538461539,
+  "lp_cheaper": 67,
+  "tie": 336,
+  "lp_dearer": 13,
+  "lp_dearer_beyond_margin": 6,
+  "lp_cheaper_beyond_margin": 60
+ },
+ "intervals_same": {
+  "intervals": 416,
+  "compared": 414,
+  "mean": 0.9385216006787016,
+  "median": 4.3704635670329085e-07,
+  "min": -1.9730668271846168,
+  "max": 174.46656447367076,
+  "share_within_margin": 0.961352657004831,
+  "lp_cheaper": 19,
+  "tie": 369,
+  "lp_dearer": 26,
+  "lp_dearer_beyond_margin": 6,
+  "lp_cheaper_beyond_margin": 10
+ },
+ "without_milk_reduction": {
+  "simulations": 27,
+  "compared": 27,
+  "mean": -0.08631248466991434,
+  "median": -2.0814352142502482e-07,
+  "sd": 0.34673532719564026,
+  "min": -1.0958198436931177,
+  "max": 0.46942381726880844,
+  "ci90": [
+   -0.17781441761185268,
+   -0.009246537342910291
+  ],
+  "ci95": [
+   -0.19595026012538666,
+   0.010978992904157873
+  ],
+  "groups": 15,
+  "share_within_margin": 0.8888888888888888,
+  "ci_within_margin": true,
+  "equivalent": false,
+  "lp_cheaper": 4,
+  "tie": 20,
+  "lp_dearer": 3,
+  "wilcoxon_p_groups": 0.97796630859375,
+  "outliers": [
+   {
+    "id": "m03/p0",
+    "gap_pct": -1.0958198436931177
+   },
+   {
+    "id": "m06/p0",
+    "gap_pct": -1.0705406244951787
+   },
+   {
+    "id": "m17/p1",
+    "gap_pct": -0.6949226346973034
+   }
+  ],
+  "verdict": "inconclusive"
+ },
+ "by_herd_size": {
+  "60": {
+   "simulations": 20,
+   "compared": 12,
+   "mean": -0.07194892228345161,
+   "median": -0.0001700714873626098,
+   "sd": 0.2543188726628148,
+   "min": -0.514632436330602,
+   "max": 0.46942381726880844,
+   "ci90": [
+    -0.13816402650219695,
+    -0.015384264478202722
+   ],
+   "ci95": [
+    -0.15075280308849254,
+    -0.006066824116609578
+   ],
+   "groups": 6,
+   "share_within_margin": 0.9166666666666666,
+   "ci_within_margin": true,
+   "equivalent": false,
+   "lp_cheaper": 4,
+   "tie": 7,
+   "lp_dearer": 1,
+   "wilcoxon_p_groups": 0.4375,
+   "outliers": [
+    {
+     "id": "m01/p1",
+     "gap_pct": -0.514632436330602
+    }
+   ],
+   "verdict": "inconclusive"
+  },
+  "100": {
+   "simulations": 4,
+   "compared": 4,
+   "mean": -0.42135274966435504,
+   "median": -0.29384600037611175,
+   "sd": 0.47631340088546564,
+   "min": -1.0958198436931177,
+   "max": -0.0018991542120789648,
+   "ci90": [
+    -0.5488594989525983,
+    -0.29384600037611175
+   ],
+   "ci95": [
+    -0.5488594989525983,
+    -0.29384600037611175
+   ],
+   "groups": 2,
+   "share_within_margin": 0.75,
+   "ci_within_margin": false,
+   "equivalent": false,
+   "lp_cheaper": 3,
+   "tie": 1,
+   "lp_dearer": 0,
+   "wilcoxon_p_groups": 0.5,
+   "outliers": [
+    {
+     "id": "m03/p0",
+     "gap_pct": -1.0958198436931177
+    }
+   ],
+   "verdict": "inconclusive"
+  },
+  "200": {
+   "simulations": 8,
+   "compared": 8,
+   "mean": 0.00631463276899914,
+   "median": -1.1317242275048266e-06,
+   "sd": 0.018494377464254905,
+   "min": -0.0009374721031955405,
+   "max": 0.05207741659522896,
+   "ci90": [
+    -0.00036128410046923186,
+    0.013018807921647339
+   ],
+   "ci95": [
+    -0.00038954238364905756,
+    0.019454182375520473
+   ],
+   "groups": 4,
+   "share_within_margin": 1.0,
+   "ci_within_margin": true,
+   "equivalent": true,
+   "lp_cheaper": 0,
+   "tie": 8,
+   "lp_dearer": 0,
+   "wilcoxon_p_groups": 0.875,
+   "outliers": [],
+   "verdict": "equivalent"
+  },
+  "300": {
+   "simulations": 8,
+   "compared": 8,
+   "mean": -0.16488583397328704,
+   "median": 0.021470394509554642,
+   "sd": 0.4594469077644198,
+   "min": -1.0705406244951787,
+   "max": 0.2168175240925471,
+   "ci90": [
+    -0.3589889849947546,
+    0.04938725946555388
+   ],
+   "ci95": [
+    -0.3816131733969417,
+    0.05184150545036766
+   ],
+   "groups": 4,
+   "share_within_margin": 0.75,
+   "ci_within_margin": true,
+   "equivalent": false,
+   "lp_cheaper": 2,
+   "tie": 4,
+   "lp_dearer": 2,
+   "wilcoxon_p_groups": 0.625,
+   "outliers": [
+    {
+     "id": "m06/p0",
+     "gap_pct": -1.0705406244951787
+    },
+    {
+     "id": "m17/p1",
+     "gap_pct": -0.6949226346973034
+    }
+   ],
+   "verdict": "inconclusive"
+  }
+ },
+ "run": {
+  "simulations": 40,
+  "ok": 32,
+  "sim_failed": 8,
+  "no_lp": 0,
+  "errors": 0,
+  "intervals": 416,
+  "intervals_without_lp_free": 0,
+  "intervals_without_lp_same": 2,
+  "lp_free_verified": 416,
+  "lp_same_verified": 414,
+  "sims_with_milk_reduction": 5,
+  "intervals_with_milk_reduction": 8,
+  "seconds": {
+   "simulation": {
+    "median": 43.866382122039795,
+    "q1": 32.25372213125229,
+    "q3": 53.48375314474106
+   },
+   "lp_per_interval": {
+    "median": 16.21725040000456,
+    "q1": 14.03443624999636,
+    "q3": 18.91011252500539
+   },
+   "compare_per_simulation": {
+    "median": 275.2619677782059,
+    "q1": 238.17955285310745,
+    "q3": 298.84613984823227
+   }
+  },
+  "price_effect_pct": {
+   "mean": 22.658818054470785,
+   "max": 47.40217761176843
+  },
+  "method_effect_pct": {
+   "mean_abs": 0.1814334839058846,
+   "max_abs": 1.0958198436931177
+  },
+  "saving_per_cow_year": {
+   "mean": 1.503494057996963,
+   "min": -6.248742601152672,
+   "max": 14.200951751056389
+  },
+  "herd_saving_per_year": 212.13601565492218
+ },
+ "failed": [
+  {
+   "id": "m02/p0",
+   "status": "sim_failed",
+   "detail": "ZeroDivisionError: division by zero"
+  },
+  {
+   "id": "m02/p1",
+   "status": "sim_failed",
+   "detail": "ZeroDivisionError: division by zero"
+  },
+  {
+   "id": "m14/p0",
+   "status": "sim_failed",
+   "detail": "ValueError: Separator 'screw_press_1' attempted to separate more water into manure solids fraction than was present in manure entering separator. The separated_solids_dry_matter value for separator 's"
+  },
+  {
+   "id": "m14/p1",
+   "status": "sim_failed",
+   "detail": "ValueError: Separator 'screw_press_1' attempted to separate more water into manure solids fraction than was present in manure entering separator. The separated_solids_dry_matter value for separator 's"
+  },
+  {
+   "id": "m16/p0",
+   "status": "sim_failed",
+   "detail": "ZeroDivisionError: division by zero"
+  },
+  {
+   "id": "m16/p1",
+   "status": "sim_failed",
+   "detail": "ZeroDivisionError: division by zero"
+  },
+  {
+   "id": "m18/p0",
+   "status": "sim_failed",
+   "detail": "ZeroDivisionError: division by zero"
+  },
+  {
+   "id": "m18/p1",
+   "status": "sim_failed",
+   "detail": "ZeroDivisionError: division by zero"
+  }
+ ],
+ "meta": {
+  "resolution": "normal",
+  "commit": "80cea27",
+  "dirty": true,
+  "rufas": "1.0.6",
+  "python": "3.12.10",
+  "numpy": "2.2.0",
+  "scipy": "1.16.2",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "date": "2026-11-21"
+ }
+}

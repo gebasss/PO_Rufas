@@ -1,0 +1,105 @@
+C:\Users\gabri\OneDrive\�rea de Trabalho\gba\projetos de software\aplicacao RuFaS\backend\dietopt\rufas_results.py:84: SyntaxWarning: invalid escape sequence '\s'
+  grava (at� 0,03 Mcal); com os valores gravados no fim do dia 0 ela errava em at� 11 Mcal (``docs\benchmark\simulacao``)."""
+0 simulações prontas, 40 a executar (resolução normal, 3 ao mesmo tempo)
+C:\Users\gabri\OneDrive\�rea de Trabalho\gba\projetos de software\aplicacao RuFaS\backend\dietopt\rufas_results.py:84: SyntaxWarning: invalid escape sequence '\s'
+  grava (at� 0,03 Mcal); com os valores gravados no fim do dia 0 ela errava em at� 11 Mcal (``docs\benchmark\simulacao``)."""
+C:\Users\gabri\OneDrive\�rea de Trabalho\gba\projetos de software\aplicacao RuFaS\backend\dietopt\rufas_results.py:84: SyntaxWarning: invalid escape sequence '\s'
+  grava (at� 0,03 Mcal); com os valores gravados no fim do dia 0 ela errava em at� 11 Mcal (``docs\benchmark\simulacao``)."""
+C:\Users\gabri\OneDrive\�rea de Trabalho\gba\projetos de software\aplicacao RuFaS\backend\dietopt\rufas_results.py:84: SyntaxWarning: invalid escape sequence '\s'
+  grava (at� 0,03 Mcal); com os valores gravados no fim do dia 0 ela errava em at� 11 Mcal (``docs\benchmark\simulacao``)."""
+[1/40] m00/p0 (300 vacas): ok, LP livre -0,196%, 5.4 min
+[2/40] m00/p1 (300 vacas): ok, LP livre -0,012%, 5.8 min
+[3/40] m02/p0 (100 vacas): sim_failed, 6.4 min
+[4/40] m02/p1 (100 vacas): sim_failed, 6.8 min
+[5/40] m01/p0 (200 vacas): ok, LP livre 0,045%, 8.7 min
+[6/40] m03/p0 (200 vacas): ok, LP livre -0,715%, 12.1 min
+[7/40] m01/p1 (200 vacas): ok, LP livre 0,002%, 13.8 min
+[8/40] m03/p1 (200 vacas): ok, LP livre 0,000%, 14.5 min
+[9/40] m04/p0 (300 vacas): ok, LP livre -0,344%, 17.0 min
+[10/40] m04/p1 (300 vacas): ok, LP livre 0,001%, 19.4 min
+[11/40] m05/p0 (300 vacas): ok, LP livre 0,158%, 19.6 min
+[12/40] m05/p1 (300 vacas): ok, LP livre 0,016%, 23.8 min
+[13/40] m07/p0 (60 vacas): sim_failed, 24.3 min
+[14/40] m07/p1 (60 vacas): sim_failed, 24.7 min
+[15/40] m06/p1 (200 vacas): ok, LP livre 0,000%, 25.4 min
+[16/40] m06/p0 (200 vacas): ok, LP livre 0,115%, 25.9 min
+[17/40] m08/p0 (200 vacas): ok, LP livre -0,344%, 31.4 min
+[18/40] m09/p0 (100 vacas): ok, LP livre 0,001%, 32.9 min
+[19/40] m10/p0 (60 vacas): sim_failed, 34.2 min
+[20/40] m10/p1 (60 vacas): sim_failed, 36.0 min
+[21/40] m08/p1 (200 vacas): ok, LP livre 0,057%, 36.2 min
+[22/40] m11/p1 (200 vacas): ok, LP livre 0,000%, 49.3 min
+[23/40] m09/p1 (100 vacas): ok, LP livre 0,003%, 50.5 min
+[24/40] m11/p0 (200 vacas): ok, LP livre -0,002%, 51.5 min
+[25/40] m12/p0 (200 vacas): ok, LP livre 0,000%, 56.4 min
+[26/40] m12/p1 (200 vacas): ok, LP livre 0,000%, 57.0 min
+[27/40] m13/p0 (300 vacas): ok, LP livre 0,006%, 59.2 min
+[28/40] m13/p1 (300 vacas): ok, LP livre 0,941%, 61.7 min
+[29/40] m15/p0 (60 vacas): sim_failed, 62.1 min
+[30/40] m15/p1 (60 vacas): sim_failed, 62.6 min
+[31/40] m14/p0 (200 vacas): ok, LP livre 0,000%, 63.1 min
+[32/40] m14/p1 (200 vacas): ok, LP livre 0,140%, 65.1 min
+[33/40] m16/p0 (300 vacas): ok, LP livre -0,019%, 69.3 min
+[34/40] m17/p0 (300 vacas): ok, LP livre 0,000%, 69.6 min
+[35/40] m16/p1 (300 vacas): ok, LP livre 0,004%, 69.7 min
+[36/40] m18/p0 (60 vacas): ok, LP livre 0,049%, 73.7 min
+[37/40] m19/p0 (60 vacas): sim_failed, 74.1 min
+[38/40] m17/p1 (300 vacas): ok, LP livre -0,005%, 74.1 min
+[39/40] m19/p1 (60 vacas): sim_failed, 74.4 min
+[40/40] m18/p1 (60 vacas): ok, LP livre -0,059%, 75.2 min
+BENCHMARK DE SIMULAÇÕES COMPLETAS sim-v2: LP × SLSQP do RuFaS dentro de uma simulação de 1 ano (padrão NASEM 2021)
+Margem de equivalência ±0,5%; empate até 0,1%; LP na resolução normal; o SLSQP roda UMA vez por intervalo (como no uso real).
+Diferença da simulação = (custo médio por vaca por dia do LP − o do SLSQP) / o do SLSQP, em %, ponderada pelos dias dos 13 intervalos; negativa = o LP é mais barato. Preços ilustrativos.
+Simulações: 40; concluídas com comparação: 30; falhas do RuFaS: 10; sem ração no LP: 0; erros: 0. Intervalos: 390.
+Rações do LP que atendem às restrições originais do RuFaS: consumo livre 390 de 390; mesmo consumo 390 de 390 (intervalos sem ração no LP: 0 e 0).
+
+COMPARAÇÃO PRIMÁRIA (o mesmo problema: LP de consumo livre contra o SLSQP)
+  n = 30 simulações em 15 cardápios; média -0,005% (mediana 0,000%, desvio 0,245%; de -0,71% a 0,94%)
+  IC de 90% por cardápio: -0,074% a 0,069%; IC de 95%: -0,087% a 0,084%; Wilcoxon sobre as médias dos cardápios: p = 0,679
+  dentro da margem: 93,3% (mínimo 95%); LP mais barato / empate / mais caro: 4 / 22 / 4
+  VEREDITO: INCONCLUSIVO (nem equivalente nem além da margem) (IC dentro da margem: sim; fração dentro da margem: não)
+  fora da margem (2): m13/p1 0,94%; m03/p0 -0,71%
+
+SECUNDÁRIA (LP de mesmo consumo, o que o SLSQP escolheu, contra o SLSQP; mais conservadora)
+  n = 30 simulações em 15 cardápios; média 0,107% (mediana 0,000%, desvio 0,514%; de -0,59% a 2,49%)
+  IC de 90% por cardápio: -0,037% a 0,304%; IC de 95%: -0,050% a 0,343%; Wilcoxon sobre as médias dos cardápios: p = 0,890
+  dentro da margem: 86,7% (mínimo 95%); LP mais barato / empate / mais caro: 2 / 25 / 3
+  VEREDITO: INCONCLUSIVO (nem equivalente nem além da margem) (IC dentro da margem: sim; fração dentro da margem: não)
+  fora da margem (4): m09/p1 2,49%; m13/p1 1,06%; m03/p0 -0,59%; m09/p0 0,54%
+
+INTERVALOS (medidas repetidas dentro da simulação: só descrição, sem inferência)
+  consumo livre: 390 de 390 intervalos; média -0,002% (mediana 0,000%; de -1,80% a 1,07%); LP mais barato / empate / mais caro: 28 / 319 / 43; além da margem: 17 mais barato e 15 mais caro
+  mesmo consumo: 390 de 390 intervalos; média 0,103% (mediana 0,000%; de -1,80% a 4,92%); LP mais barato / empate / mais caro: 18 / 341 / 31; além da margem: 10 mais barato e 21 mais caro
+
+SENSIBILIDADE
+  Simulações em que o RuFaS reduziu o leite por falta de ração: 4 de 30 (17 intervalos).
+  Só as simulações sem redução de leite (n = 26): média 0,055%, IC de 90% 0,011% a 0,119%, EQUIVALENTE.
+  Rebanho de 60 vacas: n = 2, média -0,005%, IC de 90% -0,005% a -0,005% (poucas simulações; indicação).
+  Rebanho de 100 vacas: n = 2, média 0,002%, IC de 90% 0,002% a 0,002% (poucas simulações; indicação).
+  Rebanho de 200 vacas: n = 14, média -0,050%, IC de 90% -0,145% a 0,030% (poucas simulações; indicação).
+  Rebanho de 300 vacas: n = 12, média 0,046%, IC de 90% -0,078% a 0,194% (poucas simulações; indicação).
+
+TEMPO E PESO PRÁTICO
+  Simulação do RuFaS (1 ano, com o SLSQP dentro): mediana 58 s (quartis 51 a 68 s; as simulações já em cache contam 0 s).
+  LP, uma ração (consumo livre): mediana 18,7 s (quartis 14,9 a 24,4 s). O tempo do SLSQP por intervalo não é medido aqui (ver o benchmark do módulo).
+  O custo da ração do SLSQP varia 21% em média (até 75%) entre os dois conjuntos de preços do mesmo cardápio; a diferença entre os métodos é de 0,108% em média (máx. 0,94%).
+  Economia do LP de consumo livre por vaca em lactação por ano: média US$ -0,05 (de -14,18 a 8,39); no rebanho, média US$ -38 por ano.
+
+SIMULAÇÕES SEM COMPARAÇÃO (10):
+  m02/p0: sim_failed ZeroDivisionError: division by zero
+  m02/p1: sim_failed ZeroDivisionError: division by zero
+  m07/p0: sim_failed ZeroDivisionError: division by zero
+  m07/p1: sim_failed ZeroDivisionError: division by zero
+  m10/p0: sim_failed ValueError: Separator 'screw_press_1' attempted to separate more water into manure solids fraction than was present in manure entering separator. The separated_solids_dry_matter value for separator 's
+  m10/p1: sim_failed ValueError: Separator 'screw_press_1' attempted to separate more water into manure solids fraction than was present in manure entering separator. The separated_solids_dry_matter value for separator 's
+  m15/p0: sim_failed ZeroDivisionError: division by zero
+  m15/p1: sim_failed ZeroDivisionError: division by zero
+  m19/p0: sim_failed ZeroDivisionError: division by zero
+  m19/p1: sim_failed ZeroDivisionError: division by zero
+
+Como ler: cada simulação é um rebanho de um cardápio e um conjunto de preços sorteados (semente fixa), não uma amostra de fazendas; a conclusão vale para essa família.
+A ração do LP NÃO volta para a simulação (o RuFaS não aceita isso sem ser alterado): a simulação segue com a ração do SLSQP e o LP é resolvido sobre as mesmas condições de cada intervalo.
+Por isso a camada mede a diferença de custo da ração, não o efeito da ração do LP sobre o leite ou as exigências seguintes.
+Versões: commit 80cea27 (com alterações não commitadas); RuFaS 1.0.6; Python 3.12.10, numpy 2.2.0, scipy 1.16.2; Windows-11-10.0.26300-SP0; 2026-11-21.
+Reprodução: cd backend; ..\.venv\Scripts\python -m dietopt.benchmark_sim run --out ..\docs\benchmark\simulacao
+

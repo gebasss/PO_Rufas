@@ -1,0 +1,95 @@
+0 simulações prontas, 40 a executar (resolução normal, 3 ao mesmo tempo)
+[1/40] m01/p0 (60 vacas): ok, LP livre 0,000%, 4.4 min
+[2/40] m00/p1 (200 vacas): ok, LP livre 0,000%, 4.9 min
+[3/40] m00/p0 (200 vacas): ok, LP livre 0,000%, 5.2 min
+[4/40] m02/p0 (60 vacas): sim_failed, 5.3 min
+[5/40] m02/p1 (60 vacas): sim_failed, 5.6 min
+[6/40] m01/p1 (60 vacas): ok, LP livre -0,515%, 8.2 min
+[7/40] m03/p1 (100 vacas): ok, LP livre -0,002%, 10.1 min
+[8/40] m03/p0 (100 vacas): ok, LP livre -1,096%, 11.0 min
+[9/40] m04/p0 (60 vacas): ok, LP livre -0,456%, 12.1 min
+[10/40] m04/p1 (60 vacas): ok, LP livre 0,469%, 15.7 min
+[11/40] m05/p0 (300 vacas): ok, LP livre 0,021%, 17.2 min
+[12/40] m05/p1 (300 vacas): ok, LP livre 0,073%, 21.1 min
+[13/40] m06/p0 (300 vacas): ok, LP livre -1,071%, 21.9 min
+[14/40] m06/p1 (300 vacas): ok, LP livre 0,217%, 23.8 min
+[15/40] m07/p1 (60 vacas): ok, LP livre 0,000%, 26.4 min
+[16/40] m07/p0 (60 vacas): ok, LP livre -0,136%, 26.6 min
+[17/40] m08/p0 (200 vacas): ok, LP livre 0,000%, 28.2 min
+[18/40] m08/p1 (200 vacas): ok, LP livre 0,052%, 31.6 min
+[19/40] m09/p0 (100 vacas): ok, LP livre -0,387%, 31.9 min
+[20/40] m09/p1 (100 vacas): ok, LP livre -0,201%, 33.1 min
+[21/40] m10/p0 (200 vacas): ok, LP livre -0,001%, 36.2 min
+[22/40] m11/p0 (300 vacas): ok, LP livre 0,114%, 37.8 min
+[23/40] m10/p1 (200 vacas): ok, LP livre 0,000%, 37.9 min
+[24/40] m11/p1 (300 vacas): ok, LP livre 0,000%, 41.3 min
+[25/40] m12/p1 (200 vacas): ok, LP livre -0,001%, 42.4 min
+[26/40] m12/p0 (200 vacas): ok, LP livre 0,000%, 42.7 min
+[27/40] m14/p0 (60 vacas): sim_failed, 43.1 min
+[28/40] m14/p1 (60 vacas): sim_failed, 43.6 min
+[29/40] m13/p0 (60 vacas): ok, LP livre -0,249%, 46.9 min
+[30/40] m13/p1 (60 vacas): ok, LP livre 0,000%, 47.9 min
+[31/40] m16/p0 (60 vacas): sim_failed, 48.3 min
+[32/40] m16/p1 (60 vacas): sim_failed, 48.7 min
+[33/40] m15/p0 (60 vacas): ok, LP livre 0,013%, 48.9 min
+[34/40] m15/p1 (60 vacas): ok, LP livre -0,004%, 51.8 min
+[35/40] m18/p0 (60 vacas): sim_failed, 52.3 min
+[36/40] m18/p1 (60 vacas): sim_failed, 52.8 min
+[37/40] m17/p0 (300 vacas): ok, LP livre 0,022%, 54.5 min
+[38/40] m17/p1 (300 vacas): ok, LP livre -0,695%, 54.7 min
+[39/40] m19/p0 (60 vacas): ok, LP livre 0,006%, 57.9 min
+[40/40] m19/p1 (60 vacas): ok, LP livre 0,006%, 59.0 min
+BENCHMARK DE SIMULAÇÕES COMPLETAS sim-v1: LP × SLSQP do RuFaS dentro de uma simulação de 1 ano (padrão NASEM 2021)
+Margem de equivalência ±0,5%; empate até 0,1%; LP na resolução normal; o SLSQP roda UMA vez por intervalo (como no uso real).
+Diferença da simulação = (custo médio por vaca por dia do LP − o do SLSQP) / o do SLSQP, em %, ponderada pelos dias dos 13 intervalos; negativa = o LP é mais barato. Preços ilustrativos.
+Simulações: 40; concluídas com comparação: 32; falhas do RuFaS: 8; sem ração no LP: 0; erros: 0. Intervalos: 416.
+Rações do LP que atendem às restrições originais do RuFaS: consumo livre 416 de 416; mesmo consumo 414 de 414 (intervalos sem ração no LP: 0 e 2).
+
+COMPARAÇÃO PRIMÁRIA (o mesmo problema: LP de consumo livre contra o SLSQP)
+  n = 32 simulações em 16 cardápios; média -0,119% (mediana 0,000%, desvio 0,332%; de -1,10% a 0,47%)
+  IC de 90% por cardápio: -0,197% a -0,047%; IC de 95%: -0,215% a -0,036%; Wilcoxon sobre as médias dos cardápios: p = 0,144
+  dentro da margem: 87,5% (mínimo 95%); LP mais barato / empate / mais caro: 9 / 20 / 3
+  VEREDITO: INCONCLUSIVO (nem equivalente nem além da margem) (IC dentro da margem: sim; fração dentro da margem: não)
+  fora da margem (4): m03/p0 -1,10%; m06/p0 -1,07%; m17/p1 -0,69%; m01/p1 -0,51%
+
+SECUNDÁRIA (LP de mesmo consumo, o que o SLSQP escolheu, contra o SLSQP; mais conservadora)
+  n = 32 simulações em 16 cardápios; média 1,001% (mediana 0,000%, desvio 2,994%; de -0,45% a 14,39%)
+  IC de 90% por cardápio: 0,229% a 1,936%; IC de 95%: 0,163% a 2,125%; Wilcoxon sobre as médias dos cardápios: p = 0,193
+  dentro da margem: 81,2% (mínimo 95%); LP mais barato / empate / mais caro: 3 / 23 / 6
+  VEREDITO: INCONCLUSIVO (nem equivalente nem além da margem) (IC dentro da margem: não; fração dentro da margem: não)
+  fora da margem (6): m06/p1 14,39%; m04/p1 6,81%; m11/p0 6,42%; m05/p1 3,71%; m06/p0 0,85%; m03/p0 0,72%
+
+INTERVALOS (medidas repetidas dentro da simulação: só descrição, sem inferência)
+  consumo livre: 416 de 416 intervalos; média -0,071% (mediana 0,000%; de -1,97% a 19,79%); LP mais barato / empate / mais caro: 67 / 336 / 13; além da margem: 60 mais barato e 6 mais caro
+  mesmo consumo: 414 de 416 intervalos; média 0,939% (mediana 0,000%; de -1,97% a 174,47%); LP mais barato / empate / mais caro: 19 / 369 / 26; além da margem: 10 mais barato e 6 mais caro
+
+SENSIBILIDADE
+  Simulações em que o RuFaS reduziu o leite por falta de ração: 5 de 32 (8 intervalos).
+  Só as simulações sem redução de leite (n = 27): média -0,086%, IC de 90% -0,178% a -0,009%, INCONCLUSIVO (nem equivalente nem além da margem).
+  Rebanho de 60 vacas: n = 12, média -0,072%, IC de 90% -0,138% a -0,015% (poucas simulações; indicação).
+  Rebanho de 100 vacas: n = 4, média -0,421%, IC de 90% -0,549% a -0,294% (poucas simulações; indicação).
+  Rebanho de 200 vacas: n = 8, média 0,006%, IC de 90% 0,000% a 0,013% (poucas simulações; indicação).
+  Rebanho de 300 vacas: n = 8, média -0,165%, IC de 90% -0,359% a 0,049% (poucas simulações; indicação).
+
+TEMPO E PESO PRÁTICO
+  Simulação do RuFaS (1 ano, com o SLSQP dentro): mediana 44 s (quartis 32 a 53 s; as simulações já em cache contam 0 s).
+  LP, uma ração (consumo livre): mediana 16,2 s (quartis 14,0 a 18,9 s). O tempo do SLSQP por intervalo não é medido aqui (ver o benchmark do módulo).
+  O custo da ração do SLSQP varia 23% em média (até 47%) entre os dois conjuntos de preços do mesmo cardápio; a diferença entre os métodos é de 0,181% em média (máx. 1,10%).
+  Economia do LP de consumo livre por vaca em lactação por ano: média US$ 1,50 (de -6,25 a 14,20); no rebanho, média US$ 212 por ano.
+
+SIMULAÇÕES SEM COMPARAÇÃO (8):
+  m02/p0: sim_failed ZeroDivisionError: division by zero
+  m02/p1: sim_failed ZeroDivisionError: division by zero
+  m14/p0: sim_failed ValueError: Separator 'screw_press_1' attempted to separate more water into manure solids fraction than was present in manure entering separator. The separated_solids_dry_matter value for separator 's
+  m14/p1: sim_failed ValueError: Separator 'screw_press_1' attempted to separate more water into manure solids fraction than was present in manure entering separator. The separated_solids_dry_matter value for separator 's
+  m16/p0: sim_failed ZeroDivisionError: division by zero
+  m16/p1: sim_failed ZeroDivisionError: division by zero
+  m18/p0: sim_failed ZeroDivisionError: division by zero
+  m18/p1: sim_failed ZeroDivisionError: division by zero
+
+Como ler: cada simulação é um rebanho de um cardápio e um conjunto de preços sorteados (semente fixa), não uma amostra de fazendas; a conclusão vale para essa família.
+A ração do LP NÃO volta para a simulação (o RuFaS não aceita isso sem ser alterado): a simulação segue com a ração do SLSQP e o LP é resolvido sobre as mesmas condições de cada intervalo.
+Por isso a camada mede a diferença de custo da ração, não o efeito da ração do LP sobre o leite ou as exigências seguintes.
+Versões: commit 80cea27 (com alterações não commitadas); RuFaS 1.0.6; Python 3.12.10, numpy 2.2.0, scipy 1.16.2; Windows-11-10.0.26300-SP0; 2026-11-21.
+Reprodução: cd backend; ..\.venv\Scripts\python -m dietopt.benchmark_sim run --out ..\docs\benchmark\simulacao
+

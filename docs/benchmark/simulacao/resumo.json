@@ -1,0 +1,375 @@
+{
+ "version": "sim-v2",
+ "standard": "NASEM",
+ "margin_pct": 0.5,
+ "tie_pct": 0.1,
+ "share_min": 0.95,
+ "primary": {
+  "simulations": 40,
+  "compared": 30,
+  "mean": -0.005269124044388918,
+  "median": 9.549252183685118e-05,
+  "sd": 0.2449861320909521,
+  "min": -0.7147228189650646,
+  "max": 0.9409289049193196,
+  "ci90": [
+   -0.07370700952868245,
+   0.06902041020332675
+  ],
+  "ci95": [
+   -0.08670021755402409,
+   0.0842113120043298
+  ],
+  "groups": 15,
+  "share_within_margin": 0.9333333333333333,
+  "ci_within_margin": true,
+  "equivalent": false,
+  "lp_cheaper": 4,
+  "tie": 22,
+  "lp_dearer": 4,
+  "wilcoxon_p_groups": 0.67877197265625,
+  "outliers": [
+   {
+    "id": "m13/p1",
+    "gap_pct": 0.9409289049193196
+   },
+   {
+    "id": "m03/p0",
+    "gap_pct": -0.7147228189650646
+   }
+  ],
+  "verdict": "inconclusive"
+ },
+ "same_dmi": {
+  "simulations": 40,
+  "compared": 30,
+  "mean": 0.10684949972195788,
+  "median": 1.0297467084800152e-07,
+  "sd": 0.5141933280008302,
+  "min": -0.5908221406738671,
+  "max": 2.4891590466525595,
+  "ci90": [
+   -0.03705116878985885,
+   0.30355667391000923
+  ],
+  "ci95": [
+   -0.05000619888753074,
+   0.34337741354047235
+  ],
+  "groups": 15,
+  "share_within_margin": 0.8666666666666667,
+  "ci_within_margin": true,
+  "equivalent": false,
+  "lp_cheaper": 2,
+  "tie": 25,
+  "lp_dearer": 3,
+  "wilcoxon_p_groups": 0.890380859375,
+  "outliers": [
+   {
+    "id": "m09/p1",
+    "gap_pct": 2.4891590466525595
+   },
+   {
+    "id": "m13/p1",
+    "gap_pct": 1.0596315806321726
+   },
+   {
+    "id": "m03/p0",
+    "gap_pct": -0.5908221406738671
+   },
+   {
+    "id": "m09/p0",
+    "gap_pct": 0.5426894225694504
+   }
+  ],
+  "verdict": "inconclusive"
+ },
+ "intervals_free": {
+  "intervals": 390,
+  "compared": 390,
+  "mean": -0.002471267196043319,
+  "median": 5.383327596656293e-07,
+  "min": -1.797539986300278,
+  "max": 1.0695740877368525,
+  "share_within_margin": 0.9179487179487179,
+  "lp_cheaper": 28,
+  "tie": 319,
+  "lp_dearer": 43,
+  "lp_dearer_beyond_margin": 15,
+  "lp_cheaper_beyond_margin": 17
+ },
+ "intervals_same": {
+  "intervals": 390,
+  "compared": 390,
+  "mean": 0.10306927772539955,
+  "median": -1.16430635594396e-07,
+  "min": -1.7975072306323514,
+  "max": 4.922106386655338,
+  "share_within_margin": 0.9205128205128205,
+  "lp_cheaper": 18,
+  "tie": 341,
+  "lp_dearer": 31,
+  "lp_dearer_beyond_margin": 21,
+  "lp_cheaper_beyond_margin": 10
+ },
+ "without_milk_reduction": {
+  "simulations": 26,
+  "compared": 26,
+  "mean": 0.05542351402749726,
+  "median": 0.0009332566227771935,
+  "sd": 0.1871137647785699,
+  "min": -0.05873346026038778,
+  "max": 0.9409289049193196,
+  "ci90": [
+   0.010832188854017138,
+   0.11905535959056837
+  ],
+  "ci95": [
+   0.007713173327038162,
+   0.1309984427453919
+  ],
+  "groups": 15,
+  "share_within_margin": 0.9615384615384616,
+  "ci_within_margin": true,
+  "equivalent": true,
+  "lp_cheaper": 0,
+  "tie": 22,
+  "lp_dearer": 4,
+  "wilcoxon_p_groups": 0.1876220703125,
+  "outliers": [
+   {
+    "id": "m13/p1",
+    "gap_pct": 0.9409289049193196
+   }
+  ],
+  "verdict": "equivalent"
+ },
+ "by_herd_size": {
+  "60": {
+   "simulations": 10,
+   "compared": 2,
+   "mean": -0.0046418771598588995,
+   "median": -0.0046418771598588995,
+   "sd": 0.07649705043099926,
+   "min": -0.05873346026038778,
+   "max": 0.04944970594066998,
+   "ci90": [
+    -0.0046418771598588995,
+    -0.0046418771598588995
+   ],
+   "ci95": [
+    -0.0046418771598588995,
+    -0.0046418771598588995
+   ],
+   "groups": 1,
+   "share_within_margin": 1.0,
+   "ci_within_margin": true,
+   "equivalent": true,
+   "lp_cheaper": 0,
+   "tie": 2,
+   "lp_dearer": 0,
+   "wilcoxon_p_groups": 1.0,
+   "outliers": [],
+   "verdict": "equivalent"
+  },
+  "100": {
+   "simulations": 4,
+   "compared": 2,
+   "mean": 0.0017766755275560348,
+   "median": 0.0017766755275560348,
+   "sd": 0.0016758032605044622,
+   "min": 0.0005917036781188033,
+   "max": 0.0029616473769932664,
+   "ci90": [
+    0.0017766755275560348,
+    0.0017766755275560348
+   ],
+   "ci95": [
+    0.0017766755275560348,
+    0.0017766755275560348
+   ],
+   "groups": 1,
+   "share_within_margin": 1.0,
+   "ci_within_margin": true,
+   "equivalent": true,
+   "lp_cheaper": 0,
+   "tie": 2,
+   "lp_dearer": 0,
+   "wilcoxon_p_groups": 1.0,
+   "outliers": [],
+   "verdict": "equivalent"
+  },
+  "200": {
+   "simulations": 14,
+   "compared": 14,
+   "mean": -0.050155167669406406,
+   "median": -4.5992323410178174e-07,
+   "sd": 0.2205155968657832,
+   "min": -0.7147228189650646,
+   "max": 0.13981898090973993,
+   "ci90": [
+    -0.1452496854069551,
+    0.029718796223920735
+   ],
+   "ci95": [
+    -0.16560041179962856,
+    0.03776589536164102
+   ],
+   "groups": 7,
+   "share_within_margin": 0.9285714285714286,
+   "ci_within_margin": true,
+   "equivalent": false,
+   "lp_cheaper": 2,
+   "tie": 10,
+   "lp_dearer": 2,
+   "wilcoxon_p_groups": 0.8125,
+   "outliers": [
+    {
+     "id": "m03/p0",
+     "gap_pct": -0.7147228189650646
+    }
+   ],
+   "verdict": "inconclusive"
+  },
+  "300": {
+   "simulations": 12,
+   "compared": 12,
+   "mean": 0.045819085775385654,
+   "median": 0.0007328299125213763,
+   "sd": 0.3079099533557039,
+   "min": -0.34422838668886846,
+   "max": 0.9409289049193196,
+   "ci90": [
+    -0.07770283188115758,
+    0.19407549137612246
+   ],
+   "ci95": [
+    -0.09255416012021588,
+    0.23260144499666138
+   ],
+   "groups": 6,
+   "share_within_margin": 0.9166666666666666,
+   "ci_within_margin": true,
+   "equivalent": false,
+   "lp_cheaper": 2,
+   "tie": 8,
+   "lp_dearer": 2,
+   "wilcoxon_p_groups": 0.84375,
+   "outliers": [
+    {
+     "id": "m13/p1",
+     "gap_pct": 0.9409289049193196
+    }
+   ],
+   "verdict": "inconclusive"
+  }
+ },
+ "run": {
+  "simulations": 40,
+  "ok": 30,
+  "sim_failed": 10,
+  "no_lp": 0,
+  "errors": 0,
+  "intervals": 390,
+  "intervals_without_lp_free": 0,
+  "intervals_without_lp_same": 0,
+  "lp_free_verified": 390,
+  "lp_same_verified": 390,
+  "sims_with_milk_reduction": 4,
+  "intervals_with_milk_reduction": 17,
+  "seconds": {
+   "simulation": {
+    "median": 58.428051590919495,
+    "q1": 51.23551392555237,
+    "q3": 67.9314358830452
+   },
+   "lp_per_interval": {
+    "median": 18.671746100000746,
+    "q1": 14.917830824997509,
+    "q3": 24.386927500003367
+   },
+   "compare_per_simulation": {
+    "median": 299.7397755384445,
+    "q1": 252.76244920492172,
+    "q3": 350.1653488278389
+   }
+  },
+  "price_effect_pct": {
+   "mean": 20.708561333627735,
+   "max": 75.3330943582498
+  },
+  "method_effect_pct": {
+   "mean_abs": 0.10779549567956548,
+   "max_abs": 0.9409289049193196
+  },
+  "saving_per_cow_year": {
+   "mean": -0.048606003993991224,
+   "min": -14.175920970021934,
+   "max": 8.39191433379193
+  },
+  "herd_saving_per_year": -38.343856301854984
+ },
+ "failed": [
+  {
+   "id": "m02/p0",
+   "status": "sim_failed",
+   "detail": "ZeroDivisionError: division by zero"
+  },
+  {
+   "id": "m02/p1",
+   "status": "sim_failed",
+   "detail": "ZeroDivisionError: division by zero"
+  },
+  {
+   "id": "m07/p0",
+   "status": "sim_failed",
+   "detail": "ZeroDivisionError: division by zero"
+  },
+  {
+   "id": "m07/p1",
+   "status": "sim_failed",
+   "detail": "ZeroDivisionError: division by zero"
+  },
+  {
+   "id": "m10/p0",
+   "status": "sim_failed",
+   "detail": "ValueError: Separator 'screw_press_1' attempted to separate more water into manure solids fraction than was present in manure entering separator. The separated_solids_dry_matter value for separator 's"
+  },
+  {
+   "id": "m10/p1",
+   "status": "sim_failed",
+   "detail": "ValueError: Separator 'screw_press_1' attempted to separate more water into manure solids fraction than was present in manure entering separator. The separated_solids_dry_matter value for separator 's"
+  },
+  {
+   "id": "m15/p0",
+   "status": "sim_failed",
+   "detail": "ZeroDivisionError: division by zero"
+  },
+  {
+   "id": "m15/p1",
+   "status": "sim_failed",
+   "detail": "ZeroDivisionError: division by zero"
+  },
+  {
+   "id": "m19/p0",
+   "status": "sim_failed",
+   "detail": "ZeroDivisionError: division by zero"
+  },
+  {
+   "id": "m19/p1",
+   "status": "sim_failed",
+   "detail": "ZeroDivisionError: division by zero"
+  }
+ ],
+ "meta": {
+  "resolution": "normal",
+  "commit": "659a816",
+  "dirty": false,
+  "rufas": "1.0.6",
+  "python": "3.12.10",
+  "numpy": "2.2.0",
+  "scipy": "1.16.2",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "date": "2026-11-21"
+ }
+}
