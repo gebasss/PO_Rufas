@@ -12,7 +12,8 @@ O LP é o método de parametrização da dieta ótima (`docs/CONCLUSOES_PREVIAS.
 | `v4/resultados.csv` | Um caso por linha (custos, diferenças, tempos, emissões). |
 | `v4/execucoes_slsqp.csv` | Uma execução do SLSQP por linha (semente, estado, custo, tempo). |
 | `v4/resultados.jsonl` | Os dados brutos completos, de onde o resto é gerado (e de onde a execução retoma). |
-| `historico/v1`, `v2`, `v3` | Desenhos anteriores, guardados só para rastrear a história (ver abaixo). Não são mais produzidos. |
+| `simulacao/` | A camada de simulações completas (`RELATORIO.txt`, `resumo.json`, `resultados.csv`, `intervalos.csv`, `resultados.jsonl`, `execucao.log`); ver a última seção. |
+| `historico/v1`, `v2`, `v3`, `simulacao-v1` | Desenhos anteriores, guardados só para rastrear a história (ver abaixo). Não são mais produzidos. |
 
 ## Desenho do v4 (definido antes de rodar)
 
@@ -43,3 +44,20 @@ cd backend
 - **v1** (72 casos, NASEM e NRC): fixava metano e nitrogênio em valores de teste; achou um defeito na busca do LP (até +1,77% no NASEM), corrigido depois.
 - **v2** (72 casos): metano e nitrogênio calculados da dieta; 4 vacas, 1 cardápio, dois padrões.
 - **v3** (288 casos, só NASEM): 8 animais, 3 cardápios escolhidos à mão. Mostrou 6 casos fora da margem; a investigação (`CONCLUSOES_PREVIAS.txt`, 5.8) achou que 4 eram diferença de problema (as constantes do SLSQP). O v4 resolve isso e sorteia os cardápios.
+
+## Camada de simulações completas (`simulacao/`)
+
+Pergunta: **o que o v4 mede em um animal e um dia vale dentro de uma simulação de 1 ano do RuFaS, com o SLSQP formulando a ração a cada intervalo?**
+
+- **Unidade:** uma simulação de 1 ano (rebanho em lactação, 13 intervalos de 30 dias). Os intervalos são medidas repetidas dentro dela (só descritos).
+- **Desenho:** 20 cardápios × 2 conjuntos de preços (o padrão e um sorteado) = 40 simulações; o tamanho do rebanho (60, 100, 200 ou 300 vacas) e a semente do RuFaS são sorteados por cardápio.
+- **Comparação:** o SLSQP roda uma vez por intervalo, dentro do RuFaS. O LP é resolvido depois, em cada intervalo, sobre as mesmas exigências, alimentos, preços, limites e emissões do lote. A ração do LP **não volta** para o RuFaS: a camada mede o custo da ração, não o efeito sobre o leite.
+- **Primária:** LP de consumo livre contra o SLSQP. **Secundária:** LP com o consumo do SLSQP. **Critério:** o mesmo do v4 (IC de 90% por cardápio dentro de ±0,5% e ao menos 95% das simulações dentro da margem).
+- **Resultado (semente 20261203):** 30 de 40 simulações comparadas (10 falharam dentro do RuFaS, 8 delas com 60 vacas); diferença média −0,005% (IC de 90% de −0,074% a +0,069%); 93,3% dentro da margem, abaixo dos 95%: **equivalência não demonstrada** pelo critério (a média e o IC cabem na margem). Leitura e limites em `docs/CONCLUSOES_PREVIAS.txt`, seção 8.
+- **Defeito corrigido antes:** no dia 0 o RuFaS formula com metano e nitrogênio urinário zero; a primeira rodada (`historico/simulacao-v1`, semente 20261202) usava os valores do dia 0 e foi descartada. A camada foi repetida com outra semente.
+
+```powershell
+cd backend
+..\.venv\Scripts\python -m dietopt.benchmark_sim run --out ..\docs\benchmark\simulacao     # retoma o que já foi feito (cerca de 75 min)
+..\.venv\Scripts\python -m dietopt.benchmark_sim report --out ..\docs\benchmark\simulacao  # só refaz o resumo, os CSVs e o relatório
+```

@@ -18,6 +18,7 @@ suporte ao NASEM) a comparação é recusada com a instrução de simular de nov
 
 from __future__ import annotations
 
+import time
 from typing import Any, Callable, Mapping, Sequence
 
 from .optimize import RUFAS_TOLERANCE, _amounts, _check, _within, build_problem, search
@@ -73,6 +74,7 @@ def _solve(
     dmi_range: tuple[float, float] | None, should_stop: Callable[[], bool] | None, resolution: str = RESOLUTION,
     standard: str = "NRC", pen: tuple[float, float] | None = None,
 ) -> dict[str, Any] | None:  # fmt: skip
+    started = time.perf_counter()
     cow = _cow(requirements, pen)
     overrides = {name: float(requirements[key]) for key, name in REQUIREMENT_MAP.items()}
     required = compute_requirements(standard, "LAC_COW", cow, overrides, "LAC_COW")
@@ -99,6 +101,7 @@ def _solve(
         "violated": list(check["violated"]),
         "tdn_percentage": best.point.tdn,
         "concentrate_percentage": best.point.conc,
+        "seconds": time.perf_counter() - started,
     }
 
 
@@ -115,6 +118,7 @@ def compare_with_simulation(
     standard: str = "NRC",
     on_progress: Callable[[int, int], None] | None = None,
     should_stop: Callable[[], bool] | None = None,
+    resolution: str = RESOLUTION,
 ) -> dict[str, Any]:
     """Compara, intervalo a intervalo, a ração do SLSQP da simulação com a do LP sobre as mesmas exigências.
 
@@ -149,7 +153,7 @@ def compare_with_simulation(
         requirements = simulation.requirements[index]
         variants = []
         for dmi_range in (None, (slsqp_dmi, slsqp_dmi)):
-            variants.append(_solve(requirements, ids, price, bounds, dmi_range, should_stop, RESOLUTION, standard, pens[index]))
+            variants.append(_solve(requirements, ids, price, bounds, dmi_range, should_stop, resolution, standard, pens[index]))
             done += 1
             if on_progress:
                 on_progress(done, total)

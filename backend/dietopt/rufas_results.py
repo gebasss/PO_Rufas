@@ -78,9 +78,14 @@ class SimulationResult:
         """Metano entérico (g/dia) e nitrogênio urinário (kg/dia) médios por vaca do lote no ``day``, ou ``None`` se não foram gravados.
 
         É o que o RuFaS passa ao otimizador de ração no NASEM (média dos animais do lote). Vale o dia anterior a ``day``: a ração do
-        dia é formulada antes da atualização diária dos animais, que ainda guardam os valores do dia anterior (no dia 0, os do dia 0)."""
+        dia é formulada antes da atualização diária dos animais, que ainda guardam os valores do dia anterior. No dia 0 não há dia anterior:
+        os animais ainda não calcularam as emissões (começam em 0,0 no RuFaS) e a primeira ração é formulada com metano e nitrogênio
+        urinário zero. Conferido em 40 simulações NASEM: com (0, 0) a folga de energia do dia 0 bate com a diferença que o próprio RuFaS
+        grava (até 0,03 Mcal); com os valores gravados no fim do dia 0 ela errava em até 11 Mcal (``docs\benchmark\simulacao``)."""
         if not (self.pen_methane_g and self.pen_urine_n_kg and self.pen_animals):
             return None
+        if int(day) <= 0:
+            return 0.0, 0.0
         index = max(0, min(int(day) - 1, len(self.pen_animals) - 1))
         animals = self.pen_animals[index]
         if not animals or animals <= 0:

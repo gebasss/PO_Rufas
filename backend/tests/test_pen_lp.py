@@ -125,7 +125,8 @@ def test_nasem_sem_o_metano_do_lote_e_recusado_com_instrucao():
 def test_media_do_lote_vem_do_total_dividido_pelos_animais_do_dia_anterior():
     sim = SimulationResult(pen_animals=[10.0, 20.0, 20.0], pen_methane_g=[7000.0, 14000.0, 15000.0], pen_urine_n_kg=[2.0, 5.0, 6.0])
     assert sim.pen_averages(2) == (700.0, 0.25)  # dia 2 usa o dia 1 (formulada antes da atualização do dia)
-    assert sim.pen_averages(0) == (700.0, 0.2)  # no dia 0, o dia 0
+    assert sim.pen_averages(0) == (0.0, 0.0)  # no dia 0 os animais ainda não calcularam as emissões: o RuFaS formula com zero
+    assert sim.pen_averages(1) == (700.0, 0.2)  # o dia 1 usa o dia 0
     assert SimulationResult().pen_averages(5) is None
 
 
