@@ -12,6 +12,7 @@ O LP é o método de parametrização da dieta ótima (`docs/CONCLUSOES_PREVIAS.
 | `v4/resultados.csv` | Um caso por linha (custos, diferenças, tempos, emissões). |
 | `v4/execucoes_slsqp.csv` | Uma execução do SLSQP por linha (semente, estado, custo, tempo). |
 | `v4/resultados.jsonl` | Os dados brutos completos, de onde o resto é gerado (e de onde a execução retoma). |
+| `RELATORIO_UMA_PAGINA.pdf` / `.png` | O relatório de uma página para a apresentação (3 gráficos e o que dá e não dá para dizer), com os dados do v4 e de `simulacao/`. Gerado por `python -m dietopt.benchmark_report` (pasta `backend`). |
 | `simulacao/` | A camada de simulações completas (`RELATORIO.txt`, `resumo.json`, `resultados.csv`, `intervalos.csv`, `resultados.jsonl`, `execucao.log`); ver a última seção. |
 | `historico/v1`, `v2`, `v3`, `simulacao-v1` | Desenhos anteriores, guardados só para rastrear a história (ver abaixo). Não são mais produzidos. |
 
