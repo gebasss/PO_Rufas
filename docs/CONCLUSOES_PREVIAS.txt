@@ -832,7 +832,8 @@ Próximos passos possíveis (não feitos)
 - Refazer os guias em Word da Vaca leiteira e da Sensibilidade (hoje mostram o NRC) e do Ruminante Singular (campos de metano e N urinário opcionais);
   repetir a sensibilidade de 27 simulações (seção 4) no NASEM.
 - Rever o texto "aumente a resolução" da conclusão da Dieta ótima, que a resolução fina quase não cumpre (5.7).
-- Relatório de uma página com 3 gráficos (histograma das diferenças, diferença contra custo, distribuição dos tempos) e um slide para a apresentação.
+- Slide para a apresentação (o relatório de uma página, com 3 gráficos, já existe: docsenchmark\RELATORIO_UMA_PAGINA.pdf e .png, gerado por "python -m dietopt.benchmark_report" na pasta backend; ele lê os resumos e CSVs
+  do módulo e das simulações completas e não roda otimizador).
 - Investigar os casos fora da margem da camada de simulações completas (m13/p1 e m03/p0 na primária; m09 e m13 no mesmo consumo; 8.7) e mais simulações para decidir o critério dos 95%.
 - Reportar à equipe do RuFaS as falhas de simulação com 60 e 100 vacas (ZeroDivisionError e screw_press_1; 8.5).
 - Se a busca "normal" do LP for melhorada (2 mínimos locais em 240 casos no v3), repetir o benchmark com outra semente (--seed), conforme 5.2, item 12.
